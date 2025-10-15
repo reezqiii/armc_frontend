@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mechanical-completion-frontend
+  labels:
+    app: mechanical-completion-frontend
+spec:
+  replicas: 1 # Jumlah pods yang ingin dijalankan
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: mechanical-completion-frontend
+  template:
+    metadata:
+      labels:
+        app: mechanical-completion-frontend
+    spec:
+      containers:
+        - name: mechanical-completion-frontend-container
+          image: $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest # Image otomatis dari pipeline
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources: # Optional: Batasi resource per pod
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"
+      imagePullSecrets:
+        - name: regcred

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mechanical-completion-frontend-service
+spec:
+  type: NodePort  # Gunakan NodePort untuk mengakses dari luar
+  selector:
+    app: mechanical-completion-frontend
+  ports:
+    - protocol: TCP
+      port: 80  # Port yang diekspos oleh Service
+      targetPort: 3000  # Port yang digunakan oleh aplikasi di dalam container
+      # nodePort: 30081  # Port yang bisa diakses dari luar

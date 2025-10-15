@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mechanical-completion-frontend-ingress
+spec:
+  ingressClassName: kong  # Gunakan Kong sebagai Ingress Controller
+  rules:
+    - http:
+        paths:
+          - path: /mechanical_completion
+            pathType: Prefix
+            backend:
+              service:
+                name: mechanical-completion-frontend-service  # Ganti dengan nama service aplikasi Java Anda
+                port:
+                  number: 80           # Ganti sesuai port Service Anda
