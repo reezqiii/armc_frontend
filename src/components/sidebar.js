@@ -3,7 +3,6 @@ import useCollapseStore from "@/store/useLayout";
 import { NavLink } from "@mantine/core";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
-import { dashboardSidebar } from "@/data/sidebar/dashboardSidebar";
 
 
 export default function Sidebar({ className, sidebarList }) {

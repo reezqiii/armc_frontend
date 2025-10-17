@@ -3,8 +3,9 @@ import { ActionIcon, Collapse, Menu, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconUser,
-  IconMenu2,
+  IconUserCog,
   IconHome,
+  IconMenu2,
   IconListCheck,
   IconLayoutGrid,
   IconBriefcase,
@@ -25,57 +26,23 @@ import React from "react";
 
 const navigation = [
   {
-    name: "Dashboard",
+    name: "Home",
     url: "/",
     icon: <IconHome size={20} />,
     permission: 1,
   },
-  // {
-  //   name: "Example",
-  //   url: "/example",
-  //   icon: <IconBrandGithub size={20} />,
-  //   permission: 1,
-  // },
-  // Template, Workpack, Checklist
-  // {
-  //   name: "Employee",
-  //   url: "/employee/employee_list",
-  //   icon: <IconLayoutGrid size={20} />,
-  //   permission: 1,
-  // },
-
-  //  {
-  //   name: "Master Data",
-  //   url: "/master_data_new/master_data_itr/master_system",
-  //   icon: <IconLayoutGrid size={20} />,
-  //   permission: 1,
-  // },
 
   {
-    name: "Master Data",
-    url: "/master_data_new/master_data_subsystem/subsystem_list",
-    icon: <IconLayoutGrid size={20} />,
+    name: "User Permission Request",
+    url: "/user_request/requestor_list",
+    icon: <IconUser size={20} />,
     permission: 1,
   },
 
   {
-    name: "Tag Number",
-    url: "/master_data_new/tag_number/tag_register",
-    icon: <IconTag size={20} />,
-    permission: 1,
-  },
-
-  {
-    name: "ITR Assignment",
-    url: "/master_data_new/master_data_itr/itr_assignment/unassign_list",
-    icon: <IconLayoutGrid size={20} />,
-    permission: 1,
-  },
-
-  {
-    name: "RFI Submission",
-    url: "/rfi_submission/production_rfi",
-    icon: < IconDeviceImacSearch size={20} />,
+    name: "User Management",
+    url: "/user_management/requestor_list",
+    icon: <IconUserCog size={20} />,
     permission: 1,
   },
 ];
@@ -101,12 +68,11 @@ export default function Navigation() {
             <div className="w-fit text-white">
               <Link
                 href={link.url}
-                className={`p-2 ${
-                  (link.url === "/" && router.asPath === "/") ||
-                  (link.url !== "/" && router.asPath.startsWith(link.url))
+                className={`p-2 ${(link.url === "/" && router.asPath === "/") ||
+                    (link.url !== "/" && router.asPath.startsWith(link.url))
                     ? "bg-white bg-opacity-25 text-white"
                     : ""
-                } hover:bg-white hover:text-black rounded-md text-sm flex`}
+                  } hover:bg-white hover:text-black rounded-md text-sm flex`}
                 data-active={true}
               >
                 <div className="mr-2">{link.icon}</div>
@@ -124,12 +90,11 @@ export default function Navigation() {
       <div key={index} className="w-fit text-white">
         <Link
           href={link.url}
-          className={`p-2 ${
-            (link.url === "/" && router.asPath === "/") ||
-            (link.url !== "/" && router.asPath.startsWith(link.url))
+          className={`p-2 ${(link.url === "/" && router.asPath === "/") ||
+              (link.url !== "/" && router.asPath.startsWith(link.url))
               ? "bg-white bg-opacity-25 text-white"
               : ""
-          } hover:bg-white hover:text-black rounded-md text-sm flex`}
+            } hover:bg-white hover:text-black rounded-md text-sm flex`}
           data-active={true}
         >
           <div className="mr-2">{link.icon}</div>
