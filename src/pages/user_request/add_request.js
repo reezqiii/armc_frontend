@@ -2,13 +2,13 @@ import AuthLayout from '@/components/layout/authLayout'
 import { requestorList } from '@/data/sidebar/RequestorList'
 import { Button, Paper, TextInput, Select, Checkbox, Group, Textarea } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
-import { IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react'
+import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react'
 import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 import useUser from '@/store/useUser'
 
 export default function CreateRequest() {
-    CreateRequest.title = "Create Request"
+    CreateRequest.title = "Create Request Form"
     const router = useRouter()
     const { user } = useUser()
 
@@ -44,177 +44,142 @@ export default function CreateRequest() {
                         {/* Header */}
                         <div className="flex items-center justify-center border-b pb-2 mb-5">
                             <h1 className="text-xl font-bold text-blue-500">
-                                Create User Permission Request
+                                PCMS ACCESS LOGIN REQUEST FORM
                             </h1>
                         </div>
 
-                        {/* Form Section 1 */}
                         <form onSubmit={handleSubmit}>
-                            <div className="px-6 pt-4 pb-2 space-y-4 bg-white -mt-4">
-                                <div className="grid grid-cols-1 gap-2">
-                                    <TextInput
-                                        label={
-                                            <span className="font-semibold">
-                                                Name / Requestor <span className="text-red-500">*</span>
-                                            </span>
-                                        }
-                                        value={formData.req_name}
-                                        readOnly
-                                    />
-
-                                    <TextInput
-                                        label={
-                                            <span className="font-semibold">
-                                                Designation <span className="text-red-500">*</span>
-                                            </span>
-                                        }
-                                        placeholder="Input your designation..."
-                                        value={formData.designation}
-                                        onChange={(e) => handleChange('designation', e.target.value)}
-                                    />
-
-                                    <Select
-                                        label={
-                                            <span className="font-semibold">
-                                                Division / Department <span className="text-red-500">*</span>
-                                            </span>
-                                        }
-                                        placeholder="Select department"
-                                        data={['IT', 'HRD', 'Finance', 'Production']}
-                                        value={formData.department}
-                                        onChange={(v) => handleChange('department', v)}
-                                    />
-
+                            {/* Header Section */}
+                            <div className="px-6 pt-3 pb-3 space-y-3 bg-white rounded-md shadow-sm">
+                                <div className="grid grid-cols-1 gap-3">
                                     <DateInput
                                         label={
                                             <span className="font-semibold">
-                                                Request Date <span className="text-red-500">*</span>
+                                                Requestor Date <span className="text-red-500">*</span>
                                             </span>
                                         }
                                         placeholder="Pick date"
                                         value={formData.request_date}
                                         onChange={(v) => handleChange('request_date', v)}
                                         valueFormat="MM/DD/YYYY"
+                                        rightSection={<IconCalendar size={18} className="text-gray-500" />}
+                                    />
+
+                                    <TextInput
+                                        label={
+                                            <span className="font-semibold">
+                                                Requestor <span className="text-red-500">*</span>
+                                            </span>
+                                        }
+                                        value={formData.req_name}
+                                        placeholder="Input requestor name..."
+                                        readOnly
+                                    />
+
+                                    <TextInput
+                                        label={
+                                            <span className="font-semibold">
+                                                Department <span className="text-red-500">*</span>
+                                            </span>
+                                        }
+                                        placeholder="Select Department..."
+                                        value={formData.department}
+                                        readOnly
                                     />
                                 </div>
+                            </div>
+
+                            {/* Section 1 */}
+                            <div className="bg-gray-800 text-white text-base font-semibold px-6 py-3 mt-6 w-full rounded-t-md">
+                                Description
+                            </div>
+
+                            <div className="px-6 pt-3 pb-3 space-y-3 bg-white rounded-b-md shadow-sm">
+                                <TextInput
+                                    label="Name"
+                                    placeholder="Input employee name..."
+                                    value={formData.employee_name}
+                                    onChange={(e) => handleChange('employee_name', e.target.value)}
+                                />
+
+                                <TextInput
+                                    label="Employee ID"
+                                    placeholder="Input employee ID..."
+                                    value={formData.employee_id}
+                                    onChange={(e) => handleChange('employee_id', e.target.value)}
+                                />
+
+                                <TextInput
+                                    label="Email (Office)"
+                                    placeholder="example@company.com"
+                                    value={formData.email}
+                                    onChange={(e) => handleChange('email', e.target.value)}
+                                />
+
+                                <TextInput
+                                    label="Project"
+                                    placeholder="Input project name..."
+                                    value={formData.project}
+                                    onChange={(e) => handleChange('project', e.target.value)}
+                                />
+
+                                <TextInput
+                                    label="Role"
+                                    placeholder="Input employee role..."
+                                    value={formData.role}
+                                    onChange={(e) => handleChange('role', e.target.value)}
+                                />
                             </div>
 
                             {/* Section 2 */}
-                            <div className="bg-gray-800 text-white text-base font-semibold px-6 py-4 mt-8 w-full">
-                                Description of Software Application
+                            <div className="bg-gray-800 text-white text-base font-semibold px-6 py-3 mt-6 w-full rounded-t-md">
+                                Remarks
                             </div>
 
-                            <div className="px-6 pt-4 pb-2 space-y-3 bg-white">
-                                <TextInput
-                                    label={
-                                        <span className="font-semibold">
-                                            Application Name <span className="text-red-500">*</span>
-                                        </span>
-                                    }
-                                    placeholder="Input application name..."
-                                    value={formData.app_name}
-                                    onChange={(e) => handleChange('app_name', e.target.value)}
-                                />
-
-                                <div>
-                                    {/* Baris Label dan Instruksi */}
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="text-sm font-semibold text-gray-700">
-                                            Status Request <span className="text-red-500">*</span>
-                                        </label>
-                                    </div>
-
-                                    {/* Baris Checkbox */}
-                                    <div className="flex items-center justify-between">
-                                        {/* Checkbox Group */}
-                                        <div className="flex flex-wrap gap-x-6 gap-y-2">
-                                            {['New', 'Add', 'Change', 'Delete'].map((status) => (
-                                                <Checkbox
-                                                    key={status}
-                                                    label={status}
-                                                    size="lg"
-                                                    checked={formData.status_request.includes(status)}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked;
-                                                        handleChange(
-                                                            'status_request',
-                                                            checked
-                                                                ? [...formData.status_request, status]
-                                                                : formData.status_request.filter((s) => s !== status)
-                                                        );
-                                                    }}
-                                                    classNames={{
-                                                        label: 'text-sm text-gray-700 flex items-center',
-                                                        body: 'flex items-center',
-                                                    }}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* Instruction Text */}
-                                        <span className="text-sm italic text-gray-600 ml-4 whitespace-nowrap">
-                                            *Please Tick (✓)
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <TextInput
-                                    label="Reason of Request"
-                                    placeholder="Input your request reason..."
+                            <div className="px-6 pt-3 pb-3 space-y-3 bg-white rounded-b-md shadow-sm">
+                                <Textarea
+                                    label="Request Reason"
+                                    placeholder="Input request reason..."
                                     value={formData.reason}
                                     onChange={(e) => handleChange('reason', e.target.value)}
+                                    minRows={3}
                                 />
-
-                                <Textarea
-                                    label="Request Details"
-                                    placeholder="Input your request details..."
-                                    value={formData.details}
-                                    onChange={(e) => handleChange('details', e.target.value)}
-                                />
-
                             </div>
-
 
                             {/* Section 3 */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 mt-6">
-                                <div className="bg-gray-800 text-white text-center py-4 font-semibold">
-                                    Requestor Department
-                                </div>
-                                <div className="bg-gray-800 text-white text-center py-4 font-semibold">
-                                    Requestor Head of Department
-                                </div>
-                                <div className="bg-gray-800 text-white text-center py-4 font-semibold">
-                                    Information Technology Manager
-                                </div>
-
-                                <div className="p-4">
-                                    <TextInput label="Requested by" value={formData.req_name} readOnly />
-                                </div>
-                                <div className="p-4">
-                                    <Select
-                                        label="Acknowledge by"
-                                        placeholder="-- Select --"
-                                        data={['1002015 - Ahmad Yusuf', '1003042 - Budi Santoso']}
-                                        value={formData.acknowledge_by}
-                                        onChange={(v) => handleChange('acknowledge_by', v)}
-                                    />
-                                </div>
-                                <div className="p-4">
-                                    <Select
-                                        label="Approved by"
-                                        placeholder="-- Select --"
-                                        data={['10030915 - Wahyu Hidayat']}
-                                        value={formData.approved_by}
-                                        onChange={(v) => handleChange('approved_by', v)}
-                                    />
-                                </div>
+                            <div className="bg-gray-800 text-white text-base font-semibold px-6 py-3 mt-6 w-full rounded-t-md">
+                                Signature
                             </div>
 
+                            <div className="grid grid-cols-1 md:grid-cols-3 bg-white rounded-b-md shadow-sm divide-x divide-gray-200">
+                                {[
+                                    { label: formData.req_name || 'Requestor', key: 'signature_requestor' },
+                                    { label: 'HOD Requestor', key: 'signature_hod_requestor' },
+                                    { label: 'HOD IT', key: 'signature_hod_it' },
+                                ].map((item) => (
+                                    <div
+                                        key={item.key}
+                                        className="flex flex-col items-center p-6 min-h-[200px] text-center"
+                                    >
+                                        <div className="flex-grow flex items-center justify-center w-full">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleChange(item.key, e.target.files[0])}
+                                                className="block w-3/4 text-sm text-gray-700 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <label className="text-sm font-semibold text-gray-700 mt-auto">
+                                            {item.label}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
 
                             {/* Buttons */}
                             <div className="flex justify-between mt-6">
                                 <Button
-                                    leftSection={<IconArrowLeft size={16} />}
+                                    leftSection={<IconArrowLeft size={18} />}
                                     color="gray"
                                     onClick={() => router.back()}
                                 >
@@ -231,6 +196,7 @@ export default function CreateRequest() {
                                 </Button>
                             </div>
                         </form>
+
                     </Paper>
                 </div>
             </div>

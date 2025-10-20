@@ -19,7 +19,7 @@ export const requestorList = [
     child: [
       {
         title: "User Request List",
-        href: "/",
+        href: "/user_request/requestor_list",
         active: "User Request List",
         icon: <IconListLetters size={18} />,
       },
