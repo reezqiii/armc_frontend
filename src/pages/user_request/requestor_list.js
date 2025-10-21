@@ -33,12 +33,6 @@ export default function RequestUserList() {
             size: 40,
         },
         {
-            accessorFn: (row) => row.id_request,
-            id: 'id_request',
-            header: 'No Request',
-            cell: (info) => info.getValue(),
-        },
-        {
             accessorFn: (row) => row.create_date,
             id: 'create_date',
             header: 'Request Date',
@@ -64,13 +58,19 @@ export default function RequestUserList() {
         },
         {
             accessorFn: (row) => row.id_project,
-            id: 'project',
+            id: 'id_project',
             header: 'Project',
             cell: (info) => info.getValue(),
         },
         {
+            accessorFn: (row) => row.id_department,
+            id: 'id_department',
+            header: 'Department',
+            cell: (info) => info.getValue(),
+        },
+        {
             accessorFn: (row) => row.id_role,
-            id: 'role',
+            id: 'id_role',
             header: 'Role',
             cell: (info) => info.getValue(),
         },
@@ -147,7 +147,7 @@ export default function RequestUserList() {
 
         try {
             const { data } = await axios.post(
-                `${API_URL}/api/pcms_mc_template/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+                `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
                 {},
                 {
                     headers: {
