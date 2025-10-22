@@ -18,16 +18,15 @@ export default function CreateRequest() {
     const { user } = useUser()
 
     const [formData, setFormData] = useState({
-        req_name: user?.name || '',
-        department: '',
+        department: null,
         request_date: new Date(),
-        employee_name: '',
-        employee_id: '',
+        full_name: '',
+        badge_no: '',
         email: '',
-        project: '',
-        role: '',
-        reason: '',
-    })
+        project: null,
+        role: null,
+        request_reason: '',
+    });
 
     const [projects, setProjects] = useState([])
     const [departments, setDepartments] = useState([])
@@ -35,38 +34,34 @@ export default function CreateRequest() {
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
             try {
                 const [projRes, deptRes, roleRes] = await Promise.all([
                     axios.get(`${API_URL}/portal_project`, {
-                        headers: {
-                            Authorization: `Bearer ${user.token}`,
-                            'Cache-Control': 'no-cache',
-                        },
+                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
                     axios.get(`${API_URL}/portal_department`, {
-                        headers: {
-                            Authorization: `Bearer ${user.token}`,
-                            'Cache-Control': 'no-cache',
-                        },
+                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
                     axios.get(`${API_URL}/portal_master_role_permission_db`, {
-                        headers: {
-                            Authorization: `Bearer ${user.token}`,
-                            'Cache-Control': 'no-cache',
-                        },
+                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
-                ])
+                ]);
 
-                setProjects(projRes.data)
-                setDepartments(deptRes.data)
-                setRoles(roleRes.data)
+                // Pastikan data array, fallback ke []
+                setProjects(Array.isArray(projRes.data) ? projRes.data : []);
+                setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
+                setRoles(Array.isArray(roleRes.data) ? roleRes.data : []);
             } catch (err) {
-                console.error('Failed to fetch dropdown data:', err)
+                console.error('Failed to fetch dropdown data:', err);
+                setError(err);
+            } finally {
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [API_URL, user.token])
+        fetchData();
+    }, [API_URL, user.token]);
 
     const handleChange = (field, value) => {
         setFormData({ ...formData, [field]: value })
@@ -75,16 +70,8 @@ export default function CreateRequest() {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        const requiredFields = [
-            "name",
-            "badge_no",
-            "email",
-            "project",
-            "department",
-            "role",
-            "reason",
-        ];
-
+        // Validasi field required
+        const requiredFields = ["employee_name", "employee_id", "email", "project", "department", "role", "reason"];
         for (let field of requiredFields) {
             if (!formData[field] || formData[field].toString().trim() === "") {
                 showAlert("Failed", "error", `Field "${field.replace("_", " ")}" is required`);
@@ -92,38 +79,34 @@ export default function CreateRequest() {
             }
         }
 
+        // Payload sesuai BE
+        const payload = {
+            full_name: formData.full_name,
+            badge_no: formData.badge_no,
+            email: formData.email,
+            request_type: 1,
+            request_reason: formData.request_reason,
+            request_status: 0,
+            created_by: user.id,
+            status_active: 1,
+            project: { id: Number(formData.project) },
+            department: { id_department: Number(formData.department) },
+            role: { id_role: Number(formData.role) },
+
+        };
+
         try {
-            // Buat payload yang sesuai tipe data backend
-            const payload = {
-                req_name: formData.req_name,
-                department: Number(formData.department),
-                project: Number(formData.project),
-                role: Number(formData.role),
-                employee_name: formData.employee_name,
-                employee_id: formData.employee_id,
-                email: formData.email,
-                reason: formData.reason,
-                request_date: new Date(formData.request_date).toISOString(),
-            }
+            const response = await axios.post(`${API_URL}/requests/create`, payload, {
+                headers: { Authorization: `Bearer ${user.token}` },
+            });
 
-            // Kirim data ke backend
-            const response = await axios.post(`${API_URL}/requests`, payload, {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-
-            // Cek response
             if (response.status === 200 || response.status === 201) {
-                showAlert('Success', 'success', 'Request submitted successfully')
-                router.push('/user_request/requestor_list')
-            } else {
-                showAlert('Failed', 'error', 'Failed to submit request')
+                showAlert("Success", "success", "Request submitted successfully");
+                router.push('/user_request/requestor_list');
             }
         } catch (error) {
-            console.error('Submit error:', error.response?.data || error.message)
-            showAlert('Failed', 'error', 'Something went wrong')
+            console.error(error.response?.data || error.message);
+            showAlert("Failed", "error", "Something went wrong");
         }
     }
 
@@ -162,7 +145,7 @@ export default function CreateRequest() {
                                     Requestor <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[40px] px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm flex items-center">
-                                    {formData.req_name}
+                                    {user?.name || ''}
                                 </div>
                             </div>
                         </div>
@@ -187,8 +170,8 @@ export default function CreateRequest() {
                                         </span>
                                     }
                                     placeholder="Input employee name..."
-                                    value={formData.employee_name || ''}
-                                    onChange={(e) => handleChange('employee_name', e.target.value)}
+                                    value={formData.full_name || ''}
+                                    onChange={(e) => handleChange('full_name', e.target.value)}
                                 />
 
                                 {/* Employee ID */}
@@ -201,8 +184,8 @@ export default function CreateRequest() {
                                         </span>
                                     }
                                     placeholder="Input employee ID..."
-                                    value={formData.employee_id || ''}
-                                    onChange={(e) => handleChange('employee_id', e.target.value)}
+                                    value={formData.badge_no || ''}
+                                    onChange={(e) => handleChange('badge_no', e.target.value)}
                                 />
 
                                 {/* Email */}
@@ -223,50 +206,34 @@ export default function CreateRequest() {
                                 <Select
                                     fullWidth
                                     size="sm"
-                                    label={
-                                        <span className="font-bold text-sm">
-                                            Project <span className="text-red-500">*</span>
-                                        </span>
-                                    }
+                                    label={<span className="font-bold text-sm">Project <span className="text-red-500">*</span></span>}
                                     placeholder="Select project..."
-                                    data={
-                                        Array.isArray(projects)
-                                            ? projects
-                                                .filter((p) => p?.id)
-                                                .map((p) => ({
-                                                    value: p.id.toString(),
-                                                    label: p.project_name || 'Unnamed Project',
-                                                }))
-                                            : []
-                                    }
+                                    data={projects
+                                        .filter((p) => p?.id)
+                                        .map((p) => ({
+                                            value: p.id.toString(),
+                                            label: p.project_name || 'Unnamed Project',
+                                        }))}
                                     searchable
                                     value={formData.project || ''}
-                                    onChange={(value) => handleChange('project', value)}
+                                    onChange={(value) => handleChange('project', Number(value))}
                                 />
 
                                 {/* Department */}
                                 <Select
                                     fullWidth
                                     size="sm"
-                                    label={
-                                        <span className="font-bold text-sm">
-                                            Department <span className="text-red-500">*</span>
-                                        </span>
-                                    }
+                                    label={<span className="font-bold text-sm">Department <span className="text-red-500">*</span></span>}
                                     placeholder="Select department..."
-                                    data={
-                                        Array.isArray(departments)
-                                            ? departments
-                                                .filter((d) => d?.id_department)
-                                                .map((d) => ({
-                                                    value: d.id_department.toString(),
-                                                    label: d.name_of_department || 'Unnamed Department',
-                                                }))
-                                            : []
-                                    }
+                                    data={departments
+                                        .filter((d) => d?.id_department)
+                                        .map((d) => ({
+                                            value: d.id_department.toString(),
+                                            label: d.name_of_department || 'Unnamed Department',
+                                        }))}
                                     searchable
                                     value={formData.department || ''}
-                                    onChange={(value) => handleChange('department', value)}
+                                    onChange={(value) => handleChange('department', Number(value))}
                                 />
 
                                 {/* Role */}
@@ -279,22 +246,16 @@ export default function CreateRequest() {
                                         </span>
                                     }
                                     placeholder="Select role..."
-                                    data={
-                                        Array.isArray(roles)
-                                            ? roles
-                                                .filter((r) => r?.id_role)
-                                                .map((r) => ({
-                                                    value: r.id_role.toString(),
-                                                    label: r.role_name || 'Unnamed Role',
-                                                }))
-                                            : []
-                                    }
+                                    data={roles.map((r) => ({
+                                        value: r.id_role.toString(),
+                                        label: r.role_name || 'Unnamed Role',
+                                    }))}
                                     searchable
                                     value={formData.role || ''}
-                                    onChange={(value) => handleChange('role', value)}
+                                    onChange={(value) => handleChange('role', Number(value))}
+
                                 />
                             </div>
-
                         </div>
 
                         {/* Remarks Section */}
@@ -386,4 +347,4 @@ export default function CreateRequest() {
             </div>
         </AuthLayout >
     )
-}
+} 
