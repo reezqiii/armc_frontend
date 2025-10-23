@@ -4,20 +4,21 @@ import { Button, Paper, TextInput, Textarea, Select } from '@mantine/core'
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
-import axios from 'axios';
+import axios from 'axios'
 import useUser from '@/store/useUser'
 import useSwal from '@/hooks/useSwal'
 import useApi from '@/hooks/useApi'
 
-export default function CreateRequest() {
-    CreateRequest.title = "Create Request Form"
+export default function EditRequest() {
+    EditRequest.title = "Edit Request Form"
     const router = useRouter()
+    const { id } = router.query;
     const { showAlert } = useSwal()
-    const API = useApi();
-    const API_URL = API.API_URL;
+    const API = useApi()
+    const API_URL = API.API_URL
     const { user } = useUser()
 
-    const [formData, setFormData] = React.useState({
+    const [formData, setFormData] = useState({
         full_name: '',
         badge_no: '',
         email: '',
@@ -25,38 +26,19 @@ export default function CreateRequest() {
         department: '',
         role: '',
         request_reason: '',
-    });
+    })
 
-    const [errors, setErrors] = React.useState({
-        full_name: null,
-        badge_no: null,
-        email: null,
-        project: null,
-        department: null,
-        role: null,
-        request_reason: null,
-    });
+    const [errors, setErrors] = useState({})
+    const [projects, setProjects] = useState([])
+    const [departments, setDepartments] = useState([])
+    const [roles, setRoles] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [loadingSubmit, setLoadingSubmit] = useState(false)
 
-    const [projects, setProjects] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [roles, setRoles] = useState([]);
-
-    const [loading, setLoading] = useState(false);
-    const [loadingSubmit, setLoadingSubmit] = useState(false);
-
-    // --- Fungsi Handle Change ---
-    const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: null }));
-        }
-    };
-
-    // --- Fetch Dropdown Data ---
+    // 🔸 Fetch dropdown data
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+        const fetchDropdowns = async () => {
+            setLoading(true)
             try {
                 const [projRes, deptRes, roleRes] = await Promise.all([
                     axios.get(`${API_URL}/portal_project`, {
@@ -68,25 +50,56 @@ export default function CreateRequest() {
                     axios.get(`${API_URL}/portal_master_role_permission_db`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
-                ]);
-
-                setProjects(Array.isArray(projRes.data) ? projRes.data : []);
-                setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
-                setRoles(Array.isArray(roleRes.data) ? roleRes.data : []);
+                ])
+                setProjects(projRes.data || [])
+                setDepartments(deptRes.data || [])
+                setRoles(roleRes.data || [])
             } catch (err) {
-                console.error('Failed to fetch dropdown data:', err);
+                console.error('Dropdown fetch error:', err)
             } finally {
-                setLoading(false);
+                setLoading(false)
             }
-        };
+        }
 
-        fetchData();
-    }, [API_URL, user.token]);
+        fetchDropdowns()
+    }, [API_URL, user.token])
 
-    // --- Handle Submit ---
+    useEffect(() => {
+        if (!id) return;
+
+        const fetchRequest = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/requests/${id}`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                });
+                const data = res.data;
+                setFormData({
+                    full_name: data.full_name || '',
+                    badge_no: data.badge_no || '',
+                    email: data.email || '',
+                    project: data.project?.id?.toString() || '',
+                    department: data.department?.id_department?.toString() || '',
+                    role: data.role?.id_role?.toString() || '',
+                    request_reason: data.request_reason || '',
+                })
+            } catch (err) {
+                console.error('Failed to fetch request:', err)
+                showAlert("Error", "error", "Failed to load request data")
+            }
+        }
+        fetchRequest()
+    }, [id, API_URL, user.token])
+
+    // 🔸 Handle Change
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
+    }
+
+    // 🔸 Handle Submit
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoadingSubmit(true);
+        e.preventDefault()
+        setLoadingSubmit(true)
 
         const payload = {
             full_name: formData.full_name,
@@ -95,37 +108,43 @@ export default function CreateRequest() {
             request_type: 1,
             request_reason: formData.request_reason,
             request_status: 0,
-            created_by: user.id,
             status_active: 1,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
             role: { id_role: Number(formData.role) },
-        };
+        }
 
         try {
-            const response = await axios.post(`${API_URL}/requests/create`, payload, {
-                headers: { Authorization: `Bearer ${user.token}` },
-            });
-
-            if (response.status === 200 || response.status === 201) {
-                showAlert("Success", "success", "Request submitted successfully");
-                router.push('/user_request/requestor_list');
+            if (id) {
+                await axios.put(`${API_URL}/requests/${id}`, payload, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                })
+                showAlert("Success", "success", "Request updated successfully")
+            } else {
+                // CREATE
+                await axios.post(`${API_URL}/requests/create`, payload, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                })
+                showAlert("Success", "success", "Request created successfully")
             }
+
+            router.push('/user_request/requestor_list')
         } catch (error) {
-            console.error(error.response?.data || error.message);
-            showAlert("Failed", "error", "Something went wrong");
+            console.error(error.response?.data || error.message)
+            showAlert("Failed", "error", "Something went wrong")
         } finally {
-            setLoadingSubmit(false);
+            setLoadingSubmit(false)
         }
     }
 
+    // 🔸 Render
     return (
         <AuthLayout sidebarList={requestorList}>
             <div className="bg-gray-100 py-10 flex justify-center">
                 <Paper
                     radius="md"
                     shadow="sm"
-                    className="bg-white py-8 px-10 space-y-6 w-full max-w-4xl mx-auto text-sm leading-relaxed"
+                    className="bg-white py-8 px-10 space-y-6 w-full max-w-4xl mx-auto text-[15px] leading-relaxed"
                 >
                     {/* Header */}
                     <div className="text-center mb-4">
@@ -138,7 +157,7 @@ export default function CreateRequest() {
                         {/* Requestor Info */}
                         <div className="grid grid-cols-1 gap-3">
                             <div>
-                                <label className="block font-medium mb-1 text-gray-800 text-sm">
+                                <label className="font-medium mb-1 text-gray-800 text-sm">
                                     Request Date <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
@@ -148,10 +167,10 @@ export default function CreateRequest() {
                             </div>
 
                             <div>
-                                <label className="block font-medium mb-1 text-gray-800 text-sm">
+                                <label className="font-medium mb-1 text-gray-800 text-sm">
                                     Requestor <span className="text-red-500">*</span>
                                 </label>
-                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                                <div className="h-[40px] px-3 bg-gray-100 border border-gray-300 rounded-md text-sm flex items-center">
                                     {user?.name || ''}
                                 </div>
                             </div>
@@ -168,7 +187,7 @@ export default function CreateRequest() {
                             <div className="grid grid-cols-1 gap-2">
                                 <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Full Name</span>}
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Name</span>}
                                     placeholder="Input full name..."
                                     value={formData.full_name}
                                     onChange={(e) => handleChange('full_name', e.target.value)}
@@ -198,7 +217,10 @@ export default function CreateRequest() {
                                     required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
                                     placeholder="Select project..."
-                                    data={projects.map(p => ({ value: p.id?.toString(), label: p.project_name || 'Unnamed Project' }))}
+                                    data={projects.map(p => ({
+                                        value: p.id?.toString(),
+                                        label: p.project_name || 'Unnamed Project'
+                                    }))}
                                     searchable
                                     value={formData.project}
                                     onChange={(v) => handleChange('project', v)}
@@ -209,7 +231,10 @@ export default function CreateRequest() {
                                     required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
                                     placeholder="Select department..."
-                                    data={departments.map(d => ({ value: d.id_department?.toString(), label: d.name_of_department || 'Unnamed Department' }))}
+                                    data={departments.map(d => ({
+                                        value: d.id_department?.toString(),
+                                        label: d.name_of_department || 'Unnamed Department'
+                                    }))}
                                     searchable
                                     value={formData.department}
                                     onChange={(v) => handleChange('department', v)}
@@ -220,7 +245,10 @@ export default function CreateRequest() {
                                     required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Role</span>}
                                     placeholder="Select role..."
-                                    data={roles.map(r => ({ value: r.id_role?.toString(), label: r.role_name || 'Unnamed Role' }))}
+                                    data={roles.map(r => ({
+                                        value: r.id_role?.toString(),
+                                        label: r.role_name || 'Unnamed Role'
+                                    }))}
                                     searchable
                                     value={formData.role}
                                     onChange={(v) => handleChange('role', v)}
@@ -237,8 +265,7 @@ export default function CreateRequest() {
                                 </div>
                             </div>
 
-                            <Textarea
-                                label={<span className="font-medium text-sm">Reason of Request</span>}
+                            <Textarea label={<span className="font-medium text-sm">Reason of Request</span>}
                                 placeholder="Input request reason..."
                                 value={formData.request_reason}
                                 onChange={(e) => handleChange('request_reason', e.target.value)}
@@ -258,71 +285,54 @@ export default function CreateRequest() {
                             </div>
 
                             <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
+                                {/* Requested by */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Requested by
                                     </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                                         {user?.name || ''}
                                     </div>
                                 </div>
 
+                                {/* Acknowledge by */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Acknowledge by
                                     </label>
                                     <input
-                                        type="text"
-                                        placeholder="-- Select --"
-                                        className="h-[36px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
                                         disabled
+                                        placeholder="-- Select --"
+                                        className="h-[34px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
                                     />
                                 </div>
 
+                                {/* Approved */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Approved
                                     </label>
                                     <input
-                                        type="text"
-                                        placeholder=""
-                                        className="h-[36px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
                                         disabled
+                                        placeholder=""
+                                        className="h-[34px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
                                     />
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="flex justify-between pt-6">
-                                <Button
-                                    leftSection={<IconArrowLeft size={18} />}
-                                    color="gray"
-                                    size="sm"
-                                    onClick={() => router.back()}
-                                >
+                                <Button leftSection={<IconArrowLeft size={18} />} color="gray" size="sm" onClick={() => router.back()}>
                                     Back
                                 </Button>
-                                <Button
-                                    type="submit"
-                                    leftSection={<IconDeviceFloppy size={18} />}
-                                    color="blue"
-                                    radius="sm"
-                                    size="sm"
-                                    loading={loadingSubmit}
-                                    disabled={loadingSubmit}
-                                >
-                                    Submit
+                                <Button type="submit" leftSection={<IconDeviceFloppy size={18} />}
+                                    color="blue" radius="sm" size="sm" loading={loadingSubmit}>
+                                    {id ? 'Update' : 'Submit'}
                                 </Button>
                             </div>
                         </div>
                     </form>
                 </Paper>
             </div>
-
         </AuthLayout>
-
-
-
-
     )
 }

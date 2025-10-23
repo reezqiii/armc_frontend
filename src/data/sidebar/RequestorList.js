@@ -31,7 +31,7 @@ export const requestorList = [
       },
       {
         title: "Draft",
-        href: "/",
+        href: "/user_request/draft_request",
         active: "Draft",
         icon: <IconFileStar size={18} />,
       },

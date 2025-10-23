@@ -4,7 +4,7 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconEdit, IconInfoCircle } from '@tabler/icons-react';
+import { IconEdit, IconInfoCircle, IconTrash } from '@tabler/icons-react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -47,12 +47,12 @@ export default function RequestUserList() {
         {
             accessorFn: row => row.full_name,
             id: 'full_name',
-            header: 'Name',
+            header: 'Full Name',
         },
         {
             accessorFn: row => row.badge_no,
             id: 'badge_no',
-            header: 'Employee ID',
+            header: 'Badge ID',
         },
         {
             accessorFn: row => row.email,
@@ -65,8 +65,7 @@ export default function RequestUserList() {
             header: 'Project',
         },
         {
-            accessorFn: row => row.name_of_department,
-            id: 'name_of_department',
+            accessorKey: 'department_name',
             header: 'Department',
         },
         {
@@ -92,30 +91,41 @@ export default function RequestUserList() {
                 return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
             },
         },
-
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
-            cell: info => (
-                <div className="flex gap-2">
+            cell: ({ row }) => (
+                <div className="flex flex-col gap-2">
                     <Button
                         leftSection={<IconInfoCircle size={16} />}
                         color="blue"
-                        onClick={() => router.push(`/user_management/request_detail/${info.getValue()}`)}
+                        fullWidth
+                        onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
                     >
                         Details
                     </Button>
+
                     <Button
                         leftSection={<IconEdit size={16} />}
                         color="orange"
-                        onClick={() => router.push(`/user_management/edit_request/${info.getValue()}`)}
+                        fullWidth
+                        onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
                     >
                         Edit
                     </Button>
+
+                    <Button
+                        leftSection={<IconTrash size={16} />}
+                        color="red"
+                        fullWidth
+                        onClick={() => handleDelete(row.original.id_request)}
+                    >
+                        Delete
+                    </Button>
                 </div>
             ),
-        },
+        }
     ], [pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
@@ -134,7 +144,6 @@ export default function RequestUserList() {
     });
 
     const getData = useCallback(async () => {
-        // Prepare search
         const searchQuery = {};
         columnFilters.forEach(filter => {
             if (filter.value != null && filter.value !== "") {
@@ -157,21 +166,14 @@ export default function RequestUserList() {
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
 
-            // Map FE sesuai backend
-            setData(res.data.data.map(d => ({
-                ...d,
-                project_name: d.project?.project_name || '-',
-                name_of_department: d.department?.name_of_department || '-',
-                role_name: d.role?.role_name || '-',
-            })));
-            
+            setData(res.data.data);
+
             setTotalPages(res.data.total_pages);
         } catch (err) {
             console.error("Error fetching data:", err);
         }
     }, [API_URL, columnFilters, pagination.pageIndex, pagination.pageSize, sorting, user.token]);
 
-    // ⚡ Trigger fetch saat komponen mount atau parameter berubah
     useEffect(() => {
         getData();
     }, [getData]);
@@ -182,7 +184,7 @@ export default function RequestUserList() {
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
                     <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-lg font-semibold text-blue-700">Request User List</h1>
+                            <h1 className="text-lg font-bold text-blue-500">Request User List</h1>
                         </div>
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
