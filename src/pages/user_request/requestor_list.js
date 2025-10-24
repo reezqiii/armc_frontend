@@ -4,9 +4,10 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconEdit, IconInfoCircle, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconInfoCircle, IconTrash, IconX } from '@tabler/icons-react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -20,12 +21,62 @@ export default function RequestUserList() {
 
     const [data, setData] = useState([]);
     const [columnFilters, setColumnFilters] = useState([]);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
 
+    // 🔹 Handle Cancel Function 
+    const handleCancel = async (id) => {
+        const result = await Swal.fire({
+            title: 'Are you sure you want to cancel this request?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!',
+            cancelButtonText: 'No, keep it',
+        });
 
-    // Columns mapping sesuai backend
+        if (!result.isConfirmed) return;
+
+        setIsDeleting(true);
+        try {
+            await axios.put(
+                `${API_URL}/requests/${id}`,
+                {
+                    status_active: 0,
+                    canceled_by: user.id,
+                    canceled_date: new Date().toISOString(),
+                },
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+
+            setData((prevData) =>
+                prevData.filter((item) => item.id_request !== id)
+            );
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Canceled!',
+                text: 'The request has been marked as canceled.',
+                timer: 1500,
+                showConfirmButton: false,
+            });
+        } catch (err) {
+            console.error("Error canceling request:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Failed!',
+                text: 'Failed to cancel the request. Please try again.',
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // Columns mapping 
     const columns = useMemo(() => [
         {
             id: 'no',
@@ -116,12 +167,13 @@ export default function RequestUserList() {
                     </Button>
 
                     <Button
-                        leftSection={<IconTrash size={16} />}
+                        leftSection={<IconX size={16} />}
                         color="red"
                         fullWidth
-                        onClick={() => handleDelete(row.original.id_request)}
+                        onClick={() => handleCancel(row.original.id_request)}
+                        disabled={isDeleting}
                     >
-                        Delete
+                        Cancel
                     </Button>
                 </div>
             ),
@@ -144,7 +196,8 @@ export default function RequestUserList() {
     });
 
     const getData = useCallback(async () => {
-        const searchQuery = {};
+        const searchQuery = { status_active: 1 };
+        
         columnFilters.forEach(filter => {
             if (filter.value != null && filter.value !== "") {
                 searchQuery[filter.id] = filter.value;

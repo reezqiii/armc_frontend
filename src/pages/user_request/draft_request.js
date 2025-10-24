@@ -4,10 +4,11 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconSend, IconInfoCircle, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconSend, IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import React from 'react';
+import Swal from "sweetalert2";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
@@ -22,8 +23,53 @@ export default function DraftRequestList() {
   const [data, setData] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [totalPages, setTotalPages] = useState(1);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // 🔹 Kolom dengan Request Date & Requestor ditambahkan
+  // 🔹 Handle Cancel Function
+  const handleCancel = async (id_request) => {
+    const result = await Swal.fire({
+      title: 'Cancel this request?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, cancel it!',
+      cancelButtonText: 'No, keep it',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsCanceling(true);
+    try {
+      const canceledData = {
+        canceled_by: user.full_name || user.username,
+        canceled_date: new Date().toISOString(),
+      };
+
+      await axios.put(`${API_URL}/requests/${id_request}`, canceledData, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
+      await getData();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Canceled!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error canceling request:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+      });
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  // 🔹 Column Request
   const columns = useMemo(() => [
     {
       id: 'no',
@@ -110,12 +156,13 @@ export default function DraftRequestList() {
           </Button>
 
           <Button
-            leftSection={<IconTrash size={16} />}
+            leftSection={<IconX size={16} />}
             color="red"
             fullWidth
-            onClick={() => handleDelete(row.original.id_request)}
+            onClick={() => handleCancel(row.original.id_request)}
+            disabled={isDeleting}
           >
-            Delete
+            Cancel
           </Button>
         </div>
       ),
@@ -143,21 +190,46 @@ export default function DraftRequestList() {
     getData();
   }, [getData]);
 
-  // 🔹 Fungsi Submit to HOD
+  // Submit to HOD 
   const handleSubmitToHOD = async (id_request) => {
+    const result = await Swal.fire({
+      title: "Submit to HOD?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, submit!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const res = await axios.put(
         `${API_URL}/requests/${id_request}`,
         { request_status: 1 },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
+
       if (res.status === 200) {
-        alert("✅ Submitted to HOD successfully!");
+        await Swal.fire({
+          icon: "success",
+          title: "Submitted!",
+          text: "The request has been successfully submitted to HOD.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
         getData();
       }
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to submit to HOD");
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed!",
+        text: "An error occurred while submitting to HOD. Please try again.",
+      });
     }
   };
 

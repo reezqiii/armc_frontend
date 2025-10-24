@@ -1,13 +1,14 @@
-import AuthLayout from '@/components/layout/authLayout'
-import { requestorList } from '@/data/sidebar/RequestorList'
-import { Button, Paper, TextInput, Textarea, Select } from '@mantine/core'
-import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react'
-import { useRouter } from 'next/router'
+import AuthLayout from '@/components/layout/authLayout';
+import { requestorList } from '@/data/sidebar/RequestorList';
+import { Button, Paper, TextInput, Textarea, Select } from '@mantine/core';
+import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
+import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import useUser from '@/store/useUser'
-import useSwal from '@/hooks/useSwal'
-import useApi from '@/hooks/useApi'
+import useUser from '@/store/useUser';
+import useSwal from '@/hooks/useSwal';
+import useApi from '@/hooks/useApi';
+import Swal from "sweetalert2";
 
 export default function EditRequest() {
     EditRequest.title = "Edit Request Form"
@@ -101,6 +102,19 @@ export default function EditRequest() {
         e.preventDefault()
         setLoadingSubmit(true)
 
+        const result = await Swal.fire({
+            title: id ? "Are you sure you want to update this data?" : "Are you sure you want to create a new request?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: id ? "Yes, update!" : "Yes, save",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+        });
+
+        if (!result.isConfirmed) return;
+
+        setLoadingSubmit(true);
         const payload = {
             full_name: formData.full_name,
             badge_no: formData.badge_no,
@@ -118,24 +132,41 @@ export default function EditRequest() {
             if (id) {
                 await axios.put(`${API_URL}/requests/${id}`, payload, {
                     headers: { Authorization: `Bearer ${user.token}` },
-                })
-                showAlert("Success", "success", "Request updated successfully")
+                });
+
+                // 🔹 Success notification for update
+                await Swal.fire({
+                    icon: "success",
+                    title: "Success!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
             } else {
-                // CREATE
                 await axios.post(`${API_URL}/requests/create`, payload, {
                     headers: { Authorization: `Bearer ${user.token}` },
-                })
-                showAlert("Success", "success", "Request created successfully")
+                });
+
+                // 🔹 Success notification for creation
+                await Swal.fire({
+                    icon: "success",
+                    title: "Success!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
             }
 
-            router.push('/user_request/requestor_list')
+            router.push("/user_request/requestor_list");
         } catch (error) {
-            console.error(error.response?.data || error.message)
-            showAlert("Failed", "error", "Something went wrong")
+            console.error(error.response?.data || error.message);
+            Swal.fire({
+                icon: "error",
+                title: "Failed!",
+                text: "An error occurred while saving the data. Please try again.",
+            });
         } finally {
-            setLoadingSubmit(false)
+            setLoadingSubmit(false);
         }
-    }
+    };
 
     // 🔸 Render
     return (

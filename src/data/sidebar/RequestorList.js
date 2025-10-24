@@ -37,7 +37,7 @@ export const requestorList = [
       },
       {
         title: "Pending HOD Request",
-        href: "/",
+        href: "/user_request/hod_pending",
         active: "Pending HOD Request",
         icon: <IconUserCheck size={18} />,
       },
