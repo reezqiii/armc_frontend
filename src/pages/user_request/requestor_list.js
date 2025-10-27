@@ -26,9 +26,10 @@ export default function RequestUserList() {
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
+    const [isCanceling, setIsCanceling] = useState(false);
 
     // 🔹 Handle Cancel Function 
-    const handleCancel = async (id) => {
+    const handleCancel = async (id_request) => {
         const result = await Swal.fire({
             title: 'Are you sure you want to cancel this request?',
             icon: 'warning',
@@ -41,21 +42,13 @@ export default function RequestUserList() {
 
         if (!result.isConfirmed) return;
 
-        setIsDeleting(true);
+        setIsCanceling(true);
         try {
-            await axios.put(
-                `${API_URL}/requests/${id}`,
-                {
-                    status_active: 0,
-                    canceled_by: user.id,
-                    canceled_date: new Date().toISOString(),
-                },
-                { headers: { Authorization: `Bearer ${user.token}` } }
-            );
+            await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
+                headers: { Authorization: `Bearer ${user.token}` },
+            });
 
-            setData((prevData) =>
-                prevData.filter((item) => item.id_request !== id)
-            );
+            setData(prevData => prevData.filter(item => item.id_request !== id_request));
 
             Swal.fire({
                 icon: 'success',
@@ -92,7 +85,7 @@ export default function RequestUserList() {
         },
         {
             accessorFn: row => row.requestor_name,
-            id: 'requestor_name',
+            id: 'requestor',
             header: 'Requestor',
         },
         {
@@ -197,7 +190,7 @@ export default function RequestUserList() {
 
     const getData = useCallback(async () => {
         const searchQuery = { status_active: 1 };
-        
+
         columnFilters.forEach(filter => {
             if (filter.value != null && filter.value !== "") {
                 searchQuery[filter.id] = filter.value;
@@ -237,7 +230,7 @@ export default function RequestUserList() {
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
                     <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-lg font-bold text-blue-500">Request User List</h1>
+                            <h1 className="text-xl font-bold text-blue-500">Request User List</h1>
                         </div>
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />

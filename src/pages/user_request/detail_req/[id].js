@@ -56,13 +56,22 @@ export default function RequestDetail() {
   }
 
   const statusMap = {
-    0: "Draft",
-    1: "Pending HOD",
-    2: "Rejected by HOD",
-    3: "Pending IT",
-    4: "Rejected by IT",
-    5: "Completed",
-  }
+    0: 'Draft',
+    1: 'Pending by HOD',
+    2: 'Rejected by HOD',
+    3: 'Pending by IT',
+    4: 'Rejected by IT',
+    5: 'Completed',
+  };
+
+  const statusColorMap = {
+    0: 'text-gray-500',       // Draft
+    1: 'text-yellow-500',     // Pending by HOD
+    2: 'text-red-500',        // Rejected HOD
+    3: 'text-yellow-500',     // Pending by IT
+    4: 'text-red-500',        // Rejected IT
+    5: 'text-green-500',   // Completed
+  };
 
   return (
     <AuthLayout sidebarList={requestorList}>
@@ -74,7 +83,7 @@ export default function RequestDetail() {
         >
           {/* Header */}
           <div className="text-center mb-4">
-            <h1 className="text-base font-bold text-blue-500">
+            <h1 className="text-xl font-bold text-blue-500">
               PCMS ACCESS LOGIN REQUEST
             </h1>
           </div>
@@ -96,7 +105,7 @@ export default function RequestDetail() {
                 Requestor <span className="text-red-500">*</span>
               </label>
               <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                {data.requestor_name || "-"}
+                {user?.name || ''}
               </div>
             </div>
           </div>
@@ -206,7 +215,7 @@ export default function RequestDetail() {
                   Requested by
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.requestor_name || "-"}
+                  {user?.name || ''}
                 </div>
               </div>
 
@@ -245,7 +254,7 @@ export default function RequestDetail() {
 
             <div className="text-sm font-semibold text-gray-600 flex items-center">
               Status:
-              <span className="ml-2 text-blue-600">
+              <span className={`ml-2 ${statusColorMap[data.request_status] || 'text-gray-600'}`}>
                 {statusMap[data.request_status]}
               </span>
             </div>

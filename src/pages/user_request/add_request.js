@@ -1,6 +1,6 @@
 import AuthLayout from '@/components/layout/authLayout';
 import { requestorList } from '@/data/sidebar/RequestorList';
-import { Button, Paper, TextInput, Textarea, Select } from '@mantine/core';
+import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
@@ -44,6 +44,41 @@ export default function CreateRequest() {
 
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
+    const [hodSearch, setHodSearch] = useState('');
+    const [hodOptions, setHodOptions] = useState([]);
+
+    const fetchHodUsers = async (query) => {
+  if (!query) return [];
+
+  try {
+    const res = await axios.get(`${API_URL}/api/user/search`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+      params: { q: query },
+    });
+
+    if (!res.data) return [];
+
+    // pastikan backend return array, jika object ubah ke array
+    const usersArray = Array.isArray(res.data) ? res.data : [res.data];
+
+    // filter user yang punya full_name dan id
+    const mappedUsers = usersArray
+      .filter(u => u && (u.id != null || u.full_name)) // minimal ada id atau full_name
+      .map(u => ({
+        value: u.id != null ? u.id.toString() : u.full_name, // pakai id kalau ada, kalau tidak pakai full_name
+        label: u.full_name || 'Unnamed', // fallback jika full_name kosong
+      }));
+
+    // hapus duplikat label agar mantine Autocomplete tidak error
+    const uniqueUsers = Array.from(new Map(mappedUsers.map(u => [u.label, u])).values());
+
+    return uniqueUsers;
+  } catch (err) {
+    console.error('Error fetching HOD users:', err);
+    return [];
+  }
+};
+
 
     // handle change
     const handleChange = (field, value) => {
@@ -100,7 +135,7 @@ export default function CreateRequest() {
             cancelButtonColor: "#d33",
         });
 
-        if (!result.isConfirmed) return; 
+        if (!result.isConfirmed) return;
 
         setLoadingSubmit(true);
 
@@ -153,7 +188,7 @@ export default function CreateRequest() {
                 >
                     {/* Header */}
                     <div className="text-center mb-4">
-                        <h1 className="text-base font-bold text-blue-500">
+                        <h1 className="text-xl font-bold text-blue-500">
                             PCMS ACCESS LOGIN REQUEST
                         </h1>
                     </div>
@@ -291,17 +326,25 @@ export default function CreateRequest() {
                                     </div>
                                 </div>
 
-                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Acknowledge by
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="-- Select --"
-                                        className="h-[36px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
-                                        disabled
-                                    />
-                                </div>
+                                <Autocomplete
+                                    label="Acknowledge by"
+                                    placeholder="Search HOD..."
+                                    value={hodSearch}
+                                    onChange={async (val) => {
+                                        setHodSearch(val);
+                                        const users = await fetchHodUsers(val);
+                                        setHodOptions(users); // sudah unik dan pakai id
+                                    }}
+                                    data={hodOptions.map(u => u.label)} // tetap pakai label untuk ditampilkan
+                                    onItemSubmit={(item) => {
+                                        const selectedUser = hodOptions.find(u => u.label === item);
+                                        handleChange('acknowledge_by', selectedUser?.value);
+                                        setHodSearch(selectedUser?.label || '');
+                                    }}
+                                />
+
+
+
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">

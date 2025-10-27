@@ -4,16 +4,15 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconSend, IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
-import { useRouter } from 'next/router';
-import React from 'react';
 import Swal from "sweetalert2";
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function DraftRequestList() {
-  DraftRequestList.title = "Draft Request List";
+export default function PendingHODList() {
+  PendingHODList.title = "Pending HOD List";
 
   const router = useRouter();
   const { user } = useUser();
@@ -67,12 +66,13 @@ export default function DraftRequestList() {
     }
   };
 
-  // 🔹 Column Request
+  // 🔹 column
   const columns = useMemo(() => [
     {
       id: 'no',
       header: 'No',
-      cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
+      cell: ({ row }) =>
+        row.index + 1 + pagination.pageIndex * pagination.pageSize,
       size: 40,
     },
     {
@@ -82,43 +82,42 @@ export default function DraftRequestList() {
     },
     {
       accessorFn: row => row.requestor_name,
-      id: 'requestor_name',
+      id: 'requestor',
       header: 'Requestor',
     },
     {
       accessorFn: row => row.full_name,
       id: 'full_name',
-      header: 'Full Name'
+      header: 'Full Name',
     },
     {
       accessorFn: row => row.badge_no,
       id: 'badge_no',
-      header: 'Badge ID'
+      header: 'Badge ID',
     },
     {
       accessorFn: row => row.email,
       id: 'email',
-      header: 'Email'
+      header: 'Email',
     },
     {
       accessorFn: row => row.project_name,
       id: 'project_name',
-      header: 'Project'
+      header: 'Project',
     },
     {
-      accessorFn: row => row.department_name,
-      id: 'department_name',
-      header: 'Department'
+      accessorKey: 'department_name',
+      header: 'Department',
     },
     {
       accessorFn: row => row.role_name,
       id: 'role_name',
-      header: 'Role'
+      header: 'Role',
     },
     {
       id: 'status',
       header: 'Status',
-      cell: () => <Badge color="gray">Draft</Badge>,
+      cell: () => <Badge color="yellow">Pending by HOD</Badge>,
     },
     {
       accessorFn: row => row.id_request,
@@ -126,15 +125,6 @@ export default function DraftRequestList() {
       header: 'Action',
       cell: ({ row }) => (
         <div className="flex flex-col gap-2">
-          <Button
-            leftSection={<IconSend size={16} />}
-            color="green"
-            fullWidth
-            onClick={() => handleSubmitToHOD(row.original.id_request)}
-          >
-            Submit to HOD
-          </Button>
-
           <Button
             leftSection={<IconInfoCircle size={16} />}
             color="blue"
@@ -163,15 +153,15 @@ export default function DraftRequestList() {
             Cancel
           </Button>
         </div>
-      ),
-    }
 
+      ),
+    },
   ], [pagination.pageIndex, pagination.pageSize]);
 
-  // 🔹 Fetch data hanya status = 0 (Draft)
+  // 🔹 Fetch data
   const getData = useCallback(async () => {
     try {
-      const search = JSON.stringify({ request_status: 0 });
+      const search = JSON.stringify({ request_status: 1 });
       const res = await axios.post(
         `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
         {},
@@ -180,56 +170,13 @@ export default function DraftRequestList() {
       setData(res.data.data);
       setTotalPages(res.data.total_pages);
     } catch (err) {
-      console.error("Error fetching draft data:", err);
+      console.error("Error fetching pending HOD data:", err);
     }
   }, [API_URL, pagination, user.token]);
 
   useEffect(() => {
     getData();
   }, [getData]);
-
-  // Submit to HOD 
-  const handleSubmitToHOD = async (id_request) => {
-    const result = await Swal.fire({
-      title: "Submit to HOD?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, submit!",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      const res = await axios.put(
-        `${API_URL}/requests/${id_request}`,
-        { request_status: 1 },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      if (res.status === 200) {
-        await Swal.fire({
-          icon: "success",
-          title: "Submitted!",
-          text: "The request has been successfully submitted to HOD.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-
-        getData();
-      }
-    } catch (err) {
-      console.error(err);
-
-      Swal.fire({
-        icon: "error",
-        title: "Failed!",
-        text: "An error occurred while submitting to HOD. Please try again.",
-      });
-    }
-  };
 
   const table = useReactTable({
     data,
@@ -247,7 +194,7 @@ export default function DraftRequestList() {
         <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
           <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
             <div className="flex items-center justify-between border-b pb-2 mb-3">
-              <h1 className="text-xl font-bold text-blue-500">Draft Request List</h1>
+              <h1 className="text-xl font-bold text-blue-500">Pending HOD Request List</h1>
             </div>
             <div className="overflow-x-auto">
               <Datatables table={table} totalPages={totalPages} />

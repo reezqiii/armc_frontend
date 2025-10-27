@@ -91,7 +91,6 @@ export default function EditRequest() {
         fetchRequest()
     }, [id, API_URL, user.token])
 
-    // 🔸 Handle Change
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }))
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
@@ -134,7 +133,6 @@ export default function EditRequest() {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
 
-                // 🔹 Success notification for update
                 await Swal.fire({
                     icon: "success",
                     title: "Success!",
@@ -146,7 +144,6 @@ export default function EditRequest() {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
 
-                // 🔹 Success notification for creation
                 await Swal.fire({
                     icon: "success",
                     title: "Success!",
@@ -179,13 +176,12 @@ export default function EditRequest() {
                 >
                     {/* Header */}
                     <div className="text-center mb-4">
-                        <h1 className="text-base font-bold text-blue-500">
+                        <h1 className="text-xl font-bold text-blue-500">
                             PCMS ACCESS LOGIN REQUEST
                         </h1>
                     </div>
 
                     <form onSubmit={handleSubmit}>
-                        {/* Requestor Info */}
                         <div className="grid grid-cols-1 gap-3">
                             <div>
                                 <label className="font-medium mb-1 text-gray-800 text-sm">
@@ -207,7 +203,6 @@ export default function EditRequest() {
                             </div>
                         </div>
 
-                        {/* Description Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
                                 <div className="px-10 py-2 text-base font-semibold text-white">
@@ -316,7 +311,6 @@ export default function EditRequest() {
                             </div>
 
                             <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
-                                {/* Requested by */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Requested by
@@ -326,7 +320,6 @@ export default function EditRequest() {
                                     </div>
                                 </div>
 
-                                {/* Acknowledge by */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Acknowledge by
@@ -338,7 +331,6 @@ export default function EditRequest() {
                                     />
                                 </div>
 
-                                {/* Approved */}
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Approved
