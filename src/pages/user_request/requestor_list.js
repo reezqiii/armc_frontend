@@ -125,10 +125,10 @@ export default function RequestUserList() {
                 const status = row.original.request_status.name;
                 const colorMap = {
                     'Draft': 'gray',
-                    'Pending HOD': 'yellow',
-                    'Reject HOD': 'red',
-                    'Pending IT': 'yellow',
-                    'Reject IT': 'red',
+                    'Pending by HOD': 'yellow',
+                    'Rejected by HOD': 'red',
+                    'Pending by IT': 'yellow',
+                    'Rejected by IT': 'red',
                     'Completed': 'green',
                 };
 

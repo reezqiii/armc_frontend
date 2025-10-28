@@ -1,7 +1,7 @@
 import AuthLayout from '@/components/layout/authLayout';
 import { requestorList } from '@/data/sidebar/RequestorList';
 import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
-import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
+import { IconArrowLeft, IconDeviceFloppy, IconCalendar, IconChevronDown } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -46,46 +46,74 @@ export default function CreateRequest() {
     const [loadingSubmit, setLoadingSubmit] = useState(false);
     const [hodSearch, setHodSearch] = useState('');
     const [hodOptions, setHodOptions] = useState([]);
+    const [itManagerName, setItManagerName] = useState('');
+    const [itManagerId, setItManagerId] = useState('');
 
-    const fetchHodUsers = async (query) => {
-  if (!query) return [];
-
-  try {
-    const res = await axios.get(`${API_URL}/api/user/search`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-      params: { q: query },
-    });
-
-    if (!res.data) return [];
-
-    // pastikan backend return array, jika object ubah ke array
-    const usersArray = Array.isArray(res.data) ? res.data : [res.data];
-
-    // filter user yang punya full_name dan id
-    const mappedUsers = usersArray
-      .filter(u => u && (u.id != null || u.full_name)) // minimal ada id atau full_name
-      .map(u => ({
-        value: u.id != null ? u.id.toString() : u.full_name, // pakai id kalau ada, kalau tidak pakai full_name
-        label: u.full_name || 'Unnamed', // fallback jika full_name kosong
-      }));
-
-    // hapus duplikat label agar mantine Autocomplete tidak error
-    const uniqueUsers = Array.from(new Map(mappedUsers.map(u => [u.label, u])).values());
-
-    return uniqueUsers;
-  } catch (err) {
-    console.error('Error fetching HOD users:', err);
-    return [];
-  }
-};
-
-
-    // handle change
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: null }));
+        }
+    };
+
+    useEffect(() => {
+        const loadItManager = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/api/user/search`, {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                        'Cache-Control': 'no-cache'
+                    },
+                    params: { role: 'head_of_department' }, // backend sudah filter status_user=1
+                });
+
+                // Pastikan hanya user aktif
+                const activeUsers = res.data.filter(u => u.status_user === 1);
+
+                const manager = activeUsers.find(u =>
+                    u.full_name.toLowerCase() === 'wahyu hidayat'.toLowerCase()
+                );
+
+                if (manager) {
+                    const label = `${manager.badge_no} - ${manager.full_name}`;
+                    setItManagerName(label);
+                    setItManagerId(manager.id_user);
+
+                    handleChange('approval_it_sign_id', manager.id_user);
+                }
+            } catch (err) {
+                console.error('Failed to fetch IT Manager:', err);
+            }
+        };
+
+        loadItManager();
+    }, []);
+
+
+    const fetchHodUsers = async (query) => {
+        if (!query) return [];
+
+        try {
+            const res = await axios.get(`${API_URL}/api/user/search`, {
+                headers: { Authorization: `Bearer ${user.token}` },
+                params: { role: 'head_of_department', q: query || '' },
+            });
+
+            // Filter hanya user aktif
+            const activeUsers = res.data.filter(u => u.status_user === 1);
+
+            const mappedUsers = activeUsers
+                .filter(u => u && (u.id_user != null || u.full_name))
+                .map(u => ({
+                    value: u.id_user.toString(),
+                    label: `${u.badge_no} - ${u.full_name}`,
+                }));
+
+            const uniqueUsers = Array.from(new Map(mappedUsers.map(u => [u.value, u])).values());
+            return uniqueUsers;
+        } catch (err) {
+            console.error('Error fetching HOD users:', err);
+            return [];
         }
     };
 
@@ -326,36 +354,39 @@ export default function CreateRequest() {
                                     </div>
                                 </div>
 
-                                <Autocomplete
-                                    label="Acknowledge by"
-                                    placeholder="Search HOD..."
-                                    value={hodSearch}
-                                    onChange={async (val) => {
-                                        setHodSearch(val);
-                                        const users = await fetchHodUsers(val);
-                                        setHodOptions(users); // sudah unik dan pakai id
-                                    }}
-                                    data={hodOptions.map(u => u.label)} // tetap pakai label untuk ditampilkan
-                                    onItemSubmit={(item) => {
-                                        const selectedUser = hodOptions.find(u => u.label === item);
-                                        handleChange('acknowledge_by', selectedUser?.value);
-                                        setHodSearch(selectedUser?.label || '');
-                                    }}
-                                />
-
-
-
+                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
+                                    <Autocomplete
+                                        label="Acknowledge by"
+                                        placeholder="Search HOD..."
+                                        value={hodSearch}
+                                        onChange={async (val) => {
+                                            setHodSearch(val);
+                                            const users = await fetchHodUsers(val);
+                                            setHodOptions(users);
+                                        }}
+                                        data={hodOptions.map(u => ({
+                                            value: u.value,
+                                            label: u.label,
+                                        }))}
+                                        onItemSubmit={(item) => {
+                                            handleChange('approval_hod_sign_id', item.value);
+                                            setHodSearch(item.label);
+                                        }}
+                                        rightSection={<IconChevronDown size={16} className="text-gray-500" />}
+                                        classNames={{
+                                            input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
+                                            label: "font-medium mb-1 text-gray-800 text-sm",
+                                        }}
+                                    />
+                                </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Approved
                                     </label>
-                                    <input
-                                        type="text"
-                                        placeholder=""
-                                        className="h-[36px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
-                                        disabled
-                                    />
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                                        {itManagerName || 'Loading...'}
+                                    </div>
                                 </div>
                             </div>
 
@@ -385,11 +416,6 @@ export default function CreateRequest() {
                     </form>
                 </Paper>
             </div>
-
         </AuthLayout>
-
-
-
-
     )
 }

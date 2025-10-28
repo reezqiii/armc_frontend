@@ -82,7 +82,9 @@ export default function EditRequest() {
                     department: data.department?.id_department?.toString() || '',
                     role: data.role?.id_role?.toString() || '',
                     request_reason: data.request_reason || '',
+                    request_status: data.request_status ?? 0,
                 })
+
             } catch (err) {
                 console.error('Failed to fetch request:', err)
                 showAlert("Error", "error", "Failed to load request data")
@@ -120,7 +122,7 @@ export default function EditRequest() {
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
-            request_status: 0,
+            request_status: formData.request_status,  
             status_active: 1,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },

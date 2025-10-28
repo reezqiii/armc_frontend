@@ -26,7 +26,6 @@ export default function DraftRequestList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
-  // 🔹 Handle Cancel Function 
   const handleCancel = async (id_request) => {
     const result = await Swal.fire({
       title: 'Are you sure you want to cancel this request?',
@@ -42,28 +41,32 @@ export default function DraftRequestList() {
 
     setIsCanceling(true);
     try {
-      await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const res = await axios.put(
+        `${API_URL}/requests/cancel/${id_request}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
 
-      setData(prevData => prevData.filter(item => item.id_request !== id_request));
+      if (res.status === 200) {
+        setData(prev => prev.filter(item => item.id_request !== id_request));
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Canceled!',
-        text: 'The request has been marked as canceled.',
-        timer: 1500,
-        showConfirmButton: false,
-      });
+        await Swal.fire({
+          icon: "success",
+          title: "Submitted!",
+          text: "The request has been successfully submitted to HOD.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
     } catch (err) {
-      console.error("Error canceling request:", err);
+      console.error('Error canceling request:', err);
       Swal.fire({
         icon: 'error',
         title: 'Failed!',
         text: 'Failed to cancel the request. Please try again.',
       });
     } finally {
-      setIsDeleting(false);
+      setIsCanceling(false);
     }
   };
 
@@ -175,20 +178,21 @@ export default function DraftRequestList() {
       const res = await axios.post(
         `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }
       );
+
       setData(res.data.data);
       setTotalPages(res.data.total_pages);
     } catch (err) {
       console.error("Error fetching draft data:", err);
     }
-  }, [API_URL, pagination, user.token]);
+  }, [API_URL, pagination.pageIndex, pagination.pageSize, user.token]);
 
   useEffect(() => {
     getData();
   }, [getData]);
 
-  // Submit to HOD 
+  // 🔹 Submit to HOD
   const handleSubmitToHOD = async (id_request) => {
     const result = await Swal.fire({
       title: "Submit to HOD?",
@@ -210,6 +214,9 @@ export default function DraftRequestList() {
       );
 
       if (res.status === 200) {
+        // Hapus data dari draft secara lokal tanpa fetch ulang
+        setData((prev) => prev.filter((item) => item.id_request !== id_request));
+
         await Swal.fire({
           icon: "success",
           title: "Submitted!",
@@ -217,12 +224,9 @@ export default function DraftRequestList() {
           timer: 1500,
           showConfirmButton: false,
         });
-
-        getData();
       }
     } catch (err) {
-      console.error(err);
-
+      console.error("Error submitting to HOD:", err);
       Swal.fire({
         icon: "error",
         title: "Failed!",
@@ -230,6 +234,7 @@ export default function DraftRequestList() {
       });
     }
   };
+
 
   const table = useReactTable({
     data,
