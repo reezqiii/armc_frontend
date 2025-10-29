@@ -27,21 +27,26 @@ export default function EditRequest() {
         department: '',
         role: '',
         request_reason: '',
+        approval_hod_by: '',
+        approval_it_hod_by: '',
     })
 
     const [errors, setErrors] = useState({})
     const [projects, setProjects] = useState([])
     const [departments, setDepartments] = useState([])
     const [roles, setRoles] = useState([])
+    const [hodList, setHodList] = useState([])
+    const [itManagerName, setItManagerName] = useState('')
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
+
 
     // 🔸 Fetch dropdown data
     useEffect(() => {
         const fetchDropdowns = async () => {
             setLoading(true)
             try {
-                const [projRes, deptRes, roleRes] = await Promise.all([
+                const [projRes, deptRes, roleRes, hodRes] = await Promise.all([
                     axios.get(`${API_URL}/portal_project`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
@@ -51,10 +56,14 @@ export default function EditRequest() {
                     axios.get(`${API_URL}/portal_master_role_permission_db`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
+                    axios.get(`${API_URL}/users?role=HOD`, {
+                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
+                    }),
                 ])
                 setProjects(projRes.data || [])
                 setDepartments(deptRes.data || [])
                 setRoles(roleRes.data || [])
+                setHodList(hodRes.data || [])
             } catch (err) {
                 console.error('Dropdown fetch error:', err)
             } finally {
@@ -83,7 +92,14 @@ export default function EditRequest() {
                     role: data.role?.id_role?.toString() || '',
                     request_reason: data.request_reason || '',
                     request_status: data.request_status ?? 0,
-                })
+                    approval_hod_by: data.approval_hod_by?.id_user || '',
+                });
+
+                setItManagerName(
+                    data.approval_it_hod_by
+                        ? `${data.approval_it_hod_by.badge_no} - ${data.approval_it_hod_by.full_name}`
+                        : "-"
+                );
 
             } catch (err) {
                 console.error('Failed to fetch request:', err)
@@ -116,17 +132,21 @@ export default function EditRequest() {
         if (!result.isConfirmed) return;
 
         setLoadingSubmit(true);
+
         const payload = {
             full_name: formData.full_name,
             badge_no: formData.badge_no,
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
-            request_status: formData.request_status,  
+            request_status: formData.request_status,
             status_active: 1,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
             role: { id_role: Number(formData.role) },
+        }
+        if (formData.request_status === 0) {
+            payload.approval_hod_by = { id_user: Number(formData.approval_hod_by) }
         }
 
         try {
@@ -323,13 +343,16 @@ export default function EditRequest() {
                                 </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Acknowledge by
-                                    </label>
-                                    <input
-                                        disabled
-                                        placeholder="-- Select --"
-                                        className="h-[34px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
+                                    <Select
+                                        label="Head of Department"
+                                        placeholder="-- Select HOD --"
+                                        data={hodList.map(h => ({
+                                            value: h.id_user,
+                                            label: `${h.badge_no} - ${h.full_name}`
+                                        }))}
+                                        value={formData.approval_hod_by}
+                                        onChange={(v) => handleChange('approval_hod_by', v)}
+                                        disabled={formData.request_status !== 0} // hanya bisa edit jika Draft
                                     />
                                 </div>
 

@@ -26,6 +26,8 @@ export default function CreateRequest() {
         department: '',
         role: '',
         request_reason: '',
+        approval_hod_by: '',
+        approval_it_hod_by: '',
     });
 
     const [errors, setErrors] = React.useState({
@@ -64,10 +66,9 @@ export default function CreateRequest() {
                         Authorization: `Bearer ${user.token}`,
                         'Cache-Control': 'no-cache'
                     },
-                    params: { role: 'head_of_department' }, // backend sudah filter status_user=1
+                    params: { role: 'head_of_department' },
                 });
 
-                // Pastikan hanya user aktif
                 const activeUsers = res.data.filter(u => u.status_user === 1);
 
                 const manager = activeUsers.find(u =>
@@ -79,7 +80,7 @@ export default function CreateRequest() {
                     setItManagerName(label);
                     setItManagerId(manager.id_user);
 
-                    handleChange('approval_it_sign_id', manager.id_user);
+                    handleChange('approval_it_hod_by', manager.id_user);
                 }
             } catch (err) {
                 console.error('Failed to fetch IT Manager:', err);
@@ -89,25 +90,19 @@ export default function CreateRequest() {
         loadItManager();
     }, []);
 
-
-    const fetchHodUsers = async (query) => {
-        if (!query) return [];
-
+    const fetchHodUsers = async (query = '') => {
         try {
             const res = await axios.get(`${API_URL}/api/user/search`, {
                 headers: { Authorization: `Bearer ${user.token}` },
-                params: { role: 'head_of_department', q: query || '' },
+                params: { role: 'head_of_department', q: query },
             });
 
-            // Filter hanya user aktif
             const activeUsers = res.data.filter(u => u.status_user === 1);
 
-            const mappedUsers = activeUsers
-                .filter(u => u && (u.id_user != null || u.full_name))
-                .map(u => ({
-                    value: u.id_user.toString(),
-                    label: `${u.badge_no} - ${u.full_name}`,
-                }));
+            const mappedUsers = activeUsers.map(u => ({
+                value: u.id_user.toString(),
+                label: `${u.badge_no} - ${u.full_name}`,
+            }));
 
             const uniqueUsers = Array.from(new Map(mappedUsers.map(u => [u.value, u])).values());
             return uniqueUsers;
@@ -152,7 +147,6 @@ export default function CreateRequest() {
         e.preventDefault();
         setLoadingSubmit(true);
 
-        // Show confirmation before submitting
         const result = await Swal.fire({
             title: "Ready to Submit?",
             icon: "question",
@@ -179,6 +173,8 @@ export default function CreateRequest() {
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
             role: { id_role: Number(formData.role) },
+            approval_hod_by: formData.approval_hod_by,
+            approval_it_hod_by: formData.approval_it_hod_by,
         };
 
         try {
@@ -355,29 +351,24 @@ export default function CreateRequest() {
                                 </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <Autocomplete
+                                    <Select
                                         label="Acknowledge by"
-                                        placeholder="Search HOD..."
-                                        value={hodSearch}
-                                        onChange={async (val) => {
-                                            setHodSearch(val);
-                                            const users = await fetchHodUsers(val);
+                                        placeholder="Select HOD..."
+                                        searchable
+                                        nothingFound="No HOD found"
+                                        value={formData.approval_hod_by}
+                                        onChange={(val) => handleChange('approval_hod_by', val)}
+                                        data={hodOptions.map(u => ({ value: u.value, label: u.label }))}
+                                        onDropdownOpen={async () => {
+                                            const users = await fetchHodUsers(); // query kosong = ambil semua HOD
                                             setHodOptions(users);
                                         }}
-                                        data={hodOptions.map(u => ({
-                                            value: u.value,
-                                            label: u.label,
-                                        }))}
-                                        onItemSubmit={(item) => {
-                                            handleChange('approval_hod_sign_id', item.value);
-                                            setHodSearch(item.label);
-                                        }}
-                                        rightSection={<IconChevronDown size={16} className="text-gray-500" />}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",
                                         }}
                                     />
+
                                 </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">

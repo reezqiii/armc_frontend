@@ -18,6 +18,24 @@ export default function RequestDetail() {
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [hodName, setHodName] = useState('');
+  const [itManagerName, setItManagerName] = useState('');
+
+  useEffect(() => {
+    if (data) {
+      setHodName(
+        data.approval_hod_by
+          ? `${data.approval_hod_by.badge_no} - ${data.approval_hod_by.full_name}`
+          : "-"
+      );
+
+      setItManagerName(
+        data.approval_it_hod_by
+          ? `${data.approval_it_hod_by.badge_no} - ${data.approval_it_hod_by.full_name}`
+          : "-"
+      );
+    }
+  }, [data]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,6 +44,7 @@ export default function RequestDetail() {
         const res = await axios.get(`${API_URL}/requests/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         })
+         console.log('DETAIL DATA:', res.data)
         setData(res.data)
       } catch (err) {
         console.error('Failed to fetch detail:', err)
@@ -225,7 +244,7 @@ export default function RequestDetail() {
                   Acknowledge by
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.hod_name || "-"}
+                  {hodName}
                 </div>
               </div>
 
@@ -235,7 +254,7 @@ export default function RequestDetail() {
                   Approved
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.it_manager_name || "-"}
+                  {itManagerName}
                 </div>
               </div>
             </div>
