@@ -43,13 +43,13 @@ export const requestorList = [
       },
       {
         title: "Pending IT Manager",
-        href: "/",
+        href: "/user_request/it_hod_pending",
         active: "Pending IT Manager",
         icon: <IconUserCog size={18} />,
       },
       {
         title: "Completed",
-        href: "/",
+        href: "/user_request/completed_request",
         active: "Completed",
         icon: <IconCircleCheck size={18} />,
       },
@@ -67,6 +67,12 @@ export const requestorList = [
         href: "/",
         active: "Permission Request List",
         icon: <IconListLetters size={18} />,
+      },
+      {
+        title: "Create User Permission Request",
+        href: "/",
+        active: "Create User Request",
+        icon: <IconUserPlus size={18} />,
       },
       {
         title: "Draft",

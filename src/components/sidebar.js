@@ -31,6 +31,7 @@ export default function Sidebar({ className, sidebarList }) {
               variant="filled"
               active={item.href === path}
               childrenOffset={28}
+              defaultOpened
               style={{ color: "white" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "black")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "white")}

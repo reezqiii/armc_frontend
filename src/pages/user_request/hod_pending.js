@@ -8,6 +8,7 @@ import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
+import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
@@ -25,7 +26,6 @@ export default function PendingHODList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
-  // 🔹 Handle Cancel Function 
   const handleCancel = async (id_request) => {
     const result = await Swal.fire({
       title: 'Are you sure you want to cancel this request?',
@@ -66,7 +66,6 @@ export default function PendingHODList() {
     }
   };
 
-  // 🔹 column
   const columns = useMemo(() => [
     {
       id: 'no',
@@ -79,6 +78,7 @@ export default function PendingHODList() {
       accessorFn: row => row.created_date,
       id: 'created_date',
       header: 'Request Date',
+      cell: ({ row }) => formatDate(row.original.created_date),
     },
     {
       accessorFn: row => row.requestor_name,
@@ -108,11 +108,6 @@ export default function PendingHODList() {
     {
       accessorKey: 'department_name',
       header: 'Department',
-    },
-    {
-      accessorFn: row => row.role_name,
-      id: 'role_name',
-      header: 'Role',
     },
     {
       id: 'status',

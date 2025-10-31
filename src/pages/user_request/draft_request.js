@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import React from 'react';
 import Swal from "sweetalert2";
+import { formatDate } from "@/lib/dateFormat";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
@@ -82,6 +83,7 @@ export default function DraftRequestList() {
       accessorFn: row => row.created_date,
       id: 'created_date',
       header: 'Request Date',
+      cell: ({ row }) => formatDate(row.original.created_date),
     },
     {
       accessorFn: row => row.requestor_name,
@@ -112,11 +114,6 @@ export default function DraftRequestList() {
       accessorFn: row => row.department_name,
       id: 'department_name',
       header: 'Department'
-    },
-    {
-      accessorFn: row => row.role_name,
-      id: 'role_name',
-      header: 'Role'
     },
     {
       id: 'status',

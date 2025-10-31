@@ -9,6 +9,7 @@ import useUser from '@/store/useUser';
 import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
+import { formatDate } from "@/lib/dateFormat";
 
 export default function EditRequest() {
     EditRequest.title = "Edit Request Form"
@@ -25,7 +26,6 @@ export default function EditRequest() {
         email: '',
         project: '',
         department: '',
-        role: '',
         request_reason: '',
         approval_hod_by: '',
         approval_it_hod_by: '',
@@ -34,45 +34,30 @@ export default function EditRequest() {
     const [errors, setErrors] = useState({})
     const [projects, setProjects] = useState([])
     const [departments, setDepartments] = useState([])
-    const [roles, setRoles] = useState([])
     const [hodList, setHodList] = useState([])
     const [itManagerName, setItManagerName] = useState('')
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
 
-
-    // 🔸 Fetch dropdown data
     useEffect(() => {
         const fetchDropdowns = async () => {
-            setLoading(true)
+            setLoading(true);
             try {
-                const [projRes, deptRes, roleRes, hodRes] = await Promise.all([
-                    axios.get(`${API_URL}/portal_project`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                    axios.get(`${API_URL}/portal_department`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                    axios.get(`${API_URL}/portal_master_role_permission_db`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                    axios.get(`${API_URL}/users?role=HOD`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                ])
-                setProjects(projRes.data || [])
-                setDepartments(deptRes.data || [])
-                setRoles(roleRes.data || [])
-                setHodList(hodRes.data || [])
+                const [projRes, deptRes] = await Promise.all([
+                    axios.get(`${API_URL}/portal_project`, { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }),
+                    axios.get(`${API_URL}/portal_department`, { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }),
+                ]);
+                setProjects(projRes.data || []);
+                setDepartments(deptRes.data || []);
             } catch (err) {
-                console.error('Dropdown fetch error:', err)
+                console.error('Dropdown fetch error:', err);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchDropdowns()
-    }, [API_URL, user.token])
+        fetchDropdowns();
+    }, [API_URL, user.token]);
 
     useEffect(() => {
         if (!id) return;
@@ -89,10 +74,11 @@ export default function EditRequest() {
                     email: data.email || '',
                     project: data.project?.id?.toString() || '',
                     department: data.department?.id_department?.toString() || '',
-                    role: data.role?.id_role?.toString() || '',
                     request_reason: data.request_reason || '',
                     request_status: data.request_status ?? 0,
-                    approval_hod_by: data.approval_hod_by?.id_user || '',
+                    approval_hod_by: data.approval_hod_by?.id_user?.toString() || '',
+                    approval_it_hod_by: data.approval_it_hod_by?.id_user?.toString() || '',
+
                 });
 
                 setItManagerName(
@@ -101,20 +87,38 @@ export default function EditRequest() {
                         : "-"
                 );
 
+                if (data.approval_hod_by) {
+                    const resHod = await axios.get(`${API_URL}/api/user/search`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                        params: { role: 'head_of_department' }
+                    });
+                    const activeHod = resHod.data.filter(u => u.status_user === 1);
+                    setHodList(activeHod);
+                }
+
             } catch (err) {
-                console.error('Failed to fetch request:', err)
-                showAlert("Error", "error", "Failed to load request data")
+                console.error('Failed to fetch request:', err);
+                showAlert("Error", "error", "Failed to load request data");
             }
-        }
-        fetchRequest()
-    }, [id, API_URL, user.token])
+        };
+
+        fetchRequest();
+    }, [id, API_URL, user.token]);
 
     const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }))
-        if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
-    }
+        if (field === 'approval_hod_by') {
+            const num = Number(value);
+            setFormData(prev => ({
+                ...prev,
+                [field]: isNaN(num) ? null : num
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [field]: value }));
+        }
 
-    // 🔸 Handle Submit
+        if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setLoadingSubmit(true)
@@ -143,11 +147,12 @@ export default function EditRequest() {
             status_active: 1,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
-            role: { id_role: Number(formData.role) },
         }
-        if (formData.request_status === 0) {
-            payload.approval_hod_by = { id_user: Number(formData.approval_hod_by) }
-        }
+
+        // HOD optional
+        payload.approval_hod_by = formData.approval_hod_by
+            ? { id_user: Number(formData.approval_hod_by) }
+            : null;
 
         try {
             if (id) {
@@ -210,7 +215,7 @@ export default function EditRequest() {
                                     Request Date <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                                    <span>{new Date().toLocaleDateString('en-US')}</span>
+                                    <span>{formatDate(new Date())}</span>
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>
                             </div>
@@ -289,19 +294,6 @@ export default function EditRequest() {
                                     error={errors.department}
                                 />
 
-                                <Select
-                                    required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Role</span>}
-                                    placeholder="Select role..."
-                                    data={roles.map(r => ({
-                                        value: r.id_role?.toString(),
-                                        label: r.role_name || 'Unnamed Role'
-                                    }))}
-                                    searchable
-                                    value={formData.role}
-                                    onChange={(v) => handleChange('role', v)}
-                                    error={errors.role}
-                                />
                             </div>
                         </div>
 
@@ -335,7 +327,7 @@ export default function EditRequest() {
                             <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Requested by
+                                        Requested By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                                         {user?.name || ''}
@@ -343,28 +335,29 @@ export default function EditRequest() {
                                 </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
+                                    <label className="font-medium mb-1 text-gray-800 text-sm">
+                                        Acknowledged By
+                                    </label>
                                     <Select
-                                        label="Head of Department"
                                         placeholder="-- Select HOD --"
                                         data={hodList.map(h => ({
-                                            value: h.id_user,
+                                            value: h.id_user.toString(),
                                             label: `${h.badge_no} - ${h.full_name}`
                                         }))}
-                                        value={formData.approval_hod_by}
+                                        searchable
+                                        value={formData.approval_hod_by?.toString() || ''}
                                         onChange={(v) => handleChange('approval_hod_by', v)}
-                                        disabled={formData.request_status !== 0} // hanya bisa edit jika Draft
+                                        disabled={formData.request_status !== 0}
                                     />
                                 </div>
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Approved
+                                        Approved By
                                     </label>
-                                    <input
-                                        disabled
-                                        placeholder=""
-                                        className="h-[34px] w-full px-3 bg-gray-100 border border-gray-300 rounded-md text-gray-900 text-sm"
-                                    />
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                                        {itManagerName || 'Loading...'}
+                                    </div>
                                 </div>
                             </div>
 

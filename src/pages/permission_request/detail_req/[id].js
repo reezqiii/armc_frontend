@@ -8,7 +8,6 @@ import axios from 'axios'
 import useUser from '@/store/useUser'
 import useApi from '@/hooks/useApi'
 import { formatDate } from "@/lib/dateFormat";
-import Swal from 'sweetalert2'
 
 export default function RequestDetail() {
   RequestDetail.title = "Request Detail Form"
@@ -106,94 +105,56 @@ export default function RequestDetail() {
   };
 
   const handleHodAction = async (action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action.toUpperCase()} this request?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-    })
-    if (!confirm.isConfirmed) return
-
-    let remarks = ''
-    if (action === 'reject') {
-      const { value: inputRemarks } = await Swal.fire({
-        title: 'Reason for Rejection',
-        input: 'textarea',
-        inputPlaceholder: 'Enter your reason...',
-        showCancelButton: true,
-      })
-      if (!inputRemarks) {
-        Swal.fire('Cancelled', 'You must provide a reason for rejection.', 'info')
-        return
-      }
-      remarks = inputRemarks
-    }
-
     try {
-      await axios.put(
-        `${API_URL}/requests/${id}/hod-approval`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      )
+      const payload = {};
+      if (action === 'approve') {
+        payload.approval_hod_by = user.id_user;
+        payload.request_status = 3;
+      } else if (action === 'reject') {
+        payload.approval_hod_by = user.id_user;
+        payload.request_status = 2;
+        payload.rejected_hod_remarks = "Rejected by HOD";
+      }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
-      })
+      await axios.put(`${API_URL}/requests/${id}`, payload, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
 
-      router.push('/user_request/requestor_list')
+      alert(`Request ${action} successfully`);
+      const res = await axios.get(`${API_URL}/requests/${id}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setData(res.data);
     } catch (err) {
-      console.error('Error updating status:', err)
-      Swal.fire('Error', 'Failed to update request. Please try again.', 'error')
+      console.error(err);
+      alert('Failed to update request');
     }
-  }
+  };
 
   const handleItAction = async (action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action.toUpperCase()} this request?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-    });
-    if (!confirm.isConfirmed) return;
-
-    let remarks = '';
-    if (action === 'reject') {
-      const { value: inputRemarks } = await Swal.fire({
-        title: 'Reason for Rejection',
-        input: 'textarea',
-        inputPlaceholder: 'Enter your reason...',
-        showCancelButton: true,
-      });
-      if (!inputRemarks) {
-        Swal.fire('Cancelled', 'You must provide a reason for rejection.', 'info');
-        return;
-      }
-      remarks = inputRemarks;
-    }
-
     try {
-      await axios.put(
-        `${API_URL}/requests/${id}/it-approval`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
+      const payload = {};
+      if (action === 'approve') {
+        payload.approval_it_hod_by = user.id_user;
+        payload.request_status = 5;
+      } else if (action === 'reject') {
+        payload.approval_it_hod_by = user.id_user;
+        payload.request_status = 4;
+        payload.rejected_it_remarks = "Rejected by IT";
+      }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
+      await axios.put(`${API_URL}/requests/${id}`, payload, {
+        headers: { Authorization: `Bearer ${user.token}` },
       });
 
-      router.push('/user_request/requestor_list');
+      alert(`Request ${action} successfully`);
+      const res = await axios.get(`${API_URL}/requests/${id}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setData(res.data);
     } catch (err) {
-      console.error('Error updating status:', err);
-      Swal.fire('Error', 'Failed to update request. Please try again.', 'error');
+      console.error(err);
+      alert('Failed to update request');
     }
   };
 
@@ -290,6 +251,16 @@ export default function RequestDetail() {
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                   {data.department_name || data.department?.name_of_department || "-"}
+                </div>
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                  {data.role_name || data.role?.role_name || "-"}
                 </div>
               </div>
             </div>

@@ -115,6 +115,11 @@ export default function RequestUserList() {
             header: 'Department',
         },
         {
+            accessorFn: row => row.role_name,
+            id: 'role_name',
+            header: 'Role',
+        },
+        {
             accessorFn: row => row.request_status.name,
             id: 'request_status',
             header: 'Status',

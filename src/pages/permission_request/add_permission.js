@@ -25,6 +25,7 @@ export default function CreateRequest() {
         email: '',
         project: '',
         department: '',
+        role: '',
         request_reason: '',
         approval_hod_by: '',
         approval_it_hod_by: '',
@@ -36,11 +37,14 @@ export default function CreateRequest() {
         email: null,
         project: null,
         department: null,
+        role: null,
         request_reason: null,
     });
 
     const [projects, setProjects] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [roles, setRoles] = useState([]);
+
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
     const [hodSearch, setHodSearch] = useState('');
@@ -114,18 +118,21 @@ export default function CreateRequest() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [projRes, deptRes] = await Promise.all([
+                const [projRes, deptRes, roleRes] = await Promise.all([
                     axios.get(`${API_URL}/portal_project`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
                     axios.get(`${API_URL}/portal_department`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
-                   
+                    axios.get(`${API_URL}/portal_master_role_permission_db`, {
+                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
+                    }),
                 ]);
 
                 setProjects(Array.isArray(projRes.data) ? projRes.data : []);
                 setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
+                setRoles(Array.isArray(roleRes.data) ? roleRes.data : []);
             } catch (err) {
                 console.error('Failed to fetch dropdown data:', err);
             } finally {
@@ -166,6 +173,7 @@ export default function CreateRequest() {
             status_active: 1,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
+            role: { id_role: Number(formData.role) },
             approval_hod_by: formData.approval_hod_by,
             approval_it_hod_by: formData.approval_it_hod_by,
         };
@@ -179,7 +187,6 @@ export default function CreateRequest() {
                 await Swal.fire({
                     icon: "success",
                     title: "Success!",
-                    text: "Your account request has been successfully submitted.",
                     timer: 1500,
                     showConfirmButton: false,
                 });
@@ -292,6 +299,17 @@ export default function CreateRequest() {
                                     onChange={(v) => handleChange('department', v)}
                                     error={errors.department}
                                 />
+
+                                <Select
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Role</span>}
+                                    placeholder="Select role..."
+                                    data={roles.map(r => ({ value: r.id_role?.toString(), label: r.role_name || 'Unnamed Role' }))}
+                                    searchable
+                                    value={formData.role}
+                                    onChange={(v) => handleChange('role', v)}
+                                    error={errors.role}
+                                />
                             </div>
                         </div>
 
@@ -326,7 +344,7 @@ export default function CreateRequest() {
                             <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Requested By
+                                        Requested by
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {user?.name || ''}
@@ -335,7 +353,7 @@ export default function CreateRequest() {
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
                                     <Select
-                                        label="Acknowledge By"
+                                        label="Acknowledge by"
                                         placeholder="Select HOD..."
                                         searchable
                                         nothingFound="No HOD found"
@@ -356,7 +374,7 @@ export default function CreateRequest() {
 
                                 <div className="w-full md:flex-1 min-w-[250px] p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Approved By
+                                        Approved
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {itManagerName || 'Loading...'}
