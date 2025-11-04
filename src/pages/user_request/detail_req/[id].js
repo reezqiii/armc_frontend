@@ -243,15 +243,6 @@ export default function RequestDetail() {
             </div>
 
             <div className="grid grid-cols-1 gap-2">
-              {/* Name */}
-              <div>
-                <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.full_name || "-"}
-                </div>
-              </div>
 
               {/* Badge No */}
               <div>
@@ -263,13 +254,33 @@ export default function RequestDetail() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* Name */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Email <span className="text-red-500">*</span>
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.email || "-"}
+                  {data.full_name || "-"}
+                </div>
+              </div>
+
+              {/* Department */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                  {data.department_name || data.department?.name_of_department || "-"}
+                </div>
+              </div>
+
+              {/* Position */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Position <span className="text-red-500">*</span>
+                </label>
+                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                  {/* {data.position_name || data.position?.name_of_position || "-"} */}
                 </div>
               </div>
 
@@ -283,13 +294,13 @@ export default function RequestDetail() {
                 </div>
               </div>
 
-              {/* Department */}
+              {/* Email */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Department <span className="text-red-500">*</span>
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.department_name || data.department?.name_of_department || "-"}
+                  {data.email || "-"}
                 </div>
               </div>
             </div>

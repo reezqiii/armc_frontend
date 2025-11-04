@@ -240,20 +240,62 @@ export default function EditRequest() {
                             <div className="grid grid-cols-1 gap-2">
                                 <TextInput
                                     required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Badge ID</span>}
+                                    placeholder="Input Badge ID"
+                                    value={formData.badge_no}
+                                    onChange={(e) => handleChange('badge_no', e.target.value)}
+                                    error={errors.badge_no}
+                                />
+
+                                <TextInput
+                                    required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Name</span>}
-                                    placeholder="Input full name..."
+                                    placeholder="Input Full Name"
                                     value={formData.full_name}
                                     onChange={(e) => handleChange('full_name', e.target.value)}
                                     error={errors.full_name}
                                 />
 
-                                <TextInput
+                                <Select
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Badge ID</span>}
-                                    placeholder="Input badge ID..."
-                                    value={formData.badge_no}
-                                    onChange={(e) => handleChange('badge_no', e.target.value)}
-                                    error={errors.badge_no}
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
+                                    placeholder="Select Department"
+                                    data={departments.map(d => ({
+                                        value: d.id_department?.toString(),
+                                        label: d.name_of_department || 'Unnamed Department'
+                                    }))}
+                                    searchable
+                                    value={formData.department}
+                                    onChange={(v) => handleChange('department', v)}
+                                    error={errors.department}
+                                />
+
+                                <Select
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Position</span>}
+                                    placeholder="Select Position"
+                                    // data={positions.map(p => ({
+                                    //     value: p.id_position?.toString(),
+                                    //     label: p.name_of_position || 'Unnamed Position'
+                                    // }))}
+                                    searchable
+                                    value={formData.position}
+                                    onChange={(v) => handleChange('position', v)}
+                                    // error={errors.position}
+                                />
+
+                                <Select
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
+                                    placeholder="Select Project"
+                                    data={projects.map(p => ({
+                                        value: p.id?.toString(),
+                                        label: p.project_name || 'Unnamed Project'
+                                    }))}
+                                    searchable
+                                    value={formData.project}
+                                    onChange={(v) => handleChange('project', v)}
+                                    error={errors.project}
                                 />
 
                                 <TextInput
@@ -265,35 +307,6 @@ export default function EditRequest() {
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     error={errors.email}
                                 />
-
-                                <Select
-                                    required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
-                                    placeholder="Select project..."
-                                    data={projects.map(p => ({
-                                        value: p.id?.toString(),
-                                        label: p.project_name || 'Unnamed Project'
-                                    }))}
-                                    searchable
-                                    value={formData.project}
-                                    onChange={(v) => handleChange('project', v)}
-                                    error={errors.project}
-                                />
-
-                                <Select
-                                    required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
-                                    placeholder="Select department..."
-                                    data={departments.map(d => ({
-                                        value: d.id_department?.toString(),
-                                        label: d.name_of_department || 'Unnamed Department'
-                                    }))}
-                                    searchable
-                                    value={formData.department}
-                                    onChange={(v) => handleChange('department', v)}
-                                    error={errors.department}
-                                />
-
                             </div>
                         </div>
 
@@ -305,8 +318,10 @@ export default function EditRequest() {
                                 </div>
                             </div>
 
-                            <Textarea label={<span className="font-medium text-sm">Reason of Request</span>}
-                                placeholder="Input request reason..."
+                            <Textarea
+                                required
+                                label={<span className="font-medium text-sm">Purpose</span>}
+                                placeholder="Input Request Purpose"
                                 value={formData.request_reason}
                                 onChange={(e) => handleChange('request_reason', e.target.value)}
                                 minRows={3}

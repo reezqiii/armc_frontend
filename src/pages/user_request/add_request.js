@@ -28,6 +28,10 @@ export default function CreateRequest() {
         request_reason: '',
         approval_hod_by: '',
         approval_it_hod_by: '',
+        approval_lead_it_by: '',
+        department_name: '',
+        position_name: '',
+        project_name: '',
     });
 
     const [errors, setErrors] = React.useState({
@@ -47,6 +51,8 @@ export default function CreateRequest() {
     const [hodOptions, setHodOptions] = useState([]);
     const [itManagerName, setItManagerName] = useState('');
     const [itManagerId, setItManagerId] = useState('');
+    const [badgeOptions, setBadgeOptions] = useState([]);
+    const [badgeLoading, setBadgeLoading] = useState(true);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -55,65 +61,52 @@ export default function CreateRequest() {
         }
     };
 
+    // --- Fetch all necessary data on mount ---
     useEffect(() => {
-        const loadItManager = async () => {
-            try {
-                const res = await axios.get(`${API_URL}/api/user/search`, {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`,
-                        'Cache-Control': 'no-cache'
-                    },
-                    params: { role: 'head_of_department' },
-                });
-
-                const activeUsers = res.data.filter(u => u.status_user === 1);
-
-                const manager = activeUsers.find(u =>
-                    u.full_name.toLowerCase() === 'wahyu hidayat'.toLowerCase()
-                );
-
-                if (manager) {
-                    const label = `${manager.badge_no} - ${manager.full_name}`;
-                    setItManagerName(label);
-                    setItManagerId(manager.id_user);
-
-                    handleChange('approval_it_hod_by', manager.id_user);
-                }
-            } catch (err) {
-                console.error('Failed to fetch IT Manager:', err);
-            }
-        };
-
-        loadItManager();
-    }, []);
-
-    const fetchHodUsers = async (query = '') => {
-        try {
-            const res = await axios.get(`${API_URL}/api/user/search`, {
-                headers: { Authorization: `Bearer ${user.token}` },
-                params: { role: 'head_of_department', q: query },
-            });
-
-            const activeUsers = res.data.filter(u => u.status_user === 1);
-
-            const mappedUsers = activeUsers.map(u => ({
-                value: u.id_user.toString(),
-                label: `${u.badge_no} - ${u.full_name}`,
-            }));
-
-            const uniqueUsers = Array.from(new Map(mappedUsers.map(u => [u.value, u])).values());
-            return uniqueUsers;
-        } catch (err) {
-            console.error('Error fetching HOD users:', err);
-            return [];
-        }
-    };
-
-    // Fetch Dropdown   
-    useEffect(() => {
-        const fetchData = async () => {
+        const fetchInitialData = async () => {
             setLoading(true);
             try {
+                const badgeRes = await axios.get(`${API_URL}/iss_employee`, {
+                    headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
+                });
+                const employees = Array.isArray(badgeRes.data) ? badgeRes.data : [badgeRes.data];
+                const badgeList = employees.map(e => ({
+                    value: String(e.badge_no || e.badge),
+                    label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`, // 👈 ubah ini!
+                    full_name: e.full_name || e.name,
+                    department_name: e.department_name || '',
+                    position_name: e.position_name || '',
+                    project_name: e.project_name || '',
+                    department_id: e.department_id || '',
+                    id_position: e.id_position || '',
+                    project_id: e.project_id || '',
+                }));
+
+                const uniqueBadges = Array.from(new Map(badgeList.map(item => [item.value, item])).values());
+                setBadgeOptions(uniqueBadges);
+
+                // Fetch HOD & IT Manager
+                const hodRes = await axios.get(`${API_URL}/api/user/search`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                    params: { role: 'head_of_department' },
+                });
+                const activeUsers = hodRes.data.filter(u => u.status_user === 1);
+                const hodList = activeUsers.map(u => ({
+                    value: u.id_user.toString(),
+                    label: `${u.badge_no} - ${u.full_name}`,
+                }));
+                setHodOptions(hodList);
+
+                // IT Manager
+                const itManager = activeUsers.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
+                if (itManager) {
+                    const label = `${itManager.badge_no} - ${itManager.full_name}`;
+                    setItManagerName(label);
+                    setItManagerId(itManager.id_user);
+                    handleChange('approval_it_hod_by', itManager.id_user);
+                }
+
+                // Fetch Projects and Departments
                 const [projRes, deptRes] = await Promise.all([
                     axios.get(`${API_URL}/portal_project`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
@@ -121,22 +114,38 @@ export default function CreateRequest() {
                     axios.get(`${API_URL}/portal_department`, {
                         headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
                     }),
-                   
                 ]);
-
                 setProjects(Array.isArray(projRes.data) ? projRes.data : []);
                 setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
+
             } catch (err) {
-                console.error('Failed to fetch dropdown data:', err);
+                console.error('Failed to fetch initial data:', err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData();
+        fetchInitialData();
     }, [API_URL, user.token]);
 
-    // --- Handle Submit ---
+    // --- Handle selecting badge (use pre-fetched data) ---
+    const handleSelectBadge = (value) => {
+        const selected = badgeOptions.find(b => b.value === value);
+        if (!selected) return;
+
+        setFormData(prev => ({
+            ...prev,
+            badge_no: selected.value,
+            full_name: selected.full_name,
+            department_name: selected.department_name,
+            position_name: selected.position_name,
+            project_name: selected.project_name,
+            department: selected.department_id,
+            position: selected.id_position,
+            project: selected.project_id,
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoadingSubmit(true);
@@ -157,7 +166,7 @@ export default function CreateRequest() {
 
         const payload = {
             full_name: formData.full_name,
-            badge_no: formData.badge_no,
+            badge_no: Number(formData.badge_no),
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
@@ -243,24 +252,48 @@ export default function CreateRequest() {
                             </div>
 
                             <div className="grid grid-cols-1 gap-2">
+                                <Autocomplete
+                                    required
+                                    label="Badge ID"
+                                    placeholder="Input Badge Number"
+                                    data={badgeOptions}
+                                    value={formData.badge_no || ''}
+                                    onChange={(value) => handleChange('badge_no', value)}
+                                    onOptionSubmit={(value) => handleSelectBadge(value)}
+                                />
+
                                 <TextInput
                                     required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Full Name</span>}
-                                    placeholder="Input full name..."
+                                    placeholder="Input Name"
                                     value={formData.full_name}
-                                    onChange={(e) => handleChange('full_name', e.target.value)}
-                                    error={errors.full_name}
+                                    readOnly
                                 />
 
                                 <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Badge ID</span>}
-                                    placeholder="Input badge ID..."
-                                    value={formData.badge_no}
-                                    onChange={(e) => handleChange('badge_no', e.target.value)}
-                                    error={errors.badge_no}
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
+                                    placeholder="Input Department"
+                                    value={formData.department_name || ''}
+                                    readOnly
+                                />
+                                <TextInput
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Position</span>}
+                                    placeholder="Input Position"
+                                    value={formData.position_name || ''}
+                                    readOnly
                                 />
 
+                                <TextInput
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
+                                    placeholder="Input Project"
+                                    value={formData.project_name || ''}
+                                    readOnly
+                                />
+
+                                {/* Email (manual) */}
                                 <TextInput
                                     required
                                     type="email"
@@ -271,29 +304,18 @@ export default function CreateRequest() {
                                     error={errors.email}
                                 />
 
-                                <Select
+                                <Textarea
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
-                                    placeholder="Select project..."
-                                    data={projects.map(p => ({ value: p.id?.toString(), label: p.project_name || 'Unnamed Project' }))}
-                                    searchable
-                                    value={formData.project}
-                                    onChange={(v) => handleChange('project', v)}
-                                    error={errors.project}
-                                />
-
-                                <Select
-                                    required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
-                                    placeholder="Select department..."
-                                    data={departments.map(d => ({ value: d.id_department?.toString(), label: d.name_of_department || 'Unnamed Department' }))}
-                                    searchable
-                                    value={formData.department}
-                                    onChange={(v) => handleChange('department', v)}
-                                    error={errors.department}
+                                    label={<span className="font-medium text-sm">Purpose</span>}
+                                    placeholder="Input Request Purpose"
+                                    value={formData.request_reason}
+                                    onChange={(e) => handleChange('request_reason', e.target.value)}
+                                    minRows={3}
+                                    error={errors.request_reason}
                                 />
                             </div>
                         </div>
+
 
                         {/* Remarks Section */}
                         <div className="space-y-2 mt-6">
@@ -304,46 +326,47 @@ export default function CreateRequest() {
                             </div>
 
                             <Textarea
-                                label={<span className="font-medium text-sm">Reason of Request</span>}
-                                placeholder="Input request reason..."
-                                value={formData.request_reason}
-                                onChange={(e) => handleChange('request_reason', e.target.value)}
+                                label={<span className="font-medium text-sm">Remarks (Optional)</span>}
+                                placeholder="Input Remarks (Optional)"
                                 minRows={3}
-                                error={errors.request_reason}
                             />
                         </div>
 
                         {/* Signature Section */}
+
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white flex">
-                                    <div className="flex-1 text-center">Requestor Department</div>
-                                    <div className="flex-1 text-center">Head of Department</div>
-                                    <div className="flex-1 text-center">Information Technology Manager</div>
+                                <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
+                                    <div>Requestor Department</div>
+                                    <div>Head of Department</div>
+                                    <div>Lead IT</div>
+                                    <div>Asst. IT Manager/IT Manager</div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
-                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Requested By
-                                    </label>
+                            <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-4 text-sm">
+                                {/* Requestor Department */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                                    <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {user?.name || ''}
                                     </div>
                                 </div>
 
-                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
+                                {/* Head of Department */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <Select
                                         label="Acknowledge By"
                                         placeholder="Select HOD..."
                                         searchable
-                                        nothingFound="No HOD found"
-                                        value={formData.approval_hod_by}
+                                        value={String(formData.approval_hod_by || '')}
                                         onChange={(val) => handleChange('approval_hod_by', val)}
-                                        data={hodOptions.map(u => ({ value: u.value, label: u.label }))}
+                                        data={hodOptions.map(u => ({
+                                            value: String(u.value),
+                                            label: u.label
+                                        }))}
                                         onDropdownOpen={async () => {
-                                            const users = await fetchHodUsers(); // query kosong = ambil semua HOD
+                                            const users = await fetchHodUsers();
                                             setHodOptions(users);
                                         }}
                                         classNames={{
@@ -351,10 +374,19 @@ export default function CreateRequest() {
                                             label: "font-medium mb-1 text-gray-800 text-sm",
                                         }}
                                     />
-
                                 </div>
 
-                                <div className="w-full md:flex-1 min-w-[250px] p-3">
+                                {/* Lead IT */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                                    <Select
+                                        label="Approved By"
+                                        placeholder="Select Lead IT..."
+                                        searchable
+                                    />
+                                </div>
+
+                                {/* Asst. IT Manager / IT Manager */}
+                                <div className="p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Approved By
                                     </label>
@@ -388,8 +420,8 @@ export default function CreateRequest() {
                             </div>
                         </div>
                     </form>
-                </Paper>
-            </div>
-        </AuthLayout>
+                </Paper >
+            </div >
+        </AuthLayout >
     )
 }
