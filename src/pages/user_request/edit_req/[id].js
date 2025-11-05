@@ -1,6 +1,6 @@
 import AuthLayout from '@/components/layout/authLayout';
 import { requestorList } from '@/data/sidebar/RequestorList';
-import { Button, Paper, TextInput, Textarea, Select } from '@mantine/core';
+import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react'
@@ -10,6 +10,8 @@ import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
+import { useDebouncedValue } from '@mantine/hooks';
+
 
 export default function EditRequest() {
     EditRequest.title = "Edit Request Form"
@@ -35,29 +37,102 @@ export default function EditRequest() {
     const [projects, setProjects] = useState([])
     const [departments, setDepartments] = useState([])
     const [hodList, setHodList] = useState([])
-    const [itManagerName, setItManagerName] = useState('')
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
+    const [search, setSearch] = useState('');
+    const [debouncedSearch] = useDebouncedValue(search, 300);
+    const [badgeOptions, setBadgeOptions] = useState([]);
+    const [badgeLoading, setBadgeLoading] = useState(false);
+    const [hodOptions, setHodOptions] = useState([]);
+    const [itManagerName, setItManagerName] = useState('');
+    const [itManagerId, setItManagerId] = useState('');
 
     useEffect(() => {
-        const fetchDropdowns = async () => {
+        if (!debouncedSearch) {
+            setBadgeOptions([]);
+            return;
+        }
+
+        const fetchBadges = async () => {
+            setBadgeLoading(true);
+            try {
+                const res = await axios.get(`${API_URL}/iss_employee/search?badge=${debouncedSearch}`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                });
+                const employees = Array.isArray(res.data) ? res.data : [res.data];
+                setBadgeOptions(
+                    employees.map(e => ({
+                        value: String(e.badge_no || e.badge),
+                        label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`,
+                        full_name: e.full_name || e.name,
+                        department_name: e.dept || '',
+                        position_name: e.design_desc || '',
+                        project_name: e.project_desc || '',
+                    }))
+                );
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setBadgeLoading(false);
+            }
+        };
+
+        fetchBadges();
+    }, [debouncedSearch]);
+
+
+    useEffect(() => {
+        const fetchInitialData = async () => {
             setLoading(true);
             try {
-                const [projRes, deptRes] = await Promise.all([
-                    axios.get(`${API_URL}/portal_project`, { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }),
-                    axios.get(`${API_URL}/portal_department`, { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }),
-                ]);
-                setProjects(projRes.data || []);
-                setDepartments(deptRes.data || []);
+                const hodRes = await axios.get(`${API_URL}/requests/hods`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                });
+                setHodOptions(hodRes.data.map(u => ({
+                    value: String(u.id_user),
+                    label: `${u.badge_no} - ${u.full_name}`
+                })));
+
+                // --- IT Manager default ---
+                const itManager = hodRes.data.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
+                if (itManager) {
+                    setItManagerName(`${itManager.badge_no} - ${itManager.full_name}`);
+                    setItManagerId(itManager.id_user);
+                    handleChange('approval_it_hod_by', itManager.id_user);
+                }
+
             } catch (err) {
-                console.error('Dropdown fetch error:', err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDropdowns();
+        fetchInitialData();
     }, [API_URL, user.token]);
+
+    const handleSelectBadge = async (value) => {
+        try {
+            const res = await axios.get(`${API_URL}/iss_employee/employee/${value}`, {
+                headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setFormData(prev => ({
+                ...prev,
+                badge_no: value,
+                full_name: res.data.name ?? '',
+                department_name: res.data.department.dept ?? '',
+                position_name: res.data.position?.design_desc ?? '',
+                project_name: res.data.project.project_desc ?? '',
+                department: res.data.department.dept_id ?? '',
+                position: res.data.position?.design_id ?? '',
+                project: res.data.project.project_id ?? '',
+            }));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setBadgeLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -67,18 +142,22 @@ export default function EditRequest() {
                 const res = await axios.get(`${API_URL}/requests/${id}`, {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
+
                 const data = res.data;
+
                 setFormData({
                     full_name: data.full_name || '',
                     badge_no: data.badge_no || '',
                     email: data.email || '',
-                    project: data.project?.id?.toString() || '',
-                    department: data.department?.id_department?.toString() || '',
+                    project: data.project_id?.toString() || '',
+                    project_name: data.project_name || '',
+                    department: data.dept_id?.toString() || '',
+                    department_name: data.department_name || '',
+                    position_name: data.position_name || '',
                     request_reason: data.request_reason || '',
-                    request_status: data.request_status ?? 0,
                     approval_hod_by: data.approval_hod_by?.id_user?.toString() || '',
                     approval_it_hod_by: data.approval_it_hod_by?.id_user?.toString() || '',
-
+                    request_status: data.request_status ?? 0,
                 });
 
                 setItManagerName(
@@ -238,64 +317,52 @@ export default function EditRequest() {
                             </div>
 
                             <div className="grid grid-cols-1 gap-2">
-                                <TextInput
+                                <Autocomplete
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Badge ID</span>}
-                                    placeholder="Input Badge ID"
-                                    value={formData.badge_no}
-                                    onChange={(e) => handleChange('badge_no', e.target.value)}
-                                    error={errors.badge_no}
+                                    label="Badge ID"
+                                    placeholder="Input Badge Number"
+                                    value={formData.badge_no || ''}
+                                    onChange={(value) => {
+                                        handleChange('badge_no', value);
+                                        setSearch(value);
+                                    }}
+                                    data={badgeOptions.map(b => ({ value: b.value, label: b.label }))}
+                                    onOptionSubmit={(item) => handleSelectBadge(item)}
+                                    filter={null}
+                                    rightSection={badgeLoading ? <div className="animate-spin h-4 w-4 border-2 border-gray-400 rounded-full" /> : null}
+                                    nothingFound="No employees found"
                                 />
 
                                 <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Name</span>}
-                                    placeholder="Input Full Name"
-                                    value={formData.full_name}
-                                    onChange={(e) => handleChange('full_name', e.target.value)}
-                                    error={errors.full_name}
+                                    label="Full Name"
+                                    value={formData.full_name || ''}
+                                    readOnly
+                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
                                 />
 
-                                <Select
+                                <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Department</span>}
-                                    placeholder="Select Department"
-                                    data={departments.map(d => ({
-                                        value: d.id_department?.toString(),
-                                        label: d.name_of_department || 'Unnamed Department'
-                                    }))}
-                                    searchable
-                                    value={formData.department}
-                                    onChange={(v) => handleChange('department', v)}
-                                    error={errors.department}
+                                    label="Department"
+                                    value={formData.department_name || ''}
+                                    readOnly
+                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
                                 />
 
-                                <Select
+                                <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Position</span>}
-                                    placeholder="Select Position"
-                                    // data={positions.map(p => ({
-                                    //     value: p.id_position?.toString(),
-                                    //     label: p.name_of_position || 'Unnamed Position'
-                                    // }))}
-                                    searchable
-                                    value={formData.position}
-                                    onChange={(v) => handleChange('position', v)}
-                                    // error={errors.position}
+                                    label="Position"
+                                    value={formData.position_name || ''}
+                                    readOnly
+                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
                                 />
 
-                                <Select
+                                <TextInput
                                     required
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Project</span>}
-                                    placeholder="Select Project"
-                                    data={projects.map(p => ({
-                                        value: p.id?.toString(),
-                                        label: p.project_name || 'Unnamed Project'
-                                    }))}
-                                    searchable
-                                    value={formData.project}
-                                    onChange={(v) => handleChange('project', v)}
-                                    error={errors.project}
+                                    label="Project"
+                                    value={formData.project_name || ''}
+                                    readOnly
+                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
                                 />
 
                                 <TextInput
@@ -306,6 +373,16 @@ export default function EditRequest() {
                                     value={formData.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     error={errors.email}
+                                />
+
+                                <Textarea
+                                    required
+                                    label={<span className="font-medium text-sm">Purpose</span>}
+                                    placeholder="Input Request Purpose"
+                                    value={formData.request_reason}
+                                    onChange={(e) => handleChange('request_reason', e.target.value)}
+                                    minRows={3}
+                                    error={errors.request_reason}
                                 />
                             </div>
                         </div>
@@ -319,58 +396,68 @@ export default function EditRequest() {
                             </div>
 
                             <Textarea
-                                required
-                                label={<span className="font-medium text-sm">Purpose</span>}
-                                placeholder="Input Request Purpose"
-                                value={formData.request_reason}
-                                onChange={(e) => handleChange('request_reason', e.target.value)}
+                                label={<span className="font-medium text-sm">Remarks (Optional)</span>}
+                                placeholder="Input Remarks (Optional)"
                                 minRows={3}
-                                error={errors.request_reason}
+                                value={formData.remarks}
+                                onChange={(e) => handleChange('remarks', e.target.value)}
                             />
                         </div>
 
                         {/* Signature Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white flex">
-                                    <div className="flex-1 text-center">Requestor Department</div>
-                                    <div className="flex-1 text-center">Head of Department</div>
-                                    <div className="flex-1 text-center">Information Technology Manager</div>
+                                <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
+                                    <div>Requestor Department</div>
+                                    <div>Head of Department</div>
+                                    <div>Lead IT</div>
+                                    <div>Asst. IT Manager/IT Manager</div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
-                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Requested By
-                                    </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                            <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-4 text-sm">
+                                {/* Requestor Department */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                                    <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {user?.name || ''}
                                     </div>
                                 </div>
 
-                                <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Acknowledged By
-                                    </label>
+                                {/* Head of Department */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <Select
-                                        placeholder="-- Select HOD --"
-                                        data={hodList.map(h => ({
-                                            value: h.id_user.toString(),
-                                            label: `${h.badge_no} - ${h.full_name}`
-                                        }))}
+                                        label="Acknowledge By"
+                                        placeholder="Select HOD..."
                                         searchable
-                                        value={formData.approval_hod_by?.toString() || ''}
-                                        onChange={(v) => handleChange('approval_hod_by', v)}
-                                        disabled={formData.request_status !== 0}
+                                        value={String(formData.approval_hod_by || '')}
+                                        onChange={(val) => handleChange('approval_hod_by', val)}
+                                        data={hodOptions.map(u => ({
+                                            value: String(u.value),
+                                            label: u.label
+                                        }))}
+                                        classNames={{
+                                            input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
+                                            label: "font-medium mb-1 text-gray-800 text-sm",
+                                        }}
                                     />
                                 </div>
 
-                                <div className="w-full md:flex-1 min-w-[250px] p-3">
+                                {/* Lead IT */}
+                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                                    <Select
+                                        label="Approved By"
+                                        placeholder="Select Lead IT..."
+                                        searchable
+                                    />
+                                </div>
+
+                                {/* Asst. IT Manager / IT Manager */}
+                                <div className="p-3">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
                                         Approved By
                                     </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {itManagerName || 'Loading...'}
                                     </div>
                                 </div>

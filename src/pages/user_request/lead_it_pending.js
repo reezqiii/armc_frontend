@@ -12,8 +12,8 @@ import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function ITPendingList() {
-    ITPendingList.title = "Pending IT Manager List";
+export default function LeadITPendingList() {
+    LeadITPendingList.title = "Pending Lead IT List";
 
     const router = useRouter();
     const { user } = useUser();
@@ -24,9 +24,6 @@ export default function ITPendingList() {
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isCanceling, setIsCanceling] = useState(false);
-    const [isHod, setIsHod] = useState(true);
-    const [isItHod, setIsItHod] = useState(true);
 
     // 🔹 Handle Cancel Function 
     const handleCancel = async (id_request) => {
@@ -42,7 +39,7 @@ export default function ITPendingList() {
 
         if (!result.isConfirmed) return;
 
-        setIsCanceling(true);
+        setIsDeleting(true);
         try {
             await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
@@ -69,55 +66,24 @@ export default function ITPendingList() {
         }
     };
 
-    // 🔹 column
+    // 🔹 Columns for React Table
     const columns = useMemo(() => [
-        {
-            id: 'no',
-            header: 'No',
-            cell: ({ row }) =>
-                row.index + 1 + pagination.pageIndex * pagination.pageSize,
-            size: 40,
-        },
-        {
-            accessorFn: row => row.created_date,
-            id: 'created_date',
-            header: 'Request Date',
-            cell: ({ row }) => formatDate(row.original.created_date),
-        },
-        {
-            accessorFn: row => row.requestor_name,
-            id: 'requestor',
-            header: 'Requestor',
-        },
-        {
-            accessorFn: row => row.full_name,
-            id: 'full_name',
-            header: 'Full Name',
-        },
-        {
-            accessorFn: row => row.badge_no,
-            id: 'badge_no',
-            header: 'Badge ID',
-        },
-        {
-            accessorFn: row => row.email,
-            id: 'email',
-            header: 'Email',
-        },
-        {
-            accessorFn: row => row.project_name,
-            id: 'project_name',
-            header: 'Project',
-        },
-        {
-            accessorKey: 'department_name',
-            header: 'Department',
-        },
-        {
-            id: 'status',
-            header: 'Status',
-            cell: () => <Badge color="yellow">Pending by IT</Badge>,
-        },
+        { id: 'no', header: 'No', cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize, size: 40 },
+        { accessorFn: row => row.created_date, id: 'created_date', header: 'Request Date', cell: ({ row }) => formatDate(row.original.created_date) },
+        { accessorFn: row => row.requestor_name, id: 'requestor', header: 'Requestor' },
+        { accessorFn: row => row.full_name, id: 'full_name', header: 'Full Name' },
+        { accessorFn: row => row.badge_no, id: 'badge_no', header: 'Badge ID' },
+        { accessorFn: row => row.email, id: 'email', header: 'Email' },
+        { accessorFn: row => row.project_name, id: 'project_name', header: 'Project' },
+        { accessorKey: 'department_name', header: 'Department' },
+        { id: 'status', header: 'Status', cell: ({ row }) => {
+            const status = row.original.request_status;
+            let color = 'yellow';
+            let text = 'Pending';
+            if(status === 3) text = 'Pending by Lead IT';
+            else if(status === 4) { text = 'Rejected by Lead IT'; color='red'; }
+            return <Badge color={color}>{text}</Badge>;
+        }},
         {
             accessorFn: row => row.id_request,
             id: 'action',
@@ -132,7 +98,6 @@ export default function ITPendingList() {
                     >
                         Details
                     </Button>
-
                     <Button
                         leftSection={<IconEdit size={16} />}
                         color="orange"
@@ -141,7 +106,6 @@ export default function ITPendingList() {
                     >
                         Edit
                     </Button>
-
                     <Button
                         leftSection={<IconX size={16} />}
                         color="red"
@@ -154,12 +118,12 @@ export default function ITPendingList() {
                 </div>
             ),
         },
-    ], [pagination.pageIndex, pagination.pageSize]);
+    ], [pagination.pageIndex, pagination.pageSize, isDeleting]);
 
-    // 🔹 Fetch data
+    // 🔹 Fetch Lead IT Pending data
     const getData = useCallback(async () => {
         try {
-            const search = JSON.stringify({ request_status: 5 });
+            const search = JSON.stringify({ request_status: 3 }); // Pending by Lead IT
             const res = await axios.post(
                 `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
                 {},
@@ -168,13 +132,11 @@ export default function ITPendingList() {
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {
-            console.error("Error fetching pending HOD data:", err);
+            console.error("Error fetching Lead IT pending data:", err);
         }
     }, [API_URL, pagination, user.token]);
 
-    useEffect(() => {
-        getData();
-    }, [getData]);
+    useEffect(() => { getData(); }, [getData]);
 
     const table = useReactTable({
         data,
@@ -192,7 +154,7 @@ export default function ITPendingList() {
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
                     <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-xl font-bold text-blue-500">Pending IT Manager Request List</h1>
+                            <h1 className="text-xl font-bold text-blue-500">Pending Lead IT Request List</h1>
                         </div>
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />

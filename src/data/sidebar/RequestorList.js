@@ -42,6 +42,12 @@ export const requestorList = [
         icon: <IconUserCheck size={18} />,
       },
       {
+        title: "Pending Lead IT Request",
+        href: "/user_request/lead_it_pending",
+        active: "Pending Lead IT Request",
+        icon: <IconUserCheck size={18} />,
+      },
+      {
         title: "Pending IT Manager",
         href: "/user_request/it_hod_pending",
         active: "Pending IT Manager",

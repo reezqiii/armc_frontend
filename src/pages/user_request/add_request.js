@@ -10,6 +10,9 @@ import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
+import { useDebouncedValue } from '@mantine/hooks';
+
+
 
 export default function CreateRequest() {
     CreateRequest.title = "Create Request Form"
@@ -32,6 +35,7 @@ export default function CreateRequest() {
         department_name: '',
         position_name: '',
         project_name: '',
+        remarks: '',
     });
 
     const [errors, setErrors] = React.useState({
@@ -53,6 +57,8 @@ export default function CreateRequest() {
     const [itManagerId, setItManagerId] = useState('');
     const [badgeOptions, setBadgeOptions] = useState([]);
     const [badgeLoading, setBadgeLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [debouncedSearch] = useDebouncedValue(search, 300);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -61,65 +67,61 @@ export default function CreateRequest() {
         }
     };
 
-    // --- Fetch all necessary data on mount ---
+    useEffect(() => {
+        if (!debouncedSearch) {
+            setBadgeOptions([]);
+            return;
+        }
+
+        const fetchBadges = async () => {
+            setBadgeLoading(true);
+            try {
+                const res = await axios.get(`${API_URL}/iss_employee/search?badge=${debouncedSearch}`, {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                });
+                const employees = Array.isArray(res.data) ? res.data : [res.data];
+                setBadgeOptions(
+                    employees.map(e => ({
+                        value: String(e.badge_no || e.badge),
+                        label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`,
+                        full_name: e.full_name || e.name,
+                        department_name: e.dept || '',
+                        position_name: e.design_desc || '',
+                        project_name: e.project_desc || '',
+                    }))
+                );
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setBadgeLoading(false);
+            }
+        };
+
+        fetchBadges();
+    }, [debouncedSearch]);
+
     useEffect(() => {
         const fetchInitialData = async () => {
             setLoading(true);
             try {
-                const badgeRes = await axios.get(`${API_URL}/iss_employee`, {
-                    headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                });
-                const employees = Array.isArray(badgeRes.data) ? badgeRes.data : [badgeRes.data];
-                const badgeList = employees.map(e => ({
-                    value: String(e.badge_no || e.badge),
-                    label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`, // 👈 ubah ini!
-                    full_name: e.full_name || e.name,
-                    department_name: e.department_name || '',
-                    position_name: e.position_name || '',
-                    project_name: e.project_name || '',
-                    department_id: e.department_id || '',
-                    id_position: e.id_position || '',
-                    project_id: e.project_id || '',
-                }));
-
-                const uniqueBadges = Array.from(new Map(badgeList.map(item => [item.value, item])).values());
-                setBadgeOptions(uniqueBadges);
-
-                // Fetch HOD & IT Manager
-                const hodRes = await axios.get(`${API_URL}/api/user/search`, {
+                const hodRes = await axios.get(`${API_URL}/requests/hods`, {
                     headers: { Authorization: `Bearer ${user.token}` },
-                    params: { role: 'head_of_department' },
                 });
-                const activeUsers = hodRes.data.filter(u => u.status_user === 1);
-                const hodList = activeUsers.map(u => ({
-                    value: u.id_user.toString(),
-                    label: `${u.badge_no} - ${u.full_name}`,
-                }));
-                setHodOptions(hodList);
+                setHodOptions(hodRes.data.map(u => ({
+                    value: String(u.id_user),
+                    label: `${u.badge_no} - ${u.full_name}`
+                })));
 
-                // IT Manager
-                const itManager = activeUsers.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
+                // --- IT Manager default ---
+                const itManager = hodRes.data.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
                 if (itManager) {
-                    const label = `${itManager.badge_no} - ${itManager.full_name}`;
-                    setItManagerName(label);
+                    setItManagerName(`${itManager.badge_no} - ${itManager.full_name}`);
                     setItManagerId(itManager.id_user);
                     handleChange('approval_it_hod_by', itManager.id_user);
                 }
 
-                // Fetch Projects and Departments
-                const [projRes, deptRes] = await Promise.all([
-                    axios.get(`${API_URL}/portal_project`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                    axios.get(`${API_URL}/portal_department`, {
-                        headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' },
-                    }),
-                ]);
-                setProjects(Array.isArray(projRes.data) ? projRes.data : []);
-                setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
-
             } catch (err) {
-                console.error('Failed to fetch initial data:', err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -128,22 +130,27 @@ export default function CreateRequest() {
         fetchInitialData();
     }, [API_URL, user.token]);
 
-    // --- Handle selecting badge (use pre-fetched data) ---
-    const handleSelectBadge = (value) => {
-        const selected = badgeOptions.find(b => b.value === value);
-        if (!selected) return;
-
-        setFormData(prev => ({
-            ...prev,
-            badge_no: selected.value,
-            full_name: selected.full_name,
-            department_name: selected.department_name,
-            position_name: selected.position_name,
-            project_name: selected.project_name,
-            department: selected.department_id,
-            position: selected.id_position,
-            project: selected.project_id,
-        }));
+    const handleSelectBadge = async (value) => {
+        try {
+            const res = await axios.get(`${API_URL}/iss_employee/employee/${value}`, {
+                headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setFormData(prev => ({
+                ...prev,
+                badge_no: value,
+                full_name: res.data.name ?? '',
+                department_name: res.data.department.dept ?? '',
+                position_name: res.data.position?.design_desc ?? '',
+                project_name: res.data.project.project_desc ?? '',
+                department: res.data.department.dept_id ?? '',
+                position: res.data.position?.design_id ?? '',
+                project: res.data.project.project_id ?? '',
+            }));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setBadgeLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -166,15 +173,17 @@ export default function CreateRequest() {
 
         const payload = {
             full_name: formData.full_name,
-            badge_no: Number(formData.badge_no),
+            badge_no: formData.badge_no ? Number(formData.badge_no) : undefined,
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
             request_status: 0,
+            remarks: formData.remarks,
             created_by: user.id,
             status_active: 1,
-            project: { id: Number(formData.project) },
-            department: { id_department: Number(formData.department) },
+            project_id: Number(formData.project),
+            dept_id: Number(formData.department),
+            design_id: Number(formData.position),
             approval_hod_by: formData.approval_hod_by,
             approval_it_hod_by: formData.approval_it_hod_by,
         };
@@ -256,17 +265,23 @@ export default function CreateRequest() {
                                     required
                                     label="Badge ID"
                                     placeholder="Input Badge Number"
-                                    data={badgeOptions}
                                     value={formData.badge_no || ''}
-                                    onChange={(value) => handleChange('badge_no', value)}
-                                    onOptionSubmit={(value) => handleSelectBadge(value)}
+                                    onChange={(value) => {
+                                        handleChange('badge_no', value);
+                                        setSearch(value);
+                                    }}
+                                    data={badgeOptions.map(b => ({ value: b.value, label: b.label }))}
+                                    onOptionSubmit={(item) => handleSelectBadge(item)}
+                                    filter={null}
+                                    rightSection={badgeLoading ? <div className="animate-spin h-4 w-4 border-2 border-gray-400 rounded-full" /> : null}
+                                    nothingFound="No employees found"
                                 />
 
                                 <TextInput
                                     required
                                     label={<span className="font-medium mb-1 text-gray-800 text-sm">Full Name</span>}
                                     placeholder="Input Name"
-                                    value={formData.full_name}
+                                    value={formData.full_name || ''}
                                     readOnly
                                 />
 
@@ -329,11 +344,12 @@ export default function CreateRequest() {
                                 label={<span className="font-medium text-sm">Remarks (Optional)</span>}
                                 placeholder="Input Remarks (Optional)"
                                 minRows={3}
+                                value={formData.remarks}
+                                onChange={(e) => handleChange('remarks', e.target.value)}
                             />
                         </div>
 
                         {/* Signature Section */}
-
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
                                 <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
@@ -365,10 +381,6 @@ export default function CreateRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
-                                        onDropdownOpen={async () => {
-                                            const users = await fetchHodUsers();
-                                            setHodOptions(users);
-                                        }}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",

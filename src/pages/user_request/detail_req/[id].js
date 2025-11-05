@@ -26,14 +26,24 @@ export default function RequestDetail() {
   const [isItHod, setIsItHod] = useState(true);
 
   useEffect(() => {
-    if (user?.role?.role_name === 'head_of_department') {
-      if (data?.request_status === 3) {
-        setIsItHod(true);
-      } else if (data?.request_status === 1) {
-        setIsHod(true);
-      }
+    if (!data) return;
+
+    if (data.request_status === 1) {
+      setIsHod(true);
+      setIsItHod(false);
     }
-  }, [user, data]);
+
+    else if (data.request_status === 3) {
+      setIsItHod(true);
+      setIsHod(false);
+    }
+
+    else {
+      setIsHod(false);
+      setIsItHod(false);
+    }
+  }, [data]);
+
 
   useEffect(() => {
     if (data) {
@@ -247,14 +257,14 @@ export default function RequestDetail() {
               {/* Badge No */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Badge No <span className="text-red-500">*</span>
+                  Badge ID <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                   {data.badge_no || "-"}
                 </div>
               </div>
 
-              {/* Name */}
+              {/* Full Name */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
                   Full Name <span className="text-red-500">*</span>
@@ -270,7 +280,7 @@ export default function RequestDetail() {
                   Department <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.department_name || data.department?.name_of_department || "-"}
+                  {data.department_name || "-"}
                 </div>
               </div>
 
@@ -280,7 +290,7 @@ export default function RequestDetail() {
                   Position <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {/* {data.position_name || data.position?.name_of_position || "-"} */}
+                  {data.position_name || "-"}
                 </div>
               </div>
 
@@ -290,7 +300,7 @@ export default function RequestDetail() {
                   Project <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data.project_name || data.project?.project_name || "-"}
+                  {data.project_name || "-"}
                 </div>
               </div>
 
@@ -301,6 +311,16 @@ export default function RequestDetail() {
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                   {data.email || "-"}
+                </div>
+              </div>
+
+              {/* Purpose */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Purpose <span className="text-red-500">*</span>
+                </label>
+                <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm min-h-[60px] flex items-start">
+                  <span>{data.request_reason || "-"}</span>
                 </div>
               </div>
             </div>
@@ -314,99 +334,102 @@ export default function RequestDetail() {
               </div>
             </div>
 
-            <Textarea
-              label={<span className="font-medium text-sm">Reason of Request</span>}
-              value={data.request_reason || ""}
-              readOnly
-              minRows={3}
-              className="text-sm"
-            />
+            <div>
+              <label className="font-medium text-sm text-gray-800">
+                Remarks (Optional)
+              </label>
+              <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm min-h-[px] flex items-start">
+                <span>{data.remarks || "-"}</span>
+              </div>
+            </div>    
           </div>
 
-          {/* Signature Section */}
-          <div className="space-y-2 mt-6">
-            <div className="-mx-10 bg-black shadow-sm">
-              <div className="px-10 py-2 text-base font-semibold text-white flex">
-                <div className="flex-1 text-center">Requestor Department</div>
-                <div className="flex-1 text-center">Head of Department</div>
-                <div className="flex-1 text-center">Information Technology Manager</div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-b-md text-black flex flex-col md:flex-row text-sm">
-              {/* Requested by */}
-              <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Requested By
-                </label>
-                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {user?.name || ''}
+            {/* Signature Section */}
+            <div className="space-y-2 mt-6">
+              {/* Header Bar */}
+              <div className="-mx-10 bg-black shadow-sm">
+                <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
+                  <div>Requestor Department</div>
+                  <div>Head of Department</div>
+                  <div>Lead IT</div>
+                  <div>Asst. IT Manager/IT Manager</div>
                 </div>
               </div>
 
-              {/* Acknowledge by */}
-              <div className="w-full md:flex-1 min-w-[250px] p-3 md:border-r border-gray-300">
-                <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Acknowledge By
-                </label>
-                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {hodName}
-                </div>
-
-                {isHod && data.request_status === 1 && (
-                  <div className="mt-3 flex gap-2">
-                    <Button color="green" size="sm" onClick={() => handleHodAction('approve')}>
-                      Approve
-                    </Button>
-                    <Button color="red" size="sm" onClick={() => handleHodAction('reject')}>
-                      Reject
-                    </Button>
+              {/* Content Grid */}
+              <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-4 text-sm">
+                {/* Requested By */}
+                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                  <label className="font-medium mb-1 text-gray-800 text-sm">
+                    Requested By
+                  </label>
+                  <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                    {user?.name || ''}
                   </div>
-                )}
+                </div>
 
-                {/* IT HOD approve/reject */}
-                {isItHod && data.request_status === 3 && (
-                  <div className="mt-3 flex gap-2">
-                    <Button color="green" size="sm" onClick={() => handleItAction('approve')}>
-                      Approve
-                    </Button>
-                    <Button color="red" size="sm" onClick={() => handleItAction('reject')}>
-                      Reject
-                    </Button>
+                {/* Head of Department */}
+                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                  <label className="font-medium mb-1 text-gray-800 text-sm">
+                    Acknowledge By (HOD)
+                  </label>
+                  <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                    {hodName || '-'}
                   </div>
-                )}
-              </div>
 
-              {/* Approved */}
-              <div className="w-full md:flex-1 min-w-[250px] p-3">
-                <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Approved By
-                </label>
-                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {itManagerName}
+                  {/* HOD Actions */}
+                  {isHod && data.request_status === 1 && (
+                    <div className="mt-3 flex gap-2">
+                      <Button color="green" size="sm" onClick={() => handleHodAction('approve')}>
+                        Approve
+                      </Button>
+                      <Button color="red" size="sm" onClick={() => handleHodAction('reject')}>
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lead IT */}
+                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                  <label className="font-medium mb-1 text-gray-800 text-sm block">
+                    Checked By (Lead IT)
+                  </label>
+                  <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                    {/* {leadItName || '-'} */}
+                  </div>
+                </div>
+
+                {/* IT Manager */}
+                <div className="p-3">
+                  <label className="font-medium mb-1 text-gray-800 text-sm">
+                    Approved By
+                  </label>
+                  <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                    {itManagerName || '-'}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="flex justify-between pt-6">
-            <Button
-              leftSection={<IconArrowLeft size={16} />}
-              color="gray"
-              size="sm"
-              onClick={() => router.back()}
-            >
-              Back
-            </Button>
+            {/* Footer */}
+            <div className="flex justify-between pt-6">
+              <Button
+                leftSection={<IconArrowLeft size={16} />}
+                color="gray"
+                size="sm"
+                onClick={() => router.back()}
+              >
+                Back
+              </Button>
 
-            <div className="text-sm font-semibold text-gray-600 flex items-center">
-              Status:
-              <span className={`ml-2 ${statusColorMap[data.request_status] || 'text-gray-600'}`}>
-                {statusMap[data.request_status]}
-              </span>
+              <div className="text-sm font-semibold text-gray-600 flex items-center">
+                Status:
+                <span className={`ml-2 ${statusColorMap[data.request_status] || 'text-gray-600'}`}>
+                  {statusMap[data.request_status]}
+                </span>
+              </div>
             </div>
-          </div>
         </Paper>
       </div>
     </AuthLayout>
