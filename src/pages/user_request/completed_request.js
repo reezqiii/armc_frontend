@@ -214,7 +214,7 @@ export default function CompletedRequestList() {
 
     const getData = useCallback(async () => {
         try {
-            const search = JSON.stringify({ request_status: 5 });
+            const search = JSON.stringify({ request_status: 7 });
             const res = await axios.post(
                 `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
                 {},

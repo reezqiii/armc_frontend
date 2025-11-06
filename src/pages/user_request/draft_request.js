@@ -71,7 +71,6 @@ export default function DraftRequestList() {
     }
   };
 
-  // 🔹 Column Request
   const columns = useMemo(() => [
     {
       id: 'no',
@@ -168,7 +167,6 @@ export default function DraftRequestList() {
 
   ], [pagination.pageIndex, pagination.pageSize]);
 
-  // 🔹 Fetch data hanya status = 0 (Draft)
   const getData = useCallback(async () => {
     try {
       const search = JSON.stringify({ request_status: 0 });
@@ -189,7 +187,6 @@ export default function DraftRequestList() {
     getData();
   }, [getData]);
 
-  // 🔹 Submit to HOD
   const handleSubmitToHOD = async (id_request) => {
     const result = await Swal.fire({
       title: "Submit to HOD?",
@@ -203,15 +200,14 @@ export default function DraftRequestList() {
 
     if (!result.isConfirmed) return;
 
-    try {
-      const res = await axios.put(
-        `${API_URL}/requests/${id_request}`,
-        { request_status: 1 },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
+     try {
+    const res = await axios.put(
+      `${API_URL}/requests/${id_request}/submit-to-hod`,
+      {},
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    );
 
       if (res.status === 200) {
-        // Hapus data dari draft secara lokal tanpa fetch ulang
         setData((prev) => prev.filter((item) => item.id_request !== id_request));
 
         await Swal.fire({
@@ -231,7 +227,6 @@ export default function DraftRequestList() {
       });
     }
   };
-
 
   const table = useReactTable({
     data,

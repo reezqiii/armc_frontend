@@ -12,8 +12,6 @@ import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
 
-
-
 export default function CreateRequest() {
     CreateRequest.title = "Create Request Form"
     const router = useRouter()
@@ -47,14 +45,11 @@ export default function CreateRequest() {
         request_reason: null,
     });
 
-    const [projects, setProjects] = useState([]);
-    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
-    const [hodSearch, setHodSearch] = useState('');
     const [hodOptions, setHodOptions] = useState([]);
-    const [itManagerName, setItManagerName] = useState('');
-    const [itManagerId, setItManagerId] = useState('');
+    const [leadItOptions, setLeadItOptions] = useState([]);
+    const [itManagerOptions, setItManagerOptions] = useState([]);
     const [badgeOptions, setBadgeOptions] = useState([]);
     const [badgeLoading, setBadgeLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -111,15 +106,6 @@ export default function CreateRequest() {
                     value: String(u.id_user),
                     label: `${u.badge_no} - ${u.full_name}`
                 })));
-
-                // --- IT Manager default ---
-                const itManager = hodRes.data.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
-                if (itManager) {
-                    setItManagerName(`${itManager.badge_no} - ${itManager.full_name}`);
-                    setItManagerId(itManager.id_user);
-                    handleChange('approval_it_hod_by', itManager.id_user);
-                }
-
             } catch (err) {
                 console.error(err);
             } finally {
@@ -201,7 +187,7 @@ export default function CreateRequest() {
                     timer: 1500,
                     showConfirmButton: false,
                 });
-                router.push('/user_request/requestor_list');
+                router.push('/user_request/draft_request');
             }
         } catch (error) {
             console.error(error.response?.data || error.message);
@@ -216,14 +202,15 @@ export default function CreateRequest() {
 
     return (
         <AuthLayout sidebarList={requestorList}>
-            <div className="bg-gray-100 py-10 flex justify-center">
+            <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
                 <Paper
                     radius="md"
-                    shadow="sm"
-                    className="bg-white py-8 px-10 space-y-6 w-full max-w-4xl mx-auto text-sm leading-relaxed"
+                    shadow="xl"
+                    className="bg-white py-8 px-10 w-full space-y-6 text-sm leading-relaxed"
                 >
+
                     {/* Header */}
-                    <div className="text-center mb-4">
+                    <div className=" border-b py-4 text-center">
                         <h1 className="text-xl font-bold text-blue-500">
                             PCMS ACCESS LOGIN REQUEST
                         </h1>
@@ -255,12 +242,12 @@ export default function CreateRequest() {
                         {/* Description Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white">
+                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
                                     Description
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-1 gap-3">
                                 <Autocomplete
                                     required
                                     label="Badge ID"
@@ -331,11 +318,10 @@ export default function CreateRequest() {
                             </div>
                         </div>
 
-
                         {/* Remarks Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white">
+                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
                                     Remarks
                                 </div>
                             </div>
@@ -352,9 +338,9 @@ export default function CreateRequest() {
                         {/* Signature Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
-                                    <div>Requestor Department</div>
-                                    <div>Head of Department</div>
+                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-4 text-center">
+                                    <div>Requestor</div>
+                                    <div>HOD Requestor</div>
                                     <div>Lead IT</div>
                                     <div>Asst. IT Manager/IT Manager</div>
                                 </div>
@@ -369,7 +355,7 @@ export default function CreateRequest() {
                                     </div>
                                 </div>
 
-                                {/* Head of Department */}
+                                {/* HOD Requestor */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <Select
                                         label="Acknowledge By"
@@ -390,11 +376,12 @@ export default function CreateRequest() {
 
                                 {/* Lead IT */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <Select
-                                        label="Approved By"
-                                        placeholder="Select Lead IT..."
-                                        searchable
-                                    />
+                                    <label className="font-medium mb-1 text-gray-800 text-sm">
+                                        Approved By
+                                    </label>
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                                        {/* {leadItName || 'Loading...'} */}
+                                    </div>
                                 </div>
 
                                 {/* Asst. IT Manager / IT Manager */}
@@ -403,7 +390,7 @@ export default function CreateRequest() {
                                         Approved By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {itManagerName || 'Loading...'}
+                                        {/* {itManagerName || 'Loading...'} */}
                                     </div>
                                 </div>
                             </div>

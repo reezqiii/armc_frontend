@@ -112,7 +112,7 @@ export default function PendingHODList() {
     {
       id: 'status',
       header: 'Status',
-      cell: () => <Badge color="yellow">Pending by HOD</Badge>,
+      cell: () => <Badge color="yellow">Pending by HOD Req</Badge>,
     },
     {
       accessorFn: row => row.id_request,
@@ -153,7 +153,6 @@ export default function PendingHODList() {
     },
   ], [pagination.pageIndex, pagination.pageSize]);
 
-  // 🔹 Fetch data
   const getData = useCallback(async () => {
     try {
       const search = JSON.stringify({ request_status: 1 });

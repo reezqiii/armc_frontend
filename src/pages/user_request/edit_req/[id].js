@@ -3,7 +3,7 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import useUser from '@/store/useUser';
 import useSwal from '@/hooks/useSwal';
@@ -31,11 +31,11 @@ export default function EditRequest() {
         request_reason: '',
         approval_hod_by: '',
         approval_it_hod_by: '',
+        remarks: '',
+        request_status: 0,
     })
 
     const [errors, setErrors] = useState({})
-    const [projects, setProjects] = useState([])
-    const [departments, setDepartments] = useState([])
     const [hodList, setHodList] = useState([])
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
@@ -45,10 +45,14 @@ export default function EditRequest() {
     const [badgeLoading, setBadgeLoading] = useState(false);
     const [hodOptions, setHodOptions] = useState([]);
     const [itManagerName, setItManagerName] = useState('');
-    const [itManagerId, setItManagerId] = useState('');
+    const [leadItName, setLeadItName] = useState('');
+
+    const isEditable = useMemo(() => {
+        return formData.request_status === 0 || formData.request_status === 1;
+    }, [formData.request_status]);
 
     useEffect(() => {
-        if (!debouncedSearch) {
+        if (!debouncedSearch || !isEditable) {
             setBadgeOptions([]);
             return;
         }
@@ -88,19 +92,11 @@ export default function EditRequest() {
                 const hodRes = await axios.get(`${API_URL}/requests/hods`, {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
-                setHodOptions(hodRes.data.map(u => ({
+                const mappedHodOptions = hodRes.data.map(u => ({
                     value: String(u.id_user),
                     label: `${u.badge_no} - ${u.full_name}`
-                })));
-
-                // --- IT Manager default ---
-                const itManager = hodRes.data.find(u => u.full_name.toLowerCase() === 'wahyu hidayat');
-                if (itManager) {
-                    setItManagerName(`${itManager.badge_no} - ${itManager.full_name}`);
-                    setItManagerId(itManager.id_user);
-                    handleChange('approval_it_hod_by', itManager.id_user);
-                }
-
+                }));
+                setHodOptions(mappedHodOptions);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -155,8 +151,9 @@ export default function EditRequest() {
                     department_name: data.department_name || '',
                     position_name: data.position_name || '',
                     request_reason: data.request_reason || '',
-                    approval_hod_by: data.approval_hod_by?.id_user?.toString() || '',
-                    approval_it_hod_by: data.approval_it_hod_by?.id_user?.toString() || '',
+                    remarks: data.remarks || '',
+                    approval_hod_by: data.approval_hod_by?.id?.toString() || '',
+                    approval_it_hod_by: data.approval_it_hod_by?.id?.toString() || '',
                     request_status: data.request_status ?? 0,
                 });
 
@@ -174,6 +171,12 @@ export default function EditRequest() {
                     const activeHod = resHod.data.filter(u => u.status_user === 1);
                     setHodList(activeHod);
                 }
+
+                setLeadItName(
+                    data.approval_lead_it_by
+                        ? `${data.approval_lead_it_by.badge_no} - ${data.approval_lead_it_by.full_name}`
+                        : "-"
+                );
 
             } catch (err) {
                 console.error('Failed to fetch request:', err);
@@ -224,6 +227,7 @@ export default function EditRequest() {
             request_reason: formData.request_reason,
             request_status: formData.request_status,
             status_active: 1,
+            remarks: formData.remarks,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
         }
@@ -271,17 +275,17 @@ export default function EditRequest() {
         }
     };
 
-    // 🔸 Render
     return (
         <AuthLayout sidebarList={requestorList}>
-            <div className="bg-gray-100 py-10 flex justify-center">
+            <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
                 <Paper
                     radius="md"
-                    shadow="sm"
-                    className="bg-white py-8 px-10 space-y-6 w-full max-w-4xl mx-auto text-[15px] leading-relaxed"
+                    shadow="xl"
+                    className="bg-white py-8 px-10 w-full space-y-6 text-sm leading-relaxed"
                 >
+
                     {/* Header */}
-                    <div className="text-center mb-4">
+                    <div className=" border-b py-4 text-center">
                         <h1 className="text-xl font-bold text-blue-500">
                             PCMS ACCESS LOGIN REQUEST
                         </h1>
@@ -309,14 +313,15 @@ export default function EditRequest() {
                             </div>
                         </div>
 
+                        {/* Description Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white">
+                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
                                     Description
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-1 gap-3">
                                 <Autocomplete
                                     required
                                     label="Badge ID"
@@ -390,7 +395,7 @@ export default function EditRequest() {
                         {/* Remarks Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white">
+                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
                                     Remarks
                                 </div>
                             </div>
@@ -407,9 +412,9 @@ export default function EditRequest() {
                         {/* Signature Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-2 text-base font-semibold text-white grid grid-cols-4 text-center">
-                                    <div>Requestor Department</div>
-                                    <div>Head of Department</div>
+                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-4 text-center">
+                                    <div>Requestor</div>
+                                    <div>HOD Requestor</div>
                                     <div>Lead IT</div>
                                     <div>Asst. IT Manager/IT Manager</div>
                                 </div>
@@ -436,6 +441,7 @@ export default function EditRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
+                                        disabled={!isEditable}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",
@@ -445,11 +451,12 @@ export default function EditRequest() {
 
                                 {/* Lead IT */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <Select
-                                        label="Approved By"
-                                        placeholder="Select Lead IT..."
-                                        searchable
-                                    />
+                                    <label className="font-medium mb-1 text-gray-800 text-sm">
+                                        Checked By
+                                    </label>
+                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
+                                        {leadItName || '-'}
+                                    </div>
                                 </div>
 
                                 {/* Asst. IT Manager / IT Manager */}

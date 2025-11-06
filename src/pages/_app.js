@@ -72,7 +72,7 @@ export default function App({ Component, pageProps }) {
           });
 
           setUser({
-            id: encryptUserId,
+            id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
           });
@@ -99,7 +99,7 @@ export default function App({ Component, pageProps }) {
 
         if (isValidUser) {
           setUser({
-            id: idUser,
+            id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
           });

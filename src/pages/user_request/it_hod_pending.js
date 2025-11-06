@@ -116,7 +116,7 @@ export default function ITPendingList() {
         {
             id: 'status',
             header: 'Status',
-            cell: () => <Badge color="yellow">Pending by IT</Badge>,
+            cell: () => <Badge color="yellow">Pending by IT Manager</Badge>,
         },
         {
             accessorFn: row => row.id_request,

@@ -66,24 +66,56 @@ export default function LeadITPendingList() {
         }
     };
 
-    // 🔹 Columns for React Table
+
+    // 🔹 column
     const columns = useMemo(() => [
-        { id: 'no', header: 'No', cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize, size: 40 },
-        { accessorFn: row => row.created_date, id: 'created_date', header: 'Request Date', cell: ({ row }) => formatDate(row.original.created_date) },
-        { accessorFn: row => row.requestor_name, id: 'requestor', header: 'Requestor' },
-        { accessorFn: row => row.full_name, id: 'full_name', header: 'Full Name' },
-        { accessorFn: row => row.badge_no, id: 'badge_no', header: 'Badge ID' },
-        { accessorFn: row => row.email, id: 'email', header: 'Email' },
-        { accessorFn: row => row.project_name, id: 'project_name', header: 'Project' },
-        { accessorKey: 'department_name', header: 'Department' },
-        { id: 'status', header: 'Status', cell: ({ row }) => {
-            const status = row.original.request_status;
-            let color = 'yellow';
-            let text = 'Pending';
-            if(status === 3) text = 'Pending by Lead IT';
-            else if(status === 4) { text = 'Rejected by Lead IT'; color='red'; }
-            return <Badge color={color}>{text}</Badge>;
-        }},
+        {
+            id: 'no',
+            header: 'No',
+            cell: ({ row }) =>
+                row.index + 1 + pagination.pageIndex * pagination.pageSize,
+            size: 40,
+        },
+        {
+            accessorFn: row => row.created_date,
+            id: 'created_date',
+            header: 'Request Date',
+            cell: ({ row }) => formatDate(row.original.created_date),
+        },
+        {
+            accessorFn: row => row.requestor_name,
+            id: 'requestor',
+            header: 'Requestor',
+        },
+        {
+            accessorFn: row => row.full_name,
+            id: 'full_name',
+            header: 'Full Name',
+        },
+        {
+            accessorFn: row => row.badge_no,
+            id: 'badge_no',
+            header: 'Badge ID',
+        },
+        {
+            accessorFn: row => row.email,
+            id: 'email',
+            header: 'Email',
+        },
+        {
+            accessorFn: row => row.project_name,
+            id: 'project_name',
+            header: 'Project',
+        },
+        {
+            accessorKey: 'department_name',
+            header: 'Department',
+        },
+        {
+            id: 'status',
+            header: 'Status',
+            cell: () => <Badge color="yellow">Pending by Lead IT</Badge>,
+        },
         {
             accessorFn: row => row.id_request,
             id: 'action',
@@ -120,10 +152,9 @@ export default function LeadITPendingList() {
         },
     ], [pagination.pageIndex, pagination.pageSize, isDeleting]);
 
-    // 🔹 Fetch Lead IT Pending data
     const getData = useCallback(async () => {
         try {
-            const search = JSON.stringify({ request_status: 3 }); // Pending by Lead IT
+            const search = JSON.stringify({ request_status: 3 }); 
             const res = await axios.post(
                 `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
                 {},
