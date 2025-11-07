@@ -54,19 +54,19 @@ export default function RequestDetail() {
     if (data) {
       setHodName(
         data.approval_hod_by
-          ? `${data.approval_hod_by.badge_no} - ${data.approval_hod_by.full_name}`
+          ? data.approval_hod_by.full_name
           : "-"
       );
 
       setLeadItName(
         data.approval_lead_it_by
-          ? `${data.approval_lead_it_by.badge_no} - ${data.approval_lead_it_by.full_name}`
+          ? data.approval_lead_it_by.full_name
           : "-"
       );
 
       setItManagerName(
         data.approval_it_hod_by
-          ? `${data.approval_it_hod_by.badge_no} - ${data.approval_it_hod_by.full_name}`
+          ? data.approval_it_hod_by.full_name
           : "-"
       );
     }
@@ -291,7 +291,7 @@ export default function RequestDetail() {
                 Request Date <span className="text-red-500">*</span>
               </label>
               <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                <span>{formatDate(new Date())}</span>
+                <span>{formatDate(data.created_date)}</span>
                 <IconCalendar size={16} className="text-gray-500" />
               </div>
             </div>
@@ -301,7 +301,7 @@ export default function RequestDetail() {
                 Requestor <span className="text-red-500">*</span>
               </label>
               <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                {user?.name || ''}
+                {data?.created_by_name || '-'}
               </div>
             </div>
           </div>
@@ -423,7 +423,7 @@ export default function RequestDetail() {
                 <div className="flex flex-col gap-1 text-sm">
                   <p>
                     <span className="font-medium">Name :</span>{' '}
-                    {data?.requested_by_name || user?.name || '-'}
+                    {data?.created_by_name || '-'}
                   </p>
                   <p>
                     <span className="font-medium">Date :</span>{' '}

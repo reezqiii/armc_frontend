@@ -21,6 +21,7 @@ export default function CreateRequest() {
     const { user } = useUser()
 
     const [formData, setFormData] = React.useState({
+        created_by_name: user?.full_name || user?.name || '-',
         full_name: '',
         badge_no: '',
         email: '',
@@ -179,7 +180,18 @@ export default function CreateRequest() {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
 
+            console.log("Response dari backend:", response.data);
+
             if (response.status === 200 || response.status === 201) {
+                const newRequest = response.data;
+
+                setFormData(prev => ({
+                    ...prev,
+                    created_by: newRequest.created_by,
+                    created_by_name: newRequest.created_by_name,
+                    created_date: newRequest.created_date,
+                }));
+
                 await Swal.fire({
                     icon: "success",
                     title: "Success!",
@@ -187,13 +199,15 @@ export default function CreateRequest() {
                     timer: 1500,
                     showConfirmButton: false,
                 });
-                router.push('/user_request/draft_request');
+
+                router.push(`/user_request/draft_request`);
             }
         } catch (error) {
             console.error(error.response?.data || error.message);
             Swal.fire({
                 icon: "error",
                 title: "Failed!",
+                text: "Something went wrong when submitting your request.",
             });
         } finally {
             setLoadingSubmit(false);
@@ -224,7 +238,11 @@ export default function CreateRequest() {
                                     Request Date <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                                    <span>{formatDate(new Date())}</span>
+                                    <span>
+                                        {formData.created_date
+                                            ? formatDate(formData.created_date)
+                                            : formatDate(new Date())}
+                                    </span>
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>
                             </div>
@@ -234,7 +252,7 @@ export default function CreateRequest() {
                                     Requestor <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                                    {user?.name || ''}
+                                    {formData?.created_by_name || '-'}
                                 </div>
                             </div>
                         </div>
@@ -351,7 +369,7 @@ export default function CreateRequest() {
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {user?.name || ''}
+                                        {formData?.created_by_name || '-'}
                                     </div>
                                 </div>
 
@@ -377,7 +395,7 @@ export default function CreateRequest() {
                                 {/* Lead IT */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Approved By
+                                        Checked By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
                                         {/* {leadItName || 'Loading...'} */}

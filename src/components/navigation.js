@@ -39,12 +39,12 @@ const navigation = [
     permission: 1,
   },
 
-  {
-    name: "User Management",
-    url: "/user_management/requestor_list",
-    icon: <IconUserCog size={20} />,
-    permission: 1,
-  },
+  // {
+  //   name: "User Management",
+  //   url: "/user_management/requestor_list",
+  //   icon: <IconUserCog size={20} />,
+  //   permission: 1,
+  // },
 ];
 
 

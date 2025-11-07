@@ -23,6 +23,7 @@ export default function EditRequest() {
     const { user } = useUser()
 
     const [formData, setFormData] = useState({
+        created_by_name: user?.full_name || user?.name || '-',
         full_name: '',
         badge_no: '',
         email: '',
@@ -152,6 +153,7 @@ export default function EditRequest() {
                     position_name: data.position_name || '',
                     request_reason: data.request_reason || '',
                     remarks: data.remarks || '',
+                    created_by_name: data.created_by_name || '-',
                     approval_hod_by: data.approval_hod_by?.id?.toString() || '',
                     approval_it_hod_by: data.approval_it_hod_by?.id?.toString() || '',
                     request_status: data.request_status ?? 0,
@@ -298,7 +300,11 @@ export default function EditRequest() {
                                     Request Date <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                                    <span>{formatDate(new Date())}</span>
+                                    <span>
+                                        {formData.created_date
+                                            ? formatDate(formData.created_date)
+                                            : formatDate(new Date())}
+                                    </span>
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>
                             </div>
@@ -308,7 +314,7 @@ export default function EditRequest() {
                                     Requestor <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[40px] px-3 bg-gray-100 border border-gray-300 rounded-md text-sm flex items-center">
-                                    {user?.name || ''}
+                                    {formData?.created_by_name || '-'}
                                 </div>
                             </div>
                         </div>
@@ -425,7 +431,7 @@ export default function EditRequest() {
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {user?.name || ''}
+                                        {formData?.created_by_name || '-'}
                                     </div>
                                 </div>
 
