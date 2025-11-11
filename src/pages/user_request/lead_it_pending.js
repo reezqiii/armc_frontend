@@ -21,11 +21,17 @@ export default function LeadITPendingList() {
     const API_URL = API.API_URL;
 
     const [data, setData] = useState([]);
-    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
+    const [savedFilter, setSavedFilter] = useState({})
+    const [isCanceling, setIsCanceling] = useState(false);
+    const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [columnFilters, setColumnFilters] = useState([]);
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 10,
+    });
 
-    // 🔹 Handle Cancel Function 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
             title: 'Are you sure you want to cancel this request?',
@@ -66,8 +72,6 @@ export default function LeadITPendingList() {
         }
     };
 
-
-    // 🔹 column
     const columns = useMemo(() => [
         {
             id: 'no',
@@ -76,50 +80,101 @@ export default function LeadITPendingList() {
                 row.index + 1 + pagination.pageIndex * pagination.pageSize,
             size: 40,
         },
+       {
+            accessorFn: row => row.id_request,
+            id: 'no_request',
+            header: 'No Request',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: ({ row }) => `ITF14-${String(row.original.id_request).padStart(6, '0')}`,
+        },
         {
             accessorFn: row => row.created_date,
             id: 'created_date',
             header: 'Request Date',
+            enableColumnFilter: true,
+            enableSorting: true,
             cell: ({ row }) => formatDate(row.original.created_date),
         },
         {
             accessorFn: row => row.requestor_name,
             id: 'requestor',
             header: 'Requestor',
-        },
-        {
-            accessorFn: row => row.full_name,
-            id: 'full_name',
-            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.badge_no,
             id: 'badge_no',
             header: 'Badge ID',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorFn: row => row.email,
-            id: 'email',
-            header: 'Email',
+            accessorFn: row => row.full_name,
+            id: 'full_name',
+            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.department_name,
+            id: 'department_name',
+            header: 'Department',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.position_name,
+            id: 'position_name',
+            header: 'Position',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.project_name,
             id: 'project_name',
             header: 'Project',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorKey: 'department_name',
-            header: 'Department',
+            accessorFn: row => row.company_name,
+            id: 'company_name',
+            header: 'Company',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.email,
+            id: 'email',
+            header: 'Email',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             id: 'status',
             header: 'Status',
+            enableColumnFilter: false,
+            enableSorting: true,
+            cell: info => info.getValue(),
             cell: () => <Badge color="yellow">Pending by Lead IT</Badge>,
         },
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
+            enableColumnFilter: false,
+            enableSorting: true,
+            cell: info => info.getValue(),
             cell: ({ row }) => (
                 <div className="flex flex-col gap-2">
                     <Button
@@ -152,9 +207,24 @@ export default function LeadITPendingList() {
         },
     ], [pagination.pageIndex, pagination.pageSize, isDeleting]);
 
+    const table = useReactTable({
+        data,
+        columns,
+        filterFns: {},
+        state: { columnFilters, sorting, pagination },
+        onColumnFiltersChange: setColumnFilters,
+        onSortingChange: setSorting,
+        onPaginationChange: setPagination,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        manualSorting: true,
+        manualFiltering: true,
+        manualPagination: true,
+    });
+
     const getData = useCallback(async () => {
         try {
-            const search = JSON.stringify({ request_status: 3 }); 
+            const search = JSON.stringify({ request_status: 3 });
             const res = await axios.post(
                 `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
                 {},
@@ -165,19 +235,11 @@ export default function LeadITPendingList() {
         } catch (err) {
             console.error("Error fetching Lead IT pending data:", err);
         }
-    }, [API_URL, pagination, user.token]);
+    }, [API_URL, pagination.pageIndex, pagination.pageSize, user.token]);
 
-    useEffect(() => { getData(); }, [getData]);
-
-    const table = useReactTable({
-        data,
-        columns,
-        state: { pagination },
-        onPaginationChange: setPagination,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        manualPagination: true,
-    });
+    useEffect(() => {
+        getData();
+    }, [getData]);
 
     return (
         <AuthLayout sidebarList={requestorList}>

@@ -23,13 +23,11 @@ export default function RequestUserList() {
     const [data, setData] = useState([]);
     const [columnFilters, setColumnFilters] = useState([]);
     const [isDeleting, setIsDeleting] = useState(false);
-
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
     const [isCanceling, setIsCanceling] = useState(false);
 
-    // 🔹 Handle Cancel Function 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
             title: 'Are you sure you want to cancel this request?',
@@ -80,44 +78,91 @@ export default function RequestUserList() {
             size: 40,
         },
         {
+            accessorFn: row => row.id_request,
+            id: 'no_request',
+            header: 'No Request',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: ({ row }) => `ITF14-${String(row.original.id_request).padStart(6, '0')}`,
+        },
+        {
             accessorFn: row => row.created_date,
             id: 'created_date',
             header: 'Request Date',
+            enableColumnFilter: true,
+            enableSorting: true,
             cell: ({ row }) => formatDate(row.original.created_date),
         },
         {
             accessorFn: row => row.requestor_name,
-            id: 'requestor',
+            id: 'requestor_name',
             header: 'Requestor',
-        },
-        {
-            accessorFn: row => row.full_name,
-            id: 'full_name',
-            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.badge_no,
             id: 'badge_no',
             header: 'Badge ID',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorFn: row => row.email,
-            id: 'email',
-            header: 'Email',
+            accessorFn: row => row.full_name,
+            id: 'full_name',
+            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.department_name,
+            id: 'department_name',
+            header: 'Department',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.position_name,
+            id: 'position_name',
+            header: 'Position',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.project_name,
             id: 'project_name',
             header: 'Project',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorKey: 'department_name',
-            header: 'Department',
+            accessorFn: row => row.company_name,
+            id: 'company_name',
+            header: 'Company',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.email,
+            id: 'email',
+            header: 'Email',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.request_status.name,
             id: 'request_status',
             header: 'Status',
+            enableColumnFilter: false,
+            enableSorting: true,
             cell: ({ row }) => {
                 const status = row.original.request_status.name;
                 const colorMap = {
@@ -138,6 +183,8 @@ export default function RequestUserList() {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
+            enableColumnFilter: false,
+            enableSorting: false,
             cell: ({ row }) => (
                 <div className="flex flex-col gap-2">
                     <Button
@@ -196,27 +243,29 @@ export default function RequestUserList() {
             }
         });
 
-        const filterParams = Object.keys(searchQuery).length > 0
-            ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
-            : "";
+        const filterParams =
+            searchQuery && Object.keys(searchQuery).length > 0
+                ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+                : "";
 
-        const sort = sorting.length > 0
-            ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
-            : "";
+        const sort =
+            sorting && sorting.length > 0
+                ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+                : "";
 
         try {
-            const res = await axios.post(
+            const { data } = await axios.post(
                 `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
                 {},
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
 
-            setData(res.data.data);
-
-            setTotalPages(res.data.total_pages);
+            setData(data.data);
+            setTotalPages(data.total_pages);
         } catch (err) {
             console.error("Error fetching data:", err);
         }
+
     }, [API_URL, columnFilters, pagination.pageIndex, pagination.pageSize, sorting, user.token]);
 
     useEffect(() => {

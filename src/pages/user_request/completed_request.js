@@ -21,12 +21,16 @@ export default function CompletedRequestList() {
     const API_URL = API.API_URL;
 
     const [data, setData] = useState([]);
-    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [savedFilter, setSavedFilter] = useState({})
     const [isCanceling, setIsCanceling] = useState(false);
-    const [isHod, setIsHod] = useState(true);
-    const [isItHod, setIsItHod] = useState(true);
+    const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [columnFilters, setColumnFilters] = useState([]);
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 10,
+    });
 
     function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
         const [value, setValue] = React.useState(initialValue ?? 0);
@@ -34,7 +38,7 @@ export default function CompletedRequestList() {
 
         const handleChange = async (e) => {
             const newValue = parseInt(e.target.value);
-            setValue(newValue); 
+            setValue(newValue);
             setLoading(true);
 
             try {
@@ -51,7 +55,7 @@ export default function CompletedRequestList() {
                 );
             } catch (error) {
                 console.error(error);
-                setValue(initialValue ?? 0); 
+                setValue(initialValue ?? 0);
             } finally {
                 setLoading(false);
             }
@@ -111,49 +115,92 @@ export default function CompletedRequestList() {
         }
     };
 
-    // 🔹 column
     const columns = useMemo(() => [
         {
             id: 'no',
             header: 'No',
-            cell: ({ row }) =>
-                row.index + 1 + pagination.pageIndex * pagination.pageSize,
+            cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
             size: 40,
+        },
+        {
+            accessorFn: row => row.id_request,
+            id: 'no_request',
+            header: 'No Request',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: ({ row }) => `ITF14-${String(row.original.id_request).padStart(6, '0')}`,
         },
         {
             accessorFn: row => row.created_date,
             id: 'created_date',
             header: 'Request Date',
+            enableColumnFilter: true,
+            enableSorting: true,
             cell: ({ row }) => formatDate(row.original.created_date),
         },
         {
             accessorFn: row => row.requestor_name,
-            id: 'requestor',
+            id: 'requestor_name',
             header: 'Requestor',
-        },
-        {
-            accessorFn: row => row.full_name,
-            id: 'full_name',
-            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.badge_no,
             id: 'badge_no',
             header: 'Badge ID',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorFn: row => row.email,
-            id: 'email',
-            header: 'Email',
+            accessorFn: row => row.full_name,
+            id: 'full_name',
+            header: 'Full Name',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.department_name,
+            id: 'department_name',
+            header: 'Department',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.position_name,
+            id: 'position_name',
+            header: 'Position',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             accessorFn: row => row.project_name,
             id: 'project_name',
             header: 'Project',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
-            accessorKey: 'department_name',
-            header: 'Department',
+            accessorFn: row => row.company_name,
+            id: 'company_name',
+            header: 'Company',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
+        },
+        {
+            accessorFn: row => row.email,
+            id: 'email',
+            header: 'Email',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: info => info.getValue(),
         },
         {
             id: 'status',

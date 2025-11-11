@@ -1,6 +1,6 @@
 import AuthLayout from '@/components/layout/authLayout';
 import { requestorList } from '@/data/sidebar/RequestorList';
-import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
+import { Button, Paper, TextInput, Textarea, Select, Autocomplete, MultiSelect } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect, useMemo } from 'react'
@@ -11,7 +11,6 @@ import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
-
 
 export default function EditRequest() {
     EditRequest.title = "Edit Request Form"
@@ -34,6 +33,8 @@ export default function EditRequest() {
         approval_it_hod_by: '',
         remarks: '',
         request_status: 0,
+        company: '',
+        company_name: '',
     })
 
     const [errors, setErrors] = useState({})
@@ -46,6 +47,8 @@ export default function EditRequest() {
     const [badgeLoading, setBadgeLoading] = useState(false);
     const [hodOptions, setHodOptions] = useState([]);
     const [itManagerName, setItManagerName] = useState('');
+    const [accessYardOptions, setAccessYardOptions] = useState([]);
+    const [navMenuOptions, setNavMenuOptions] = useState([]);
     const [leadItName, setLeadItName] = useState('');
 
     const isEditable = useMemo(() => {
@@ -85,19 +88,73 @@ export default function EditRequest() {
         fetchBadges();
     }, [debouncedSearch]);
 
-
     useEffect(() => {
         const fetchInitialData = async () => {
             setLoading(true);
             try {
-                const hodRes = await axios.get(`${API_URL}/requests/hods`, {
-                    headers: { Authorization: `Bearer ${user.token}` },
-                });
-                const mappedHodOptions = hodRes.data.map(u => ({
+                const [hodRes, companyRes, navMenuRes] = await Promise.all([
+                    axios.get(`${API_URL}/requests/hods`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                    axios.get(`${API_URL}/portal_company/list`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                    axios.get(`${API_URL}/portal_nav_menu/list`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                ]);
+
+                setHodOptions(hodRes.data.map(u => ({
                     value: String(u.id_user),
-                    label: `${u.badge_no} - ${u.full_name}`
-                }));
-                setHodOptions(mappedHodOptions);
+                    label: `${u.badge_no} - ${u.full_name}`,
+                })));
+
+                setAccessYardOptions(companyRes.data.map(c => ({
+                    value: String(c.id_company),
+                    label: c.company_name,
+                })));
+
+                setNavMenuOptions(navMenuRes.data.map(n => ({
+                    value: String(n.id_application),
+                    label: n.application_name,
+                })));
+                if (router.query.id) {
+                    const res = await axios.get(`${API_URL}/requests/${router.query.id}`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    });
+
+                    const data = res.data;
+
+                    setFormData(prev => ({
+                        ...prev,
+                        full_name: data.full_name || '',
+                        badge_no: data.badge_no || '',
+                        email: data.email || '',
+                        request_reason: data.request_reason || '',
+                        remarks: data.remarks || '',
+                        approval_hod_by: data.approval_hod_by || '',
+                        approval_it_hod_by: data.approval_it_hod_by || '',
+                        company: data.id_company ? String(data.id_company) : '',
+                        department: data.dept_id ? String(data.dept_id) : '',
+                        position: data.design_id ? String(data.design_id) : '',
+                        project: data.project_id ? String(data.project_id) : '',
+                        access_yard_company: Array.isArray(data.access_yard_company)
+                            ? data.access_yard_company.map(item =>
+                                typeof item === 'object' ? String(item.id_company) : String(item)
+                            )
+                            : typeof data.access_yard_company === 'string'
+                                ? data.access_yard_company.split(',').map(s => s.trim())
+                                : [],
+
+                        access_nav_menu: Array.isArray(data.access_nav_menu)
+                            ? data.access_nav_menu.map(item =>
+                                typeof item === 'object' ? String(item.id_application) : String(item)
+                            )
+                            : typeof data.access_nav_menu === 'string'
+                                ? data.access_nav_menu.split(',').map(s => s.trim())
+                                : [],
+                    }));
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -120,6 +177,8 @@ export default function EditRequest() {
                 department_name: res.data.department.dept ?? '',
                 position_name: res.data.position?.design_desc ?? '',
                 project_name: res.data.project.project_desc ?? '',
+                company_name: res.data.company?.company_name ?? '',
+                company: res.data.company?.id_company ?? '',
                 department: res.data.department.dept_id ?? '',
                 position: res.data.position?.design_id ?? '',
                 project: res.data.project.project_id ?? '',
@@ -157,6 +216,8 @@ export default function EditRequest() {
                     approval_hod_by: data.approval_hod_by?.id?.toString() || '',
                     approval_it_hod_by: data.approval_it_hod_by?.id?.toString() || '',
                     request_status: data.request_status ?? 0,
+                    company_name: data.company_name || data.company?.company_name || '',
+                    company: data.company?.id_company || '',
                 });
 
                 setItManagerName(
@@ -232,9 +293,14 @@ export default function EditRequest() {
             remarks: formData.remarks,
             project: { id: Number(formData.project) },
             department: { id_department: Number(formData.department) },
-        }
-
-        // HOD optional
+            id_company: Number(formData.company),
+            access_yard_company: Array.isArray(formData.access_yard_company)
+                ? formData.access_yard_company.join(',')
+                : formData.access_yard_company || '',
+            access_nav_menu: Array.isArray(formData.access_nav_menu)
+                ? formData.access_nav_menu.join(',')
+                : formData.access_nav_menu || '',
+        };
         payload.approval_hod_by = formData.approval_hod_by
             ? { id_user: Number(formData.approval_hod_by) }
             : null;
@@ -247,7 +313,8 @@ export default function EditRequest() {
 
                 await Swal.fire({
                     icon: "success",
-                    title: "Success!",
+                    title: "Successful!",
+                    text: "The data has been updated successfully.",
                     timer: 1500,
                     showConfirmButton: false,
                 });
@@ -374,6 +441,44 @@ export default function EditRequest() {
                                     value={formData.project_name || ''}
                                     readOnly
                                     classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
+                                />
+
+                                <TextInput
+                                    required
+                                    label="Company"
+                                    value={formData.company_name || ''}
+                                    readOnly
+                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
+                                />
+
+                                <MultiSelect
+                                    required
+                                    label="Access Yard Company"
+                                    placeholder="Select Access Yard"
+                                    data={accessYardOptions}
+                                    value={formData.access_yard_company}
+                                    onChange={(val) => handleChange('access_yard_company', val)}
+                                    searchable
+                                    clearable
+                                    classNames={{
+                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
+                                        label: "font-medium mb-1 text-gray-800 text-sm",
+                                    }}
+                                />
+
+                                <MultiSelect
+                                    required
+                                    label="System Access"
+                                    placeholder="Select System Access"
+                                    data={navMenuOptions}
+                                    value={formData.access_nav_menu}
+                                    onChange={(val) => handleChange('access_nav_menu', val)}
+                                    searchable
+                                    clearable
+                                    classNames={{
+                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
+                                        label: "font-medium mb-1 text-gray-800 text-sm",
+                                    }}
                                 />
 
                                 <TextInput

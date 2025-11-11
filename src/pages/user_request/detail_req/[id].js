@@ -365,6 +365,16 @@ export default function RequestDetail() {
                 </div>
               </div>
 
+              {/* Company */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Company <span className="text-red-500">*</span>
+                </label>
+                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                  {data?.company?.company_name || "-"}
+                </div>
+              </div>
+
               {/* Email */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">

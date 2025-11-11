@@ -22,10 +22,16 @@ export default function DraftRequestList() {
   const API_URL = API.API_URL;
 
   const [data, setData] = useState([]);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [totalPages, setTotalPages] = useState(1);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [savedFilter, setSavedFilter] = useState({})
   const [isCanceling, setIsCanceling] = useState(false);
+  const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const handleCancel = async (id_request) => {
     const result = await Swal.fire({
@@ -79,50 +85,98 @@ export default function DraftRequestList() {
       size: 40,
     },
     {
+      accessorFn: row => row.id_request,
+      id: 'no_request',
+      header: 'No Request',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: ({ row }) => `ITF14-${String(row.original.id_request).padStart(6, '0')}`,
+    },
+    {
       accessorFn: row => row.created_date,
       id: 'created_date',
       header: 'Request Date',
+      enableColumnFilter: true,
+      enableSorting: true,
       cell: ({ row }) => formatDate(row.original.created_date),
     },
     {
       accessorFn: row => row.requestor_name,
       id: 'requestor_name',
       header: 'Requestor',
-    },
-    {
-      accessorFn: row => row.full_name,
-      id: 'full_name',
-      header: 'Full Name'
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
     },
     {
       accessorFn: row => row.badge_no,
       id: 'badge_no',
-      header: 'Badge ID'
+      header: 'Badge ID',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
     },
     {
-      accessorFn: row => row.email,
-      id: 'email',
-      header: 'Email'
-    },
-    {
-      accessorFn: row => row.project_name,
-      id: 'project_name',
-      header: 'Project'
+      accessorFn: row => row.full_name,
+      id: 'full_name',
+      header: 'Full Name',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
     },
     {
       accessorFn: row => row.department_name,
       id: 'department_name',
-      header: 'Department'
+      header: 'Department',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
+    },
+    {
+      accessorFn: row => row.position_name,
+      id: 'position_name',
+      header: 'Position',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
+    },
+    {
+      accessorFn: row => row.project_name,
+      id: 'project_name',
+      header: 'Project',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
+    },
+    {
+      accessorFn: row => row.company_name,
+      id: 'company_name',
+      header: 'Company',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
+    },
+    {
+      accessorFn: row => row.email,
+      id: 'email',
+      header: 'Email',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: info => info.getValue(),
     },
     {
       id: 'status',
       header: 'Status',
+      enableColumnFilter: false,
+      enableSorting: true,
       cell: () => <Badge color="gray">Draft</Badge>,
     },
     {
       accessorFn: row => row.id_request,
       id: 'action',
       header: 'Action',
+      enableColumnFilter: false,
+      enableSorting: true,
       cell: ({ row }) => (
         <div className="flex flex-col gap-2">
           <Button
@@ -167,15 +221,29 @@ export default function DraftRequestList() {
 
   ], [pagination.pageIndex, pagination.pageSize]);
 
+  const table = useReactTable({
+    data,
+    columns,
+    filterFns: {},
+    state: { columnFilters, sorting, pagination },
+    onColumnFiltersChange: setColumnFilters,
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    manualSorting: true,
+    manualFiltering: true,
+    manualPagination: true,
+  });
+
   const getData = useCallback(async () => {
     try {
       const search = JSON.stringify({ request_status: 0 });
       const res = await axios.post(
         `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}`, 'Cache-Control': 'no-cache' } }
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
-
       setData(res.data.data);
       setTotalPages(res.data.total_pages);
     } catch (err) {
@@ -200,12 +268,12 @@ export default function DraftRequestList() {
 
     if (!result.isConfirmed) return;
 
-     try {
-    const res = await axios.put(
-      `${API_URL}/requests/${id_request}/submit-to-hod`,
-      {},
-      { headers: { Authorization: `Bearer ${user.token}` } }
-    );
+    try {
+      const res = await axios.put(
+        `${API_URL}/requests/${id_request}/submit-to-hod`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
 
       if (res.status === 200) {
         setData((prev) => prev.filter((item) => item.id_request !== id_request));
@@ -227,16 +295,6 @@ export default function DraftRequestList() {
       });
     }
   };
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: { pagination },
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: true,
-  });
 
   return (
     <AuthLayout sidebarList={requestorList}>

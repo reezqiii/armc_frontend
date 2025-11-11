@@ -1,6 +1,6 @@
 import AuthLayout from '@/components/layout/authLayout';
 import { requestorList } from '@/data/sidebar/RequestorList';
-import { Button, Paper, TextInput, Textarea, Select, Autocomplete } from '@mantine/core';
+import { Button, Paper, TextInput, Textarea, Select, Autocomplete, MultiSelect } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar, IconChevronDown } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import React, { useState, useEffect } from 'react';
@@ -35,6 +35,10 @@ export default function CreateRequest() {
         position_name: '',
         project_name: '',
         remarks: '',
+        company: '',
+        company_name: '',
+        access_yard_company: [],
+        access_nav_menu: [],
     });
 
     const [errors, setErrors] = React.useState({
@@ -54,6 +58,8 @@ export default function CreateRequest() {
     const [badgeOptions, setBadgeOptions] = useState([]);
     const [badgeLoading, setBadgeLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [accessYardOptions, setAccessYardOptions] = useState([]);
+    const [navMenuOptions, setNavMenuOptions] = useState([]);
     const [debouncedSearch] = useDebouncedValue(search, 300);
 
     const handleChange = (field, value) => {
@@ -100,12 +106,28 @@ export default function CreateRequest() {
         const fetchInitialData = async () => {
             setLoading(true);
             try {
-                const hodRes = await axios.get(`${API_URL}/requests/hods`, {
-                    headers: { Authorization: `Bearer ${user.token}` },
-                });
+                const [hodRes, companyRes, navMenuRes] = await Promise.all([
+                    axios.get(`${API_URL}/requests/hods`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                    axios.get(`${API_URL}/portal_company/list`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                    axios.get(`${API_URL}/portal_nav_menu/list`, {
+                        headers: { Authorization: `Bearer ${user.token}` },
+                    }),
+                ]);
                 setHodOptions(hodRes.data.map(u => ({
                     value: String(u.id_user),
                     label: `${u.badge_no} - ${u.full_name}`
+                })));
+                setAccessYardOptions(companyRes.data.map(c => ({
+                    value: String(c.id_company),
+                    label: c.company_name,
+                })));
+                setNavMenuOptions(navMenuRes.data.map(n => ({
+                    value: String(n.id_application),
+                    label: n.application_name,
                 })));
             } catch (err) {
                 console.error(err);
@@ -129,6 +151,8 @@ export default function CreateRequest() {
                 department_name: res.data.department.dept ?? '',
                 position_name: res.data.position?.design_desc ?? '',
                 project_name: res.data.project.project_desc ?? '',
+                company_name: res.data.company_name ?? res.data.company ?? '',
+                company: res.data.id_company ?? '',
                 department: res.data.department.dept_id ?? '',
                 position: res.data.position?.design_id ?? '',
                 project: res.data.project.project_id ?? '',
@@ -171,8 +195,11 @@ export default function CreateRequest() {
             project_id: Number(formData.project),
             dept_id: Number(formData.department),
             design_id: Number(formData.position),
+            id_company: Number(formData.company),
             approval_hod_by: formData.approval_hod_by,
             approval_it_hod_by: formData.approval_it_hod_by,
+            access_yard_company: formData.access_yard_company,
+            access_nav_menu: formData.access_nav_menu,
         };
 
         try {
@@ -311,6 +338,44 @@ export default function CreateRequest() {
                                     placeholder="Input Project"
                                     value={formData.project_name || ''}
                                     readOnly
+                                />
+
+                                <TextInput
+                                    required
+                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Company</span>}
+                                    placeholder="Input Company"
+                                    value={formData.company_name || ''}
+                                    readOnly
+                                />
+
+                                <MultiSelect
+                                    required
+                                    label="Access Yard Company"
+                                    placeholder="Select Access Yard"
+                                    data={accessYardOptions}
+                                    value={formData.access_yard_company}
+                                    onChange={(val) => handleChange('access_yard_company', val)}
+                                    searchable
+                                    clearable
+                                    classNames={{
+                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
+                                        label: "font-medium mb-1 text-gray-800 text-sm",
+                                    }}
+                                />
+
+                                <MultiSelect
+                                    required
+                                    label="System Access"
+                                    placeholder="Select System Access"
+                                    data={navMenuOptions}
+                                    value={formData.access_nav_menu}
+                                    onChange={(val) => handleChange('access_nav_menu', val)}
+                                    searchable
+                                    clearable
+                                    classNames={{
+                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
+                                        label: "font-medium mb-1 text-gray-800 text-sm",
+                                    }}
                                 />
 
                                 {/* Email (manual) */}
