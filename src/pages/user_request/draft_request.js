@@ -27,6 +27,7 @@ export default function DraftRequestList() {
   const [isCanceling, setIsCanceling] = useState(false);
   const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -78,6 +79,24 @@ export default function DraftRequestList() {
   };
 
   const columns = useMemo(() => [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllPageRowsSelected()}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      ),
+      size: 40,
+    },
     {
       id: 'no',
       header: 'No',
@@ -229,6 +248,7 @@ export default function DraftRequestList() {
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: true,
@@ -296,6 +316,59 @@ export default function DraftRequestList() {
     }
   };
 
+  const handleSubmitMultipleToHOD = async () => {
+    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id_request);
+
+    if (selectedIds.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'No Selection',
+        text: 'Please select at least one request to submit.',
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Submit ${selectedIds.length} requests to HOD?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit!',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      for (const id of selectedIds) {
+        await axios.put(
+          `${API_URL}/requests/${id}/submit-to-hod`,
+          {},
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+      }
+
+      setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
+      table.resetRowSelection();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Submitted!',
+        text: `${selectedIds.length} requests have been submitted to HOD.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error('Error submitting multiple requests:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed!',
+        text: 'An error occurred while submitting requests. Please try again.',
+      });
+    }
+  };
+
   return (
     <AuthLayout sidebarList={requestorList}>
       <div className="py-6">
@@ -303,7 +376,16 @@ export default function DraftRequestList() {
           <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
             <div className="flex items-center justify-between border-b pb-2 mb-3">
               <h1 className="text-xl font-bold text-blue-500">Draft Request List</h1>
+              <Button
+                color="green"
+                leftSection={<IconSend size={16} />}
+                onClick={handleSubmitMultipleToHOD}
+                disabled={Object.keys(rowSelection).length === 0}
+              >
+                Submit Selected to HOD
+              </Button>
             </div>
+
             <div className="overflow-x-auto">
               <Datatables table={table} totalPages={totalPages} />
             </div>

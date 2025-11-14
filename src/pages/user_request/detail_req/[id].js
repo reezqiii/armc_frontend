@@ -365,13 +365,31 @@ export default function RequestDetail() {
                 </div>
               </div>
 
-              {/* Company */}
+              {/* Access Yard Company */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Company <span className="text-red-500">*</span>
+                  Access Yard Company <span className="text-red-500">*</span>
                 </label>
-                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                  {data?.company?.company_name || "-"}
+                <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm min-h-[36px] flex items-start">
+                  <span>
+                    {data.access_yard_company?.length
+                      ? data.access_yard_company.map(c => c.company_name).join(', ')
+                      : '-'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Application Access */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Applicaiton Access <span className="text-red-500">*</span>
+                </label>
+                <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm min-h-[36px] flex items-start">
+                  <span>
+                    {data.access_nav_menu?.length
+                      ? data.access_nav_menu.map(n => n.application_name).join(', ')
+                      : '-'}
+                  </span>
                 </div>
               </div>
 

@@ -365,8 +365,8 @@ export default function CreateRequest() {
 
                                 <MultiSelect
                                     required
-                                    label="System Access"
-                                    placeholder="Select System Access"
+                                    label="Application Access"
+                                    placeholder="Select Application Access"
                                     data={navMenuOptions}
                                     value={formData.access_nav_menu}
                                     onChange={(val) => handleChange('access_nav_menu', val)}
