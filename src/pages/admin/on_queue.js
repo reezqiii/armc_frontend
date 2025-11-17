@@ -4,31 +4,76 @@ import { requestorList } from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconEdit, IconInfoCircle, IconTrash, IconX } from '@tabler/icons-react';
-import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
-import Swal from 'sweetalert2';
-import useEncrypt from "@/hooks/useEncrypt";
+import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function RequestUserList() {
-    RequestUserList.title = "Request User List";
+export default function CompletedRequestList() {
+    CompletedRequestList.title = "Completed Request List";
 
     const router = useRouter();
     const { user } = useUser();
     const API = useApi();
     const API_URL = API.API_URL;
-    const { encrypt } = useEncrypt();
 
     const [data, setData] = useState([]);
-    const [columnFilters, setColumnFilters] = useState([]);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
-    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
+    const [savedFilter, setSavedFilter] = useState({})
     const [isCanceling, setIsCanceling] = useState(false);
+    const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [columnFilters, setColumnFilters] = useState([]);
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 10,
+    });
+
+    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
+        const [value, setValue] = React.useState(initialValue ?? 0);
+        const [loading, setLoading] = React.useState(false);
+
+        const handleChange = async (e) => {
+            const newValue = parseInt(e.target.value);
+            setValue(newValue);
+            setLoading(true);
+
+            try {
+                await axios.patch(
+                    `${API_URL}/requests/${id_request}/admin-status`,
+                    { request_admin: newValue },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                setData(prevData =>
+                    prevData.map(item =>
+                        item.id_request === id_request ? { ...item, request_admin: newValue } : item
+                    )
+                );
+            } catch (error) {
+                console.error(error);
+                setValue(initialValue ?? 0);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <select
+                value={value}
+                onChange={handleChange}
+                disabled={loading}
+                className="border border-gray-300 rounded-md text-sm p-1 bg-white"
+            >
+                <option value={0}>On Queue</option>
+                <option value={1}>On Progress</option>
+                <option value={2}>Completed</option>
+            </select>
+        );
+    }
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -74,8 +119,7 @@ export default function RequestUserList() {
         {
             id: 'no',
             header: 'No',
-            cell: ({ row }) =>
-                row.index + 1 + pagination.pageIndex * pagination.pageSize,
+            cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
             size: 40,
         },
         {
@@ -159,70 +203,82 @@ export default function RequestUserList() {
             cell: info => info.getValue(),
         },
         {
-            accessorFn: row => row.request_status.name,
-            id: 'request_status',
+            id: 'status',
             header: 'Status',
-            enableColumnFilter: false,
-            enableSorting: true,
-            cell: ({ row }) => {
-                const status = row.original.request_status.name;
-                const colorMap = {
-                    'Draft': 'gray',
-                    'Pending by HOD Req': 'yellow',
-                    'Rejected by HOD Req': 'red',
-                    'Pending by Lead IT': 'yellow',
-                    'Rejected by Lead IT': 'red',
-                    'Pending by IT Manager': 'yellow',
-                    'Rejected by IT Manager': 'red',
-                    'Completed': 'green',
-                };
-
-                return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
-            },
+            cell: () => <Badge color="green">Completed</Badge>,
+        },
+        {
+            accessorFn: row => row.request_admin,
+            id: 'request_admin',
+            header: 'Admin Status',
+            cell: ({ row }) => (
+                <AdminStatusCell
+                    value={row.original.request_admin}
+                    id_request={row.original.id_request}
+                    API_URL={API_URL}
+                    token={user.token}
+                    setData={setData}
+                />
+            ),
         },
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
-            enableColumnFilter: false,
-            enableSorting: false,
-            cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request)); // aman
+            cell: ({ row }) => (
+                <div className="flex flex-col gap-2">
+                    <Button
+                        leftSection={<IconInfoCircle size={16} />}
+                        color="blue"
+                        fullWidth
+                        onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
+                    >
+                        Details
+                    </Button>
 
-                return (
-                    <div className="flex flex-col gap-2">
-                        <Button
-                            leftSection={<IconInfoCircle size={16} />}
-                            color="blue"
-                            fullWidth
-                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
-                        >
-                            Details
-                        </Button>
+                    <Button
+                        leftSection={<IconEdit size={16} />}
+                        color="orange"
+                        fullWidth
+                        onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
+                    >
+                        Edit
+                    </Button>
 
-                        <Button
-                            leftSection={<IconEdit size={16} />}
-                            color="orange"
-                            fullWidth
-                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                        >
-                            Edit
-                        </Button>
+                    <Button
+                        leftSection={<IconX size={16} />}
+                        color="red"
+                        fullWidth
+                        onClick={() => handleCancel(row.original.id_request)}
+                        disabled={isDeleting}
+                    >
+                        Cancel
+                    </Button>
+                </div>
+            ),
+        },
+    ], [pagination.pageIndex, pagination.pageSize]);
 
-                        <Button
-                            leftSection={<IconX size={16} />}
-                            color="red"
-                            fullWidth
-                            onClick={() => handleCancel(row.original.id_request)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                );
-            }
+    const getData = useCallback(async () => {
+        try {
+            const search = JSON.stringify({ request_status: 7 });
+            const res = await axios.post(
+                `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
+                {},
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            console.log(res.data.data);
+            setData(res.data.data);
+            setTotalPages(res.data.total_pages);
+        } catch (err) {
+            console.error("Error fetching pending HOD data:", err);
         }
-    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    }, [API_URL, pagination, user.token]);
+
+
+    useEffect(() => {
+        getData();
+    }, [getData]);
 
     const table = useReactTable({
         data,
@@ -243,51 +299,13 @@ export default function RequestUserList() {
         manualPagination: true,
     });
 
-    const getData = useCallback(async () => {
-        const searchQuery = { status_active: 1 };
-
-        columnFilters.forEach(filter => {
-            if (filter.value != null && filter.value !== "") {
-                searchQuery[filter.id] = filter.value;
-            }
-        });
-
-        const filterParams =
-            searchQuery && Object.keys(searchQuery).length > 0
-                ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
-                : "";
-
-        const sort =
-            sorting && sorting.length > 0
-                ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
-                : "";
-
-        try {
-            const { data } = await axios.post(
-                `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
-                {},
-                { headers: { Authorization: `Bearer ${user.token}` } }
-            );
-
-            setData(data.data);
-            setTotalPages(data.total_pages);
-        } catch (err) {
-            console.error("Error fetching data:", err);
-        }
-
-    }, [API_URL, columnFilters, pagination.pageIndex, pagination.pageSize, sorting, user.token]);
-
-    useEffect(() => {
-        getData();
-    }, [getData]);
-
     return (
         <AuthLayout sidebarList={requestorList}>
             <div className="py-6">
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
                     <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-xl font-bold text-blue-500">Request User List</h1>
+                            <h1 className="text-xl font-bold text-blue-500">Completed Request List</h1>
                         </div>
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />

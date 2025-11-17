@@ -8,6 +8,7 @@ import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
+import useEncrypt from "@/hooks/useEncrypt";
 import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
@@ -19,6 +20,7 @@ export default function PendingHODList() {
   const { user } = useUser();
   const API = useApi();
   const API_URL = API.API_URL;
+  const { encrypt } = useEncrypt();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,6 +28,7 @@ export default function PendingHODList() {
   const [isCanceling, setIsCanceling] = useState(false);
   const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -72,7 +75,127 @@ export default function PendingHODList() {
     }
   };
 
+  const handleApproveMultiple = async () => {
+    const ids = table.getSelectedRowModel().rows.map(r => r.original.id_request);
+
+    if (ids.length === 0) return;
+
+    const confirm = await Swal.fire({
+      title: `Approve ${ids.length} selected request(s)?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, approve",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axios.put(
+        `${API_URL}/requests/hod-approval/bulk`,
+        {
+          ids,
+          action: "approve",
+          remarks: "",
+        },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Approved!",
+        text: `${ids.length} request(s) approved successfully.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      table.resetRowSelection();
+      getData();
+
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to approve requests.", "error");
+    }
+  };
+
+  const handleRejectMultiple = async () => {
+    const ids = table.getSelectedRowModel().rows.map(r => r.original.id_request);
+
+    if (ids.length === 0) return;
+
+    const confirm = await Swal.fire({
+      title: `Reject ${ids.length} selected request(s)?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, reject",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const { value: remarks } = await Swal.fire({
+      title: "Reason for Rejection",
+      input: "textarea",
+      inputPlaceholder: "Enter your reason...",
+      showCancelButton: true,
+    });
+
+    if (!remarks) {
+      Swal.fire("Cancelled", "You must provide a reason.", "info");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API_URL}/requests/hod-approval/bulk`,
+        {
+          ids,
+          action: "reject",
+          remarks,
+        },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Rejected!",
+        text: `${ids.length} request(s) rejected successfully.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      table.resetRowSelection();
+      getData();
+
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to reject requests.", "error");
+    }
+  };
+
   const columns = useMemo(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllPageRowsSelected()}
+          ref={el => {
+            if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+          }}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          ref={el => {
+            if (el) el.indeterminate = row.getIsSomeSelected();
+          }}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      ),
+      size: 40,
+    },
     {
       id: 'no',
       header: 'No',
@@ -173,49 +296,59 @@ export default function PendingHODList() {
       header: 'Action',
       enableColumnFilter: false,
       enableSorting: true,
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-2">
-          <Button
-            leftSection={<IconInfoCircle size={16} />}
-            color="blue"
-            fullWidth
-            onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
-          >
-            Details
-          </Button>
+      cell: ({ row }) => {
+        const encryptedId = encrypt(String(row.original.id_request)); // aman
 
-          <Button
-            leftSection={<IconEdit size={16} />}
-            color="orange"
-            fullWidth
-            onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
-          >
-            Edit
-          </Button>
+        return (
+          <div className="flex flex-col gap-2">
+            <Button
+              leftSection={<IconInfoCircle size={16} />}
+              color="blue"
+              fullWidth
+              onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+            >
+              Details
+            </Button>
 
-          <Button
-            leftSection={<IconX size={16} />}
-            color="red"
-            fullWidth
-            onClick={() => handleCancel(row.original.id_request)}
-            disabled={isDeleting}
-          >
-            Cancel
-          </Button>
-        </div>
+            <Button
+              leftSection={<IconEdit size={16} />}
+              color="orange"
+              fullWidth
+              onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+            >
+              Edit
+            </Button>
 
-      ),
-    },
-  ], [pagination.pageIndex, pagination.pageSize]);
+            <Button
+              leftSection={<IconX size={16} />}
+              color="red"
+              fullWidth
+              onClick={() => handleCancel(row.original.id_request)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+          </div>
+        );
+      }
+    }
+  ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
   const table = useReactTable({
     data,
     columns,
     filterFns: {},
-    state: { columnFilters, sorting, pagination },
+    state: {
+      columnFilters,
+      sorting,
+      pagination,
+      rowSelection, // <-- WAJIB supaya checkbox muncul
+    },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection, // <-- WAJIB untuk ceklis
+    enableRowSelection: true, // <-- WAJIB
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: true,
@@ -225,7 +358,11 @@ export default function PendingHODList() {
 
   const getData = useCallback(async () => {
     try {
-      const search = JSON.stringify({ request_status: 1 });
+      const search = JSON.stringify({
+        request_status: 1,
+        approval_hod_by: user.id,
+      });
+
       const res = await axios.post(
         `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
         {},
@@ -247,12 +384,44 @@ export default function PendingHODList() {
       <div className="py-6">
         <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
           <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+
             <div className="flex items-center justify-between border-b pb-2 mb-3">
-              <h1 className="text-xl font-bold text-blue-500">Pending HOD Request List</h1>
+              <h1 className="text-xl font-bold text-blue-500">
+                Pending HOD Request List
+              </h1>
             </div>
+
             <div className="overflow-x-auto">
               <Datatables table={table} totalPages={totalPages} />
             </div>
+
+            <div className="flex justify-between items-center border-t pt-3 mt-4">
+
+              <span className="text-sm text-gray-700">
+                Selected: {table.getSelectedRowModel().rows.length}
+              </span>
+
+              <div className="flex gap-2">
+
+                <Button
+                  color="red"
+                  onClick={handleRejectMultiple}
+                  disabled={table.getSelectedRowModel().rows.length === 0}
+                >
+                  Reject
+                </Button>
+
+                <Button
+                  color="blue"
+                  onClick={handleApproveMultiple}
+                  disabled={table.getSelectedRowModel().rows.length === 0}
+                >
+                  Approve
+                </Button>
+              </div>
+
+            </div>
+
           </Paper>
         </div>
       </div>

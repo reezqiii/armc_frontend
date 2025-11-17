@@ -7,6 +7,7 @@ import { Button, Paper, Badge } from '@mantine/core';
 import { IconSend, IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import useEncrypt from "@/hooks/useEncrypt";
 import React from 'react';
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
@@ -20,6 +21,7 @@ export default function DraftRequestList() {
   const { user } = useUser();
   const API = useApi();
   const API_URL = API.API_URL;
+  const { encrypt } = useEncrypt();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -28,6 +30,7 @@ export default function DraftRequestList() {
   const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
+  const [selectedIds, setSelectedIds] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -78,13 +81,73 @@ export default function DraftRequestList() {
     }
   };
 
+  const handleSubmitMultipleToHOD = async () => {
+    const selectedIds = table
+      .getSelectedRowModel()
+      .rows
+      .map(row => row.original.id_request);
+
+    if (selectedIds.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'No Selection',
+        text: 'Please select at least one request to submit.',
+      });
+      return;
+    }
+
+    const confirm = await Swal.fire({
+      title: `Submit ${selectedIds.length} selected request(s) to HOD?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await Promise.all(
+        selectedIds.map(id =>
+          axios.put(
+            `${API_URL}/requests/${id}/submit-to-hod`,
+            {},
+            { headers: { Authorization: `Bearer ${user.token}` } }
+          )
+        )
+      );
+
+      setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
+
+      table.resetRowSelection();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: `${selectedIds.length} request(s) submitted to HOD.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to submit selected requests.',
+      });
+    }
+  };
+
   const columns = useMemo(() => [
     {
-      id: 'select',
+      id: "select",
       header: ({ table }) => (
         <input
           type="checkbox"
           checked={table.getIsAllPageRowsSelected()}
+          ref={el => {
+            if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+          }}
           onChange={table.getToggleAllPageRowsSelectedHandler()}
         />
       ),
@@ -92,6 +155,9 @@ export default function DraftRequestList() {
         <input
           type="checkbox"
           checked={row.getIsSelected()}
+          ref={el => {
+            if (el) el.indeterminate = row.getIsSomeSelected();
+          }}
           onChange={row.getToggleSelectedHandler()}
         />
       ),
@@ -196,59 +262,59 @@ export default function DraftRequestList() {
       header: 'Action',
       enableColumnFilter: false,
       enableSorting: true,
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-2">
-          <Button
-            leftSection={<IconSend size={16} />}
-            color="green"
-            fullWidth
-            onClick={() => handleSubmitToHOD(row.original.id_request)}
-          >
-            Submit to HOD
-          </Button>
+      cell: ({ row }) => {
+        const encryptedId = encrypt(String(row.original.id_request)); // aman
 
-          <Button
-            leftSection={<IconInfoCircle size={16} />}
-            color="blue"
-            fullWidth
-            onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
-          >
-            Details
-          </Button>
+        return (
+          <div className="flex flex-col gap-2">
+            <Button
+              leftSection={<IconInfoCircle size={16} />}
+              color="blue"
+              fullWidth
+              onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+            >
+              Details
+            </Button>
 
-          <Button
-            leftSection={<IconEdit size={16} />}
-            color="orange"
-            fullWidth
-            onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
-          >
-            Edit
-          </Button>
+            <Button
+              leftSection={<IconEdit size={16} />}
+              color="orange"
+              fullWidth
+              onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+            >
+              Edit
+            </Button>
 
-          <Button
-            leftSection={<IconX size={16} />}
-            color="red"
-            fullWidth
-            onClick={() => handleCancel(row.original.id_request)}
-            disabled={isDeleting}
-          >
-            Cancel
-          </Button>
-        </div>
-      ),
+            <Button
+              leftSection={<IconX size={16} />}
+              color="red"
+              fullWidth
+              onClick={() => handleCancel(row.original.id_request)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+          </div>
+        );
+      }
     }
-
-  ], [pagination.pageIndex, pagination.pageSize]);
+  ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
   const table = useReactTable({
     data,
     columns,
     filterFns: {},
-    state: { columnFilters, sorting, pagination },
+    state: {
+      columnFilters,
+      sorting,
+      pagination,
+      rowSelection,
+    },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: true,
@@ -275,123 +341,43 @@ export default function DraftRequestList() {
     getData();
   }, [getData]);
 
-  const handleSubmitToHOD = async (id_request) => {
-    const result = await Swal.fire({
-      title: "Submit to HOD?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, submit!",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      const res = await axios.put(
-        `${API_URL}/requests/${id_request}/submit-to-hod`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      if (res.status === 200) {
-        setData((prev) => prev.filter((item) => item.id_request !== id_request));
-
-        await Swal.fire({
-          icon: "success",
-          title: "Submitted!",
-          text: "The request has been successfully submitted to HOD.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      }
-    } catch (err) {
-      console.error("Error submitting to HOD:", err);
-      Swal.fire({
-        icon: "error",
-        title: "Failed!",
-        text: "An error occurred while submitting to HOD. Please try again.",
-      });
-    }
-  };
-
-  const handleSubmitMultipleToHOD = async () => {
-    const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id_request);
-
-    if (selectedIds.length === 0) {
-      Swal.fire({
-        icon: 'info',
-        title: 'No Selection',
-        text: 'Please select at least one request to submit.',
-      });
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: `Submit ${selectedIds.length} requests to HOD?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, submit!',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      for (const id of selectedIds) {
-        await axios.put(
-          `${API_URL}/requests/${id}/submit-to-hod`,
-          {},
-          { headers: { Authorization: `Bearer ${user.token}` } }
-        );
-      }
-
-      setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
-      table.resetRowSelection();
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Submitted!',
-        text: `${selectedIds.length} requests have been submitted to HOD.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error('Error submitting multiple requests:', err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Failed!',
-        text: 'An error occurred while submitting requests. Please try again.',
-      });
-    }
-  };
-
   return (
     <AuthLayout sidebarList={requestorList}>
       <div className="py-6">
         <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
+
           <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+
             <div className="flex items-center justify-between border-b pb-2 mb-3">
-              <h1 className="text-xl font-bold text-blue-500">Draft Request List</h1>
-              <Button
-                color="green"
-                leftSection={<IconSend size={16} />}
-                onClick={handleSubmitMultipleToHOD}
-                disabled={Object.keys(rowSelection).length === 0}
-              >
-                Submit Selected to HOD
-              </Button>
+              <h1 className="text-xl font-bold text-blue-500">
+                Draft Request List
+              </h1>
             </div>
 
             <div className="overflow-x-auto">
               <Datatables table={table} totalPages={totalPages} />
             </div>
+
+            <div className="flex justify-between items-center border-t pt-3 mt-4">
+
+              <span className="text-sm text-gray-700">
+                Selected: {table.getSelectedRowModel().rows.length}
+              </span>
+
+              <Button
+                color="green"
+                leftSection={<IconSend size={16} />}
+                onClick={handleSubmitMultipleToHOD}
+                disabled={table.getSelectedRowModel().rows.length === 0}
+              >
+                Submit to HOD
+              </Button>
+            </div>
+
           </Paper>
         </div>
       </div>
     </AuthLayout>
   );
+
 }

@@ -8,6 +8,8 @@ import axios from 'axios'
 import useUser from '@/store/useUser';
 import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
+import useDecrypt from '@/hooks/useDecrypt';
+import useEncrypt from '@/hooks/useEncrypt';
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
@@ -20,6 +22,8 @@ export default function EditRequest() {
     const API = useApi()
     const API_URL = API.API_URL
     const { user } = useUser()
+    const { encrypt } = useEncrypt();
+    const { decrypt } = useDecrypt();
 
     const [formData, setFormData] = useState({
         created_by_name: user?.full_name || user?.name || '-',
@@ -36,6 +40,17 @@ export default function EditRequest() {
         company: '',
         company_name: '',
     })
+
+    const decryptedId = useMemo(() => {
+        if (!id) return null;
+
+        try {
+            return decrypt(id);
+        } catch (e) {
+            console.error("Failed to decrypt ID:", e);
+            return null;
+        }
+    }, [id, decrypt]);
 
     const [errors, setErrors] = useState({})
     const [hodList, setHodList] = useState([])
@@ -118,8 +133,8 @@ export default function EditRequest() {
                     value: String(n.id_application),
                     label: n.application_name,
                 })));
-                if (router.query.id) {
-                    const res = await axios.get(`${API_URL}/requests/${router.query.id}`, {
+                if (decryptedId) {
+                    const res = await axios.get(`${API_URL}/requests/${decryptedId}`, {
                         headers: { Authorization: `Bearer ${user.token}` },
                     });
 
@@ -195,7 +210,7 @@ export default function EditRequest() {
 
         const fetchRequest = async () => {
             try {
-                const res = await axios.get(`${API_URL}/requests/${id}`, {
+                const res = await axios.get(`${API_URL}/requests/${decryptedId}`, {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
 
@@ -248,7 +263,7 @@ export default function EditRequest() {
         };
 
         fetchRequest();
-    }, [id, API_URL, user.token]);
+    }, [decryptedId, API_URL, user.token]);
 
     const handleChange = (field, value) => {
         if (field === 'approval_hod_by') {
@@ -307,7 +322,7 @@ export default function EditRequest() {
 
         try {
             if (id) {
-                await axios.put(`${API_URL}/requests/${id}`, payload, {
+                await axios.put(`${API_URL}/requests/${decryptedId}`, payload, {
                     headers: { Authorization: `Bearer ${user.token}` },
                 });
 

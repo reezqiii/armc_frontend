@@ -11,6 +11,7 @@ import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import useEncrypt from '@/hooks/useEncrypt';
 
 export default function CompletedRequestList() {
     CompletedRequestList.title = "Completed Request List";
@@ -19,6 +20,7 @@ export default function CompletedRequestList() {
     const { user } = useUser();
     const API = useApi();
     const API_URL = API.API_URL;
+    const { encrypt } = useEncrypt();
 
     const [data, setData] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -32,48 +34,48 @@ export default function CompletedRequestList() {
         pageSize: 10,
     });
 
-    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
-        const [value, setValue] = React.useState(initialValue ?? 0);
-        const [loading, setLoading] = React.useState(false);
+    // function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
+    //     const [value, setValue] = React.useState(initialValue ?? 0);
+    //     const [loading, setLoading] = React.useState(false);
 
-        const handleChange = async (e) => {
-            const newValue = parseInt(e.target.value);
-            setValue(newValue);
-            setLoading(true);
+    //     const handleChange = async (e) => {
+    //         const newValue = parseInt(e.target.value);
+    //         setValue(newValue);
+    //         setLoading(true);
 
-            try {
-                await axios.patch(
-                    `${API_URL}/requests/${id_request}/admin-status`,
-                    { request_admin: newValue },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+    //         try {
+    //             await axios.patch(
+    //                 `${API_URL}/requests/${id_request}/admin-status`,
+    //                 { request_admin: newValue },
+    //                 { headers: { Authorization: `Bearer ${token}` } }
+    //             );
 
-                setData(prevData =>
-                    prevData.map(item =>
-                        item.id_request === id_request ? { ...item, request_admin: newValue } : item
-                    )
-                );
-            } catch (error) {
-                console.error(error);
-                setValue(initialValue ?? 0);
-            } finally {
-                setLoading(false);
-            }
-        };
+    //             setData(prevData =>
+    //                 prevData.map(item =>
+    //                     item.id_request === id_request ? { ...item, request_admin: newValue } : item
+    //                 )
+    //             );
+    //         } catch (error) {
+    //             console.error(error);
+    //             setValue(initialValue ?? 0);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
 
-        return (
-            <select
-                value={value}
-                onChange={handleChange}
-                disabled={loading}
-                className="border border-gray-300 rounded-md text-sm p-1 bg-white"
-            >
-                <option value={0}>On Queue</option>
-                <option value={1}>On Progress</option>
-                <option value={2}>Completed</option>
-            </select>
-        );
-    }
+    //     return (
+    //         <select
+    //             value={value}
+    //             onChange={handleChange}
+    //             disabled={loading}
+    //             className="border border-gray-300 rounded-md text-sm p-1 bg-white"
+    //         >
+    //             <option value={0}>On Queue</option>
+    //             <option value={1}>On Progress</option>
+    //             <option value={2}>Completed</option>
+    //         </select>
+    //     );
+    // }
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -119,7 +121,8 @@ export default function CompletedRequestList() {
         {
             id: 'no',
             header: 'No',
-            cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
+            cell: ({ row }) =>
+                row.index + 1 + pagination.pageIndex * pagination.pageSize,
             size: 40,
         },
         {
@@ -203,61 +206,70 @@ export default function CompletedRequestList() {
             cell: info => info.getValue(),
         },
         {
-            id: 'status',
+            accessorFn: row => row.request_status.name,
+            id: 'request_status',
             header: 'Status',
-            cell: () => <Badge color="green">Completed</Badge>,
-        },
-        {
-            accessorFn: row => row.request_admin,
-            id: 'request_admin',
-            header: 'Admin Status',
-            cell: ({ row }) => (
-                <AdminStatusCell
-                    value={row.original.request_admin}
-                    id_request={row.original.id_request}
-                    API_URL={API_URL}
-                    token={user.token}
-                    setData={setData}
-                />
-            ),
+            enableColumnFilter: false,
+            enableSorting: true,
+            cell: ({ row }) => {
+                const status = row.original.request_status.name;
+                const colorMap = {
+                    'Draft': 'gray',
+                    'Pending by HOD Req': 'yellow',
+                    'Rejected by HOD Req': 'red',
+                    'Pending by Lead IT': 'yellow',
+                    'Rejected by Lead IT': 'red',
+                    'Pending by IT Manager': 'yellow',
+                    'Rejected by IT Manager': 'red',
+                    'Completed': 'green',
+                };
+
+                return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
+            },
         },
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-2">
-                    <Button
-                        leftSection={<IconInfoCircle size={16} />}
-                        color="blue"
-                        fullWidth
-                        onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
-                    >
-                        Details
-                    </Button>
+            enableColumnFilter: false,
+            enableSorting: false,
+            cell: ({ row }) => {
+                const encryptedId = encrypt(String(row.original.id_request)); // aman
 
-                    <Button
-                        leftSection={<IconEdit size={16} />}
-                        color="orange"
-                        fullWidth
-                        onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
-                    >
-                        Edit
-                    </Button>
+                return (
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            leftSection={<IconInfoCircle size={16} />}
+                            color="blue"
+                            fullWidth
+                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                        >
+                            Details
+                        </Button>
 
-                    <Button
-                        leftSection={<IconX size={16} />}
-                        color="red"
-                        fullWidth
-                        onClick={() => handleCancel(row.original.id_request)}
-                        disabled={isDeleting}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-            ),
-        },
-    ], [pagination.pageIndex, pagination.pageSize]);
+                        <Button
+                            leftSection={<IconEdit size={16} />}
+                            color="orange"
+                            fullWidth
+                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                        >
+                            Edit
+                        </Button>
+
+                        <Button
+                            leftSection={<IconX size={16} />}
+                            color="red"
+                            fullWidth
+                            onClick={() => handleCancel(row.original.id_request)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                );
+            }
+        }
+    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const getData = useCallback(async () => {
         try {
@@ -275,19 +287,26 @@ export default function CompletedRequestList() {
         }
     }, [API_URL, pagination, user.token]);
 
-
     useEffect(() => {
         getData();
     }, [getData]);
 
-
     const table = useReactTable({
         data,
         columns,
-        state: { pagination },
+        filterFns: {},
+        state: {
+            columnFilters,
+            sorting,
+            pagination,
+        },
+        onColumnFiltersChange: setColumnFilters,
+        onSortingChange: setSorting,
         onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        manualSorting: true,
+        manualFiltering: true,
         manualPagination: true,
     });
 

@@ -6,6 +6,7 @@ import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
 import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
+import useEncrypt from "@/hooks/useEncrypt";
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
@@ -19,6 +20,7 @@ export default function LeadITPendingList() {
     const { user } = useUser();
     const API = useApi();
     const API_URL = API.API_URL;
+    const { encrypt } = useEncrypt();
 
     const [data, setData] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -26,6 +28,7 @@ export default function LeadITPendingList() {
     const [isCanceling, setIsCanceling] = useState(false);
     const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
     const [pagination, setPagination] = useState({
         pageIndex: 0,
@@ -72,7 +75,112 @@ export default function LeadITPendingList() {
         }
     };
 
+    const handleSubmitMultipleLeadIT = async (action) => {
+        const selectedIds = table
+            .getSelectedRowModel()
+            .rows
+            .map(row => row.original.id_request);
+
+        if (selectedIds.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'No Selection',
+                text: 'Please select at least one request.',
+            });
+            return;
+        }
+
+        const confirm = await Swal.fire({
+            title: `${action === 'approve'
+                ? 'Approve'
+                : 'Reject'
+                } ${selectedIds.length} selected request(s)?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, proceed',
+            cancelButtonText: 'Cancel',
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        // === Jika REJECT → minta alasan (textarea) ===
+        let remarks = "";
+
+        if (action === "reject") {
+            const { value } = await Swal.fire({
+                title: "Reason for Rejection",
+                input: "textarea",
+                inputPlaceholder: "Enter your reason...",
+                showCancelButton: true,
+            });
+
+            if (!value) {
+                Swal.fire("Cancelled", "You must provide a reason.", "info");
+                return;
+            }
+
+            remarks = value;
+        }
+
+        try {
+            await Promise.all(
+                selectedIds.map(id =>
+                    axios.put(
+                        `${API_URL}/requests/${id}/lead-it-approval`,
+                        { action, remarks },
+                        { headers: { Authorization: `Bearer ${user.token}` } }
+                    )
+                )
+            );
+
+            // Hapus dari table
+            setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
+
+            table.resetRowSelection();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: `${selectedIds.length} request(s) processed.`,
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+        } catch (err) {
+            console.error("Lead IT bulk error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to process selected requests.',
+            });
+        }
+    };
+
     const columns = useMemo(() => [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={table.getIsAllPageRowsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+                    }}
+                    onChange={table.getToggleAllPageRowsSelectedHandler()}
+                />
+            ),
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = row.getIsSomeSelected();
+                    }}
+                    onChange={row.getToggleSelectedHandler()}
+                />
+            ),
+            size: 40,
+        },
         {
             id: 'no',
             header: 'No',
@@ -80,7 +188,7 @@ export default function LeadITPendingList() {
                 row.index + 1 + pagination.pageIndex * pagination.pageSize,
             size: 40,
         },
-       {
+        {
             accessorFn: row => row.id_request,
             id: 'no_request',
             header: 'No Request',
@@ -174,47 +282,59 @@ export default function LeadITPendingList() {
             header: 'Action',
             enableColumnFilter: false,
             enableSorting: true,
-            cell: info => info.getValue(),
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-2">
-                    <Button
-                        leftSection={<IconInfoCircle size={16} />}
-                        color="blue"
-                        fullWidth
-                        onClick={() => router.push(`/user_request/detail_req/${row.original.id_request}`)}
-                    >
-                        Details
-                    </Button>
-                    <Button
-                        leftSection={<IconEdit size={16} />}
-                        color="orange"
-                        fullWidth
-                        onClick={() => router.push(`/user_request/edit_req/${row.original.id_request}`)}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        leftSection={<IconX size={16} />}
-                        color="red"
-                        fullWidth
-                        onClick={() => handleCancel(row.original.id_request)}
-                        disabled={isDeleting}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-            ),
-        },
-    ], [pagination.pageIndex, pagination.pageSize, isDeleting]);
+            cell: ({ row }) => {
+                const encryptedId = encrypt(String(row.original.id_request)); // aman
+
+                return (
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            leftSection={<IconInfoCircle size={16} />}
+                            color="blue"
+                            fullWidth
+                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                        >
+                            Details
+                        </Button>
+
+                        <Button
+                            leftSection={<IconEdit size={16} />}
+                            color="orange"
+                            fullWidth
+                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                        >
+                            Edit
+                        </Button>
+
+                        <Button
+                            leftSection={<IconX size={16} />}
+                            color="red"
+                            fullWidth
+                            onClick={() => handleCancel(row.original.id_request)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                );
+            }
+        }
+    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
         data,
         columns,
         filterFns: {},
-        state: { columnFilters, sorting, pagination },
+        state: {
+            columnFilters,
+            sorting,
+            pagination,
+            rowSelection,
+        },
         onColumnFiltersChange: setColumnFilters,
         onSortingChange: setSorting,
         onPaginationChange: setPagination,
+        onRowSelectionChange: setRowSelection,
+        enableRowSelection: true,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         manualSorting: true,
@@ -246,12 +366,43 @@ export default function LeadITPendingList() {
             <div className="py-6">
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
                     <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
                             <h1 className="text-xl font-bold text-blue-500">Pending Lead IT Request List</h1>
                         </div>
+
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
                         </div>
+
+                        <div className="flex justify-between items-center border-t pt-3 mt-4">
+
+                            <span className="text-sm text-gray-700">
+                                Selected: {table.getSelectedRowModel().rows.length}
+                            </span>
+
+                            <div className="flex gap-2">
+
+                                <Button
+                                    color="red"
+                                    onClick={() => handleSubmitMultipleLeadIT("reject")}
+                                    disabled={table.getSelectedRowModel().rows.length === 0}
+                                >
+                                    Reject
+                                </Button>
+
+                                <Button
+                                    color="blue"
+                                    onClick={() => handleSubmitMultipleLeadIT("approve")}
+                                    disabled={table.getSelectedRowModel().rows.length === 0}
+                                >
+                                    Approve
+                                </Button>
+
+                            </div>
+
+                        </div>
+
                     </Paper>
                 </div>
             </div>

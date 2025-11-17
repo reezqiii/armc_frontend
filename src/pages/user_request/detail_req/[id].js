@@ -6,7 +6,9 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import useUser from '@/store/useUser'
+import useDecrypt from '@/hooks/useDecrypt';
 import useApi from '@/hooks/useApi'
+import useEncrypt from '@/hooks/useEncrypt';
 import { formatDate } from "@/lib/dateFormat";
 import Swal from 'sweetalert2'
 
@@ -17,6 +19,8 @@ export default function RequestDetail() {
   const API = useApi()
   const API_URL = API.API_URL
   const { user } = useUser()
+  const { encrypt } = useEncrypt();
+  const { decrypt } = useDecrypt();
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -73,21 +77,30 @@ export default function RequestDetail() {
   }, [data]);
 
   const fetchData = async () => {
-    setLoading(true)
+    if (!id) return;
+
     try {
-      const res = await axios.get(`${API_URL}/requests/${id}`, {
+      
+      setLoading(true);
+
+      const realId = decrypt(id);
+
+      const res = await axios.get(`${API_URL}/requests/${realId}`, {
         headers: { Authorization: `Bearer ${user.token}` },
-      })
-      setData(res.data)
+      });
+
+      setData(res.data);
     } catch (err) {
-      console.error('Failed to fetch detail:', err)
+      console.error("Failed to fetch detail:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    if (id && user?.token) fetchData()
+    if (id && user?.token) {
+      fetchData();
+    }
   }, [id, user?.token, API_URL])
 
   if (loading) {
