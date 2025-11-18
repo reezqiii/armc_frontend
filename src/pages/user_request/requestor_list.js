@@ -80,7 +80,7 @@ export default function RequestUserList() {
         },
         {
             accessorFn: row => row.id_request,
-            id: 'no_request',
+            id: 'id_request',
             header: 'No Request',
             enableColumnFilter: true,
             enableSorting: true,

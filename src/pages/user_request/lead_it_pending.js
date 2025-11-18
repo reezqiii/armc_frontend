@@ -26,7 +26,7 @@ export default function LeadITPendingList() {
     const [totalPages, setTotalPages] = useState(1);
     const [savedFilter, setSavedFilter] = useState({})
     const [isCanceling, setIsCanceling] = useState(false);
-    const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+    const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
@@ -190,7 +190,7 @@ export default function LeadITPendingList() {
         },
         {
             accessorFn: row => row.id_request,
-            id: 'no_request',
+            id: 'id_request',
             header: 'No Request',
             enableColumnFilter: true,
             enableSorting: true,
@@ -206,7 +206,7 @@ export default function LeadITPendingList() {
         },
         {
             accessorFn: row => row.requestor_name,
-            id: 'requestor',
+            id: 'requestor_name',
             header: 'Requestor',
             enableColumnFilter: true,
             enableSorting: true,
@@ -343,19 +343,31 @@ export default function LeadITPendingList() {
     });
 
     const getData = useCallback(async () => {
+        const sort_by = sorting[0]?.id || "id_request";
+        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+
+        const filterObj = Object.fromEntries(
+            columnFilters.map(f => [f.id, f.value])
+        );
+
+        const search = JSON.stringify({
+            request_status: 3,
+            ...filterObj
+        });
+
         try {
-            const search = JSON.stringify({ request_status: 3 });
             const res = await axios.post(
-                `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
+                `${API_URL}/requests/serverside_list?search=${encodeURIComponent(search)}&sort_by=${sort_by}&sort_order=${sort_order}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
                 {},
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
+
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {
-            console.error("Error fetching Lead IT pending data:", err);
+            console.error("❌ Error fetching draft data:", err);
         }
-    }, [API_URL, pagination.pageIndex, pagination.pageSize, user.token]);
+    }, [API_URL, pagination, sorting, columnFilters, user.token]);
 
     useEffect(() => {
         getData();
