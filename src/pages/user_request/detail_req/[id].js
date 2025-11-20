@@ -27,61 +27,59 @@ export default function RequestDetail() {
   const [hodName, setHodName] = useState('');
   const [itManagerName, setItManagerName] = useState('');
   const [isHod, setIsHod] = useState(false);
-  const [isItHod, setIsItHod] = useState(false);
-  const [isLeadIt, setIsLeadIt] = useState(false);
   const [leadItName, setLeadItName] = useState('');
+  const [permissions, setPermissions] = useState({
+    approvalLeadIt: [],
+    approvalItManager: [],
+  });
+
+  useEffect(() => {
+    const fetchPerms = async () => {
+      if (!user?.token) return;
+
+      const res = await axios.get(
+        `${API_URL}/portal_user_permission/me?appId=31`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        }
+      );
+      setPermissions(res.data);
+    };
+
+    fetchPerms();
+  }, [user?.token, API_URL]);
+
+  const isLeadIt = permissions?.approvalLeadIt?.includes(String(user.id));
+  const isItHod = permissions?.approvalItManager?.includes(String(user.id));
+
+  // const isLeadIt = permissions?.approvalLeadIt?.includes("2000");
+  // const isItHod = permissions?.approvalItManager?.includes("2001");
 
   useEffect(() => {
     if (!data || !user) return;
 
-    const userIdLogin = user.id;
-    const hodIdRequest = data.approval_hod_by?.id;
+    const userId = user.id?.toString();
+    const hodId = data.approval_hod_by?.id?.toString();
 
-    setIsHod(false);
-    setIsLeadIt(false);
-    setIsItHod(false);
-
-    const isIdMatch = userIdLogin?.toString() === hodIdRequest?.toString();
-
-    if (isIdMatch && data.request_status === 1) {
+    if (userId === hodId && data.request_status === 1) {
       setIsHod(true);
     }
-    else if (data.request_status === 3) {
-      setIsLeadIt(true);
-    }
-    else if (data.request_status === 5) {
-      setIsItHod(true);
-    }
+
+    setHodName(data.approval_hod_by?.full_name ?? "-");
+    setLeadItName(data.approval_lead_it_by?.full_name ?? "-");
+    setItManagerName(data.approval_it_hod_by?.full_name ?? "-");
+
   }, [data, user]);
-
-  useEffect(() => {
-    if (data) {
-      setHodName(
-        data.approval_hod_by
-          ? data.approval_hod_by.full_name
-          : "-"
-      );
-
-      setLeadItName(
-        data.approval_lead_it_by
-          ? data.approval_lead_it_by.full_name
-          : "-"
-      );
-
-      setItManagerName(
-        data.approval_it_hod_by
-          ? data.approval_it_hod_by.full_name
-          : "-"
-      );
-    }
-  }, [data]);
 
   const fetchData = async () => {
     if (!id) return;
 
     try {
-      
+
       setLoading(true);
+      console.log("Encrypted ID:", encrypt(id.toString()));
 
       const realId = decrypt(id);
 
@@ -587,10 +585,10 @@ export default function RequestDetail() {
                 )}
               </div>
             </div>
-          </div>
+          </div >
 
           {/* Footer */}
-          <div className="flex justify-between pt-6">
+          < div className="flex justify-between pt-6" >
             <Button
               leftSection={<IconArrowLeft size={16} />}
               color="gray"
@@ -606,10 +604,10 @@ export default function RequestDetail() {
                 {statusMap[data.request_status]}
               </span>
             </div>
-          </div>
-        </Paper>
-      </div>
-    </AuthLayout>
+          </div >
+        </Paper >
+      </div >
+    </AuthLayout >
   )
 }
 

@@ -187,7 +187,7 @@ export default function RequestUserList() {
             enableColumnFilter: false,
             enableSorting: false,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request)); // aman
+                const encryptedId = encrypt(String(row.original.id_request));
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -222,7 +222,7 @@ export default function RequestUserList() {
                 );
             }
         }
-    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    ], [data, encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
         data,
