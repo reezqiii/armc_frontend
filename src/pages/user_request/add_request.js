@@ -207,8 +207,6 @@ export default function CreateRequest() {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
 
-            console.log("Response dari backend:", response.data);
-
             if (response.status === 200 || response.status === 201) {
                 const newRequest = response.data;
 
@@ -227,7 +225,7 @@ export default function CreateRequest() {
                     showConfirmButton: false,
                 });
 
-                router.push(`/user_request/draft_request`);
+                router.replace(router.asPath);
             }
         } catch (error) {
             console.error(error.response?.data || error.message);

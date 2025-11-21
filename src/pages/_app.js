@@ -25,9 +25,9 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
   const { encrypt } = useEncrypt();
   const { decrypt } = useDecrypt();
-  const API         = useApi()
-  const API_URL     = API.API_URL
-  const PORTAL_API  = API.LINK_PORTAL
+  const API = useApi()
+  const API_URL = API.API_URL
+  const PORTAL_API = API.LINK_PORTAL
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -75,19 +75,20 @@ export default function App({ Component, pageProps }) {
             id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
+            permissions: isValidUser.user.permissions,
           });
 
           setIsAuthenticated(true);
           router.push('/')
           return;
         } else {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         }
       } else {
         const cookieValue = Cookies.get("portal_user");
 
         if (!cookieValue) {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         } else {
           idUser = cookieValue;
         }
@@ -102,10 +103,12 @@ export default function App({ Component, pageProps }) {
             id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
+            permissions: isValidUser.user.permissions,
           });
+
           setIsAuthenticated(true);
         } else {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         }
       }
     };

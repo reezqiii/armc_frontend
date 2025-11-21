@@ -30,10 +30,23 @@ export default function ITPendingList() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
+    const [canApprove, setCanApprove] = useState(false);
+    const [permissions, setPermissions] = useState({
+        approvalLeadIt: [],
+        approvalItManager: []
+    });
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     });
+
+    useEffect(() => {
+        if (user && user.permissions) {
+            setCanApprove(
+                user.permissions.approvalItManager?.includes("2001")
+            );
+        }
+    }, [user]);
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -76,6 +89,12 @@ export default function ITPendingList() {
     };
 
     const handleSubmitMultipleITHOD = async (action) => {
+
+        if (!canApprove) {
+            Swal.fire("Forbidden", "You do not have permission to approve as IT Manager", "error");
+            return;
+        }
+
         const selectedIds = table
             .getSelectedRowModel()
             .rows
@@ -123,13 +142,15 @@ export default function ITPendingList() {
 
         try {
             await Promise.all(
-                selectedIds.map(id =>
-                    axios.put(
-                        `${API_URL}/requests/${id}/it-approval`,
-                        { action, remarks },   // <== reason ikut dikirim
+                selectedIds.map(id => {
+                    const encryptedId = encrypt(String(id));
+
+                    return axios.put(
+                        `${API_URL}/requests/${encryptedId}/it-approval`,
+                        { action, remarks },
                         { headers: { Authorization: `Bearer ${user.token}` } }
-                    )
-                )
+                    );
+                })
             );
 
             setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
@@ -157,26 +178,25 @@ export default function ITPendingList() {
     const columns = useMemo(() => [
         {
             id: "select",
-            header: ({ table }) => (
-                <input
-                    type="checkbox"
-                    checked={table.getIsAllPageRowsSelected()}
-                    ref={el => {
-                        if (el) el.indeterminate = table.getIsSomePageRowsSelected();
-                    }}
-                    onChange={table.getToggleAllPageRowsSelectedHandler()}
-                />
-            ),
-            cell: ({ row }) => (
-                <input
-                    type="checkbox"
-                    checked={row.getIsSelected()}
-                    ref={el => {
-                        if (el) el.indeterminate = row.getIsSomeSelected();
-                    }}
-                    onChange={row.getToggleSelectedHandler()}
-                />
-            ),
+            enableSorting: false,
+            header: ({ table }) =>
+                canApprove ? (
+                    <input
+                        type="checkbox"
+                        checked={table.getIsAllPageRowsSelected()}
+                        ref={el => { if (el) el.indeterminate = table.getIsSomePageRowsSelected(); }}
+                        onChange={table.getToggleAllPageRowsSelectedHandler()}
+                    />
+                ) : null,
+            cell: ({ row }) =>
+                canApprove ? (
+                    <input
+                        type="checkbox"
+                        checked={row.getIsSelected()}
+                        ref={el => { if (el) el.indeterminate = row.getIsSomeSelected(); }}
+                        onChange={row.getToggleSelectedHandler()}
+                    />
+                ) : null,
             size: 40,
         },
         {
@@ -315,7 +335,7 @@ export default function ITPendingList() {
                 );
             }
         }
-    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    ], [canApprove, encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
         data,
@@ -325,10 +345,13 @@ export default function ITPendingList() {
             columnFilters,
             sorting,
             pagination,
+            rowSelection,
         },
         onColumnFiltersChange: setColumnFilters,
         onSortingChange: setSorting,
         onPaginationChange: setPagination,
+        onRowSelectionChange: setRowSelection,
+        enableRowSelection: true,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         manualSorting: true,
@@ -389,28 +412,18 @@ export default function ITPendingList() {
                                 Selected: {table.getSelectedRowModel().rows.length}
                             </span>
 
-                            <div className="flex gap-2">
+                            {canApprove && (
+                                <div className="flex gap-2">
+                                    <Button color="red" onClick={() => handleSubmitMultipleITHOD("reject")}>
+                                        Reject
+                                    </Button>
 
-                                <Button
-                                    color="red"
-                                    onClick={() => handleSubmitMultipleITHOD("reject")}
-                                    disabled={table.getSelectedRowModel().rows.length === 0}
-                                >
-                                    Reject
-                                </Button>
-
-                                <Button
-                                    color="blue"
-                                    onClick={() => handleSubmitMultipleITHOD("approve")}
-                                    disabled={table.getSelectedRowModel().rows.length === 0}
-                                >
-                                    Approve
-                                </Button>
-
-                            </div>
-
+                                    <Button color="blue" onClick={() => handleSubmitMultipleITHOD("approve")}>
+                                        Approve
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-
                     </Paper>
                 </div>
             </div>

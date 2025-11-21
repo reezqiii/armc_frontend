@@ -12,6 +12,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 
 export default function RequestUserList() {
     RequestUserList.title = "Request User List";
@@ -28,6 +29,8 @@ export default function RequestUserList() {
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedRejectData, setSelectedRejectData] = useState(null);
     const [isCanceling, setIsCanceling] = useState(false);
 
     const handleCancel = async (id_request) => {
@@ -159,24 +162,62 @@ export default function RequestUserList() {
             cell: info => info.getValue(),
         },
         {
-            accessorFn: row => row.request_status.name,
             id: 'request_status',
             header: 'Status',
-            enableColumnFilter: false,
-            enableSorting: true,
+            accessorFn: row => row.request_status.name,
             cell: ({ row }) => {
                 const status = row.original.request_status.name;
+
                 const colorMap = {
-                    'Draft': 'gray',
-                    'Pending by HOD Req': 'yellow',
-                    'Rejected by HOD Req': 'red',
-                    'Pending by Lead IT': 'yellow',
-                    'Rejected by Lead IT': 'red',
-                    'Pending by IT Manager': 'yellow',
-                    'Rejected by IT Manager': 'red',
-                    'Completed': 'green',
+                    Draft: "gray",
+                    "Pending by HOD Req": "yellow",
+                    "Rejected by HOD Req": "red",
+                    "Pending by Lead IT": "yellow",
+                    "Rejected by Lead IT": "red",
+                    "Pending by IT Manager": "yellow",
+                    "Rejected by IT Manager": "red",
+                    Completed: "green",
                 };
 
+                if (status.startsWith("Rejected")) {
+
+                    const rejectField = {
+                        by: row.original.approval_hod_by?.full_name
+                            || row.original.approval_lead_it_by?.full_name
+                            || row.original.approval_it_hod_by?.full_name,
+
+                        at: row.original.approval_hod_date_at
+                            || row.original.approval_lead_date_at
+                            || row.original.approval_it_date_at,
+
+                        reason: row.original.rejected_hod_remarks
+                            || row.original.rejected_lead_remarks
+                            || row.original.rejected_it_remarks,
+                    };
+
+                    return (
+                        <div className="flex flex-col gap-1">
+                            <Badge color="red">{status}</Badge>
+
+                            <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                onClick={() => {
+                                    setSelectedRejectData({
+                                        status,
+                                        rejected_by_name: rejectField.by,
+                                        rejected_at: formatDate(rejectField.at),
+                                        rejected_reason: rejectField.reason,
+                                    });
+                                    setModalOpen(true);
+                                }}
+                            >
+                                View Reason
+                            </Button>
+                        </div>
+                    );
+                }
                 return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
             },
         },
@@ -295,6 +336,11 @@ export default function RequestUserList() {
                     </Paper>
                 </div>
             </div>
+            <RejectTimelineModal
+                opened={modalOpen}
+                onClose={() => setModalOpen(false)}
+                data={selectedRejectData || {}}
+            />
         </AuthLayout>
     );
 }

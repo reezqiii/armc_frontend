@@ -267,7 +267,6 @@ export default function CompletedRequestList() {
                 {},
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
-            console.log(res.data.data);
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {

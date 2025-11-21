@@ -90,9 +90,11 @@ export default function RequestDetail() {
     0: 'Draft',
     1: 'Pending by HOD',
     2: 'Rejected by HOD',
-    3: 'Pending by IT',
-    4: 'Rejected by IT',
-    5: 'Completed',
+    3: 'Pending by Lead IT',
+    4: 'Rejected by Lead IT',
+    5: 'Pending by IT Manager',
+    6: 'Rejected by IT Manager',
+    7: 'Completed',
   };
 
   const statusColorMap = {
@@ -101,7 +103,9 @@ export default function RequestDetail() {
     2: 'text-red-500',
     3: 'text-yellow-500',
     4: 'text-red-500',
-    5: 'text-green-500',
+    5: 'text-yellow-500',
+    6: 'text-red-500',
+    7: 'text-green-500',
   };
 
   const handleHodAction = async (action) => {

@@ -129,8 +129,10 @@ export default function RequestUserList() {
                     'Draft': 'gray',
                     'Pending by HOD': 'yellow',
                     'Rejected by HOD': 'red',
-                    'Pending by IT': 'yellow',
-                    'Rejected by IT': 'red',
+                    'Pending by Lead IT': 'yellow',
+                    'Rejected by Lead IT': 'red',
+                    'Pending by IT Manager': 'yellow',
+                    'Rejected by IT Manager': 'red',
                     'Completed': 'green',
                 };
 

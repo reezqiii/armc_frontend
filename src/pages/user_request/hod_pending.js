@@ -30,6 +30,8 @@ export default function PendingHODList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+const [selectedRejectData, setSelectedRejectData] = useState(null);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,

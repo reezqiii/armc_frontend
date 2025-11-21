@@ -30,10 +30,23 @@ export default function LeadITPendingList() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
+    const [canApprove, setCanApprove] = useState(false);
+    const [permissions, setPermissions] = useState({
+        approvalLeadIt: [],
+        approvalItManager: []
+    });
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     });
+
+    useEffect(() => {
+        if (user && user.permissions) {
+            setCanApprove(
+                user.permissions.approvalLeadIt?.includes("2000")
+            );
+        }
+    }, [user]);
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -76,6 +89,12 @@ export default function LeadITPendingList() {
     };
 
     const handleSubmitMultipleLeadIT = async (action) => {
+
+        if (!canApprove) {
+            Swal.fire("Forbidden", "You do not have permission to approve as Lead IT", "error");
+            return;
+        }
+
         const selectedIds = table
             .getSelectedRowModel()
             .rows
@@ -103,7 +122,6 @@ export default function LeadITPendingList() {
 
         if (!confirm.isConfirmed) return;
 
-        // === Jika REJECT → minta alasan (textarea) ===
         let remarks = "";
 
         if (action === "reject") {
@@ -124,16 +142,17 @@ export default function LeadITPendingList() {
 
         try {
             await Promise.all(
-                selectedIds.map(id =>
-                    axios.put(
-                        `${API_URL}/requests/${id}/lead-it-approval`,
+                selectedIds.map(id => {
+                    const encryptedId = encrypt(String(id));
+
+                    return axios.put(
+                        `${API_URL}/requests/${encryptedId}/lead-it-approval`,
                         { action, remarks },
                         { headers: { Authorization: `Bearer ${user.token}` } }
-                    )
-                )
+                    );
+                })
             );
 
-            // Hapus dari table
             setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
 
             table.resetRowSelection();
@@ -159,26 +178,25 @@ export default function LeadITPendingList() {
     const columns = useMemo(() => [
         {
             id: "select",
-            header: ({ table }) => (
-                <input
-                    type="checkbox"
-                    checked={table.getIsAllPageRowsSelected()}
-                    ref={el => {
-                        if (el) el.indeterminate = table.getIsSomePageRowsSelected();
-                    }}
-                    onChange={table.getToggleAllPageRowsSelectedHandler()}
-                />
-            ),
-            cell: ({ row }) => (
-                <input
-                    type="checkbox"
-                    checked={row.getIsSelected()}
-                    ref={el => {
-                        if (el) el.indeterminate = row.getIsSomeSelected();
-                    }}
-                    onChange={row.getToggleSelectedHandler()}
-                />
-            ),
+            enableSorting: false,
+            header: ({ table }) =>
+                canApprove ? (
+                    <input
+                        type="checkbox"
+                        checked={table.getIsAllPageRowsSelected()}
+                        ref={el => { if (el) el.indeterminate = table.getIsSomePageRowsSelected(); }}
+                        onChange={table.getToggleAllPageRowsSelectedHandler()}
+                    />
+                ) : null,
+            cell: ({ row }) =>
+                canApprove ? (
+                    <input
+                        type="checkbox"
+                        checked={row.getIsSelected()}
+                        ref={el => { if (el) el.indeterminate = row.getIsSomeSelected(); }}
+                        onChange={row.getToggleSelectedHandler()}
+                    />
+                ) : null,
             size: 40,
         },
         {
@@ -283,7 +301,7 @@ export default function LeadITPendingList() {
             enableColumnFilter: false,
             enableSorting: true,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request)); // aman
+                const encryptedId = encrypt(String(row.original.id_request)); 
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -318,7 +336,7 @@ export default function LeadITPendingList() {
                 );
             }
         }
-    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    ], [canApprove, encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
         data,
@@ -393,28 +411,18 @@ export default function LeadITPendingList() {
                                 Selected: {table.getSelectedRowModel().rows.length}
                             </span>
 
-                            <div className="flex gap-2">
+                            {canApprove && (
+                                <div className="flex gap-2">
+                                    <Button color="red" onClick={() => handleSubmitMultipleLeadIT("reject")}>
+                                        Reject
+                                    </Button>
 
-                                <Button
-                                    color="red"
-                                    onClick={() => handleSubmitMultipleLeadIT("reject")}
-                                    disabled={table.getSelectedRowModel().rows.length === 0}
-                                >
-                                    Reject
-                                </Button>
-
-                                <Button
-                                    color="blue"
-                                    onClick={() => handleSubmitMultipleLeadIT("approve")}
-                                    disabled={table.getSelectedRowModel().rows.length === 0}
-                                >
-                                    Approve
-                                </Button>
-
-                            </div>
-
+                                    <Button color="blue" onClick={() => handleSubmitMultipleLeadIT("approve")}>
+                                        Approve
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-
                     </Paper>
                 </div>
             </div>
