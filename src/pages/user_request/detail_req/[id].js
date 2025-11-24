@@ -27,45 +27,32 @@ export default function RequestDetail() {
   const [hodName, setHodName] = useState('');
   const [itManagerName, setItManagerName] = useState('');
   const [isHod, setIsHod] = useState(false);
+  const [isLeadIt, setIsLeadIt] = useState(false);
+  const [isItHod, setIsItHod] = useState(false);
   const [leadItName, setLeadItName] = useState('');
-  const [permissions, setPermissions] = useState({
-    approvalLeadIt: [],
-    approvalItManager: [],
-  });
-
-  useEffect(() => {
-    const fetchPerms = async () => {
-      if (!user?.token) return;
-
-      const res = await axios.get(
-        `${API_URL}/portal_user_permission/me?appId=31`,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`
-          }
-        }
-      );
-      setPermissions(res.data);
-    };
-
-    fetchPerms();
-  }, [user?.token, API_URL]);
-
-  const isLeadIt = permissions?.approvalLeadIt?.includes(String(user.id));
-  const isItHod = permissions?.approvalItManager?.includes(String(user.id));
-
-  // const isLeadIt = permissions?.approvalLeadIt?.includes("2000");
-  // const isItHod = permissions?.approvalItManager?.includes("2001");
+  const canLeadIt = user.permissions?.approvalLeadIt?.length > 0;
+  const canItHod = user.permissions?.approvalItManager?.length > 0;
 
   useEffect(() => {
     if (!data || !user) return;
 
-    const userId = user.id?.toString();
-    const hodId = data.approval_hod_by?.id?.toString();
+    const userId = String(user.id ?? "");
+    const hodId = String(data.approval_hod_by?.id ?? "");
 
-    if (userId === hodId && data.request_status === 1) {
-      setIsHod(true);
-    }
+    const canLeadIt = user.permissions?.approvalLeadIt?.length > 0;
+    const canItHod = user.permissions?.approvalItManager?.length > 0;
+
+    setIsHod(
+      userId === hodId && data.request_status === 1
+    );
+
+    setIsLeadIt(
+      data.request_status === 3 && canLeadIt
+    );
+
+    setIsItHod(
+      data.request_status === 5 && canItHod
+    );
 
     setHodName(data.approval_hod_by?.full_name ?? "-");
     setLeadItName(data.approval_lead_it_by?.full_name ?? "-");
@@ -79,11 +66,10 @@ export default function RequestDetail() {
     try {
 
       setLoading(true);
-      console.log("Encrypted ID:", encrypt(id.toString()));
 
       const realId = decrypt(id);
 
-      const res = await axios.get(`${API_URL}/requests/${realId}`, {
+      const res = await axios.get(`${API_URL}/requests/${id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -166,11 +152,13 @@ export default function RequestDetail() {
     }
 
     try {
+      const realId = id;
+
       await axios.put(
-        `${API_URL}/requests/${id}/hod-approval`,
+        `${API_URL}/requests/${realId}/hod-approval`,
         { action, remarks },
         { headers: { Authorization: `Bearer ${user.token}` } }
-      )
+      );
 
       Swal.fire({
         icon: 'success',
@@ -187,86 +175,44 @@ export default function RequestDetail() {
     }
   };
 
-  const handleItAction = async (action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action.toUpperCase()} this request?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-    });
-    if (!confirm.isConfirmed) return;
-
-    let remarks = '';
-    if (action === 'reject') {
-      const { value: inputRemarks } = await Swal.fire({
-        title: 'Reason for Rejection',
-        input: 'textarea',
-        inputPlaceholder: 'Enter your reason...',
-        showCancelButton: true,
-      });
-      if (!inputRemarks) {
-        Swal.fire('Cancelled', 'You must provide a reason for rejection.', 'info');
-        return;
-      }
-      remarks = inputRemarks;
-    }
-
-    try {
-      await axios.put(
-        `${API_URL}/requests/${id}/it-approval`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Success!',
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      fetchData();
-    } catch (err) {
-      console.error('Error updating status:', err);
-      Swal.fire('Error', 'Failed to update request. Please try again.', 'error')
-    }
-  }
-
   const handleLeadItAction = async (action) => {
     const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action.toUpperCase()} this request?`,
-      icon: 'question',
+      title: `Are you sure you want to ${action}?`,
+      icon: "question",
       showCancelButton: true,
       confirmButtonText: `Yes, ${action}`,
     });
+
     if (!confirm.isConfirmed) return;
 
-    let remarks = '';
-    if (action === 'reject') {
+    let remarks = "";
+    if (action === "reject") {
       const { value: inputRemarks } = await Swal.fire({
-        title: 'Reason for Rejection',
-        input: 'textarea',
-        inputPlaceholder: 'Enter your reason...',
+        title: "Reason for Rejection",
+        input: "textarea",
+        inputPlaceholder: "Enter your reason...",
         showCancelButton: true,
       });
+
       if (!inputRemarks) {
-        Swal.fire('Cancelled', 'You must provide a reason for rejection.', 'info');
+        Swal.fire("Cancelled", "You must provide a reason for rejection.", "info");
         return;
       }
       remarks = inputRemarks;
     }
 
     try {
+      const realId = id;
+
       await axios.put(
-        `${API_URL}/requests/${id}/lead-it-approval`,
+        `${API_URL}/requests/${realId}/lead-it-approval`,
         { action, remarks },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       Swal.fire({
-        icon: 'success',
-        title: 'Success!',
+        icon: "success",
+        title: "Success!",
         text: `Request has been ${action}ed.`,
         timer: 1500,
         showConfirmButton: false,
@@ -274,8 +220,58 @@ export default function RequestDetail() {
 
       fetchData();
     } catch (err) {
-      console.error('Error updating status:', err);
-      Swal.fire('Error', 'Failed to update request. Please try again.', 'error');
+      console.error("Error updating status:", err);
+      Swal.fire("Error", "Failed to update request. Please try again.", "error");
+    }
+  };
+
+  const handleItHodAction = async (action) => {
+    const confirm = await Swal.fire({
+      title: `Are you sure you want to ${action}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: `Yes, ${action}`,
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    let remarks = "";
+    if (action === "reject") {
+      const { value: inputRemarks } = await Swal.fire({
+        title: "Reason for Rejection",
+        input: "textarea",
+        inputPlaceholder: "Enter your reason...",
+        showCancelButton: true,
+      });
+
+      if (!inputRemarks) {
+        Swal.fire("Cancelled", "You must provide a reason for rejection.", "info");
+        return;
+      }
+      remarks = inputRemarks;
+    }
+
+    try {
+      const realId = id;
+
+      await axios.put(
+        `${API_URL}/requests/${realId}/it-approval`,
+        { action, remarks },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: `Request has been ${action}ed.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      fetchData();
+    } catch (err) {
+      console.error("Error updating status:", err);
+      Swal.fire("Error", "Failed to update request. Please try again.", "error");
     }
   };
 
@@ -502,13 +498,20 @@ export default function RequestDetail() {
                       : '-'}
                   </p>
                 </div>
-                {/* HOD Actions */}
                 {isHod && data.request_status === 1 && (
                   <div className="mt-3 flex gap-2">
-                    <Button color="green" size="sm" onClick={() => handleHodAction('approve')}>
+                    <Button
+                      color="green"
+                      size="sm"
+                      onClick={() => handleHodAction('approve')}
+                    >
                       Approve
                     </Button>
-                    <Button color="red" size="sm" onClick={() => handleHodAction('reject')}>
+                    <Button
+                      color="red"
+                      size="sm"
+                      onClick={() => handleHodAction('reject')}
+                    >
                       Reject
                     </Button>
                   </div>
@@ -537,13 +540,12 @@ export default function RequestDetail() {
                       : '-'}
                   </p>
                 </div>
-
                 {isLeadIt && data.request_status === 3 && (
                   <div className="mt-3 flex gap-2">
-                    <Button color="green" size="sm" onClick={() => handleLeadItAction('approve')}>
+                    <Button color="green" size="sm" onClick={() => handleLeadItAction("approve")}>
                       Approve
                     </Button>
-                    <Button color="red" size="sm" onClick={() => handleLeadItAction('reject')}>
+                    <Button color="red" size="sm" onClick={() => handleLeadItAction("reject")}>
                       Reject
                     </Button>
                   </div>
@@ -572,13 +574,12 @@ export default function RequestDetail() {
                       : '-'}
                   </p>
                 </div>
-
                 {isItHod && data.request_status === 5 && (
                   <div className="mt-3 flex gap-2">
-                    <Button color="green" size="sm" onClick={() => handleItAction('approve')}>
+                    <Button color="green" size="sm" onClick={() => handleItHodAction("approve")}>
                       Approve
                     </Button>
-                    <Button color="red" size="sm" onClick={() => handleItAction('reject')}>
+                    <Button color="red" size="sm" onClick={() => handleItHodAction("reject")}>
                       Reject
                     </Button>
                   </div>

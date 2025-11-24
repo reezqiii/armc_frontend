@@ -301,7 +301,7 @@ export default function LeadITPendingList() {
             enableColumnFilter: false,
             enableSorting: true,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request)); 
+                const encryptedId = encrypt(String(row.original.id_request));
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -413,12 +413,11 @@ export default function LeadITPendingList() {
 
                             {canApprove && (
                                 <div className="flex gap-2">
-                                    <Button color="red" onClick={() => handleSubmitMultipleLeadIT("reject")}>
-                                        Reject
-                                    </Button>
-
                                     <Button color="blue" onClick={() => handleSubmitMultipleLeadIT("approve")}>
                                         Approve
+                                    </Button>
+                                    <Button color="red" onClick={() => handleSubmitMultipleLeadIT("reject")}>
+                                        Reject
                                     </Button>
                                 </div>
                             )}

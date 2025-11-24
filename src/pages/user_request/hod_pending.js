@@ -31,7 +31,7 @@ export default function PendingHODList() {
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-const [selectedRejectData, setSelectedRejectData] = useState(null);
+  const [selectedRejectData, setSelectedRejectData] = useState(null);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -368,6 +368,7 @@ const [selectedRejectData, setSelectedRejectData] = useState(null);
 
     const search = JSON.stringify({
       request_status: 1,
+      approval_hod_by: user.id,
       ...filterObj
     });
 
@@ -411,27 +412,26 @@ const [selectedRejectData, setSelectedRejectData] = useState(null);
                 Selected: {table.getSelectedRowModel().rows.length}
               </span>
 
-              <div className="flex gap-2">
+              {user?.id && data.some(item => item.approval_hod_by?.id === user.id) && (
+                <div className="flex gap-2">
+                  <Button
+                    color="blue"
+                    onClick={handleApproveMultiple}
+                    disabled={table.getSelectedRowModel().rows.length === 0}
+                  >
+                    Approve 
+                  </Button>
 
-                <Button
-                  color="red"
-                  onClick={handleRejectMultiple}
-                  disabled={table.getSelectedRowModel().rows.length === 0}
-                >
-                  Reject
-                </Button>
-
-                <Button
-                  color="blue"
-                  onClick={handleApproveMultiple}
-                  disabled={table.getSelectedRowModel().rows.length === 0}
-                >
-                  Approve
-                </Button>
-              </div>
-
+                  <Button
+                    color="red"
+                    onClick={handleRejectMultiple}
+                    disabled={table.getSelectedRowModel().rows.length === 0}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              )}
             </div>
-
           </Paper>
         </div>
       </div>

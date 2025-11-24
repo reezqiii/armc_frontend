@@ -285,7 +285,10 @@ export default function RequestUserList() {
     });
 
     const getData = useCallback(async () => {
-        const searchQuery = { status_active: 1 };
+        const searchQuery = {
+            status_active: 1,
+            requestor_id: user.id
+        };
 
         columnFilters.forEach(filter => {
             if (filter.value != null && filter.value !== "") {
@@ -302,6 +305,9 @@ export default function RequestUserList() {
             sorting && sorting.length > 0
                 ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
                 : "";
+
+        console.log("Filter params sent:", filterParams);
+
 
         try {
             const { data } = await axios.post(

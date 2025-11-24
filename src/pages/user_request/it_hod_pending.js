@@ -122,7 +122,6 @@ export default function ITPendingList() {
 
         if (!confirm.isConfirmed) return;
 
-        // === Jika REJECT → minta reason ===
         let remarks = "";
         if (action === "reject") {
             const { value } = await Swal.fire({
@@ -414,12 +413,11 @@ export default function ITPendingList() {
 
                             {canApprove && (
                                 <div className="flex gap-2">
-                                    <Button color="red" onClick={() => handleSubmitMultipleITHOD("reject")}>
-                                        Reject
-                                    </Button>
-
                                     <Button color="blue" onClick={() => handleSubmitMultipleITHOD("approve")}>
                                         Approve
+                                    </Button>
+                                    <Button color="red" onClick={() => handleSubmitMultipleITHOD("reject")}>
+                                        Reject
                                     </Button>
                                 </div>
                             )}

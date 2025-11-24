@@ -322,8 +322,8 @@ export default function DraftRequestList() {
     manualFiltering: true,
     manualPagination: true,
   });
-
-  const getData = useCallback(async () => {
+  
+const getData = useCallback(async () => {
     const sort_by = sorting[0]?.id || "id_request";
     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
@@ -333,6 +333,7 @@ export default function DraftRequestList() {
 
     const search = JSON.stringify({
       request_status: 0,
+      requestor_id: user.id,
       ...filterObj
     });
 

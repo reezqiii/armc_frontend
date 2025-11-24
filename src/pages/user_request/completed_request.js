@@ -35,48 +35,48 @@ export default function CompletedRequestList() {
         pageSize: 10,
     });
 
-    // function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
-    //     const [value, setValue] = React.useState(initialValue ?? 0);
-    //     const [loading, setLoading] = React.useState(false);
+    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
+        const [value, setValue] = React.useState(initialValue ?? 0);
+        const [loading, setLoading] = React.useState(false);
 
-    //     const handleChange = async (e) => {
-    //         const newValue = parseInt(e.target.value);
-    //         setValue(newValue);
-    //         setLoading(true);
+        const handleChange = async (e) => {
+            const newValue = parseInt(e.target.value);
+            setValue(newValue);
+            setLoading(true);
 
-    //         try {
-    //             await axios.patch(
-    //                 `${API_URL}/requests/${id_request}/admin-status`,
-    //                 { request_admin: newValue },
-    //                 { headers: { Authorization: `Bearer ${token}` } }
-    //             );
+            try {
+                await axios.patch(
+                    `${API_URL}/requests/${id_request}/admin-status`,
+                    { request_admin: newValue },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
 
-    //             setData(prevData =>
-    //                 prevData.map(item =>
-    //                     item.id_request === id_request ? { ...item, request_admin: newValue } : item
-    //                 )
-    //             );
-    //         } catch (error) {
-    //             console.error(error);
-    //             setValue(initialValue ?? 0);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
+                setData(prevData =>
+                    prevData.map(item =>
+                        item.id_request === id_request ? { ...item, request_admin: newValue } : item
+                    )
+                );
+            } catch (error) {
+                console.error(error);
+                setValue(initialValue ?? 0);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    //     return (
-    //         <select
-    //             value={value}
-    //             onChange={handleChange}
-    //             disabled={loading}
-    //             className="border border-gray-300 rounded-md text-sm p-1 bg-white"
-    //         >
-    //             <option value={0}>On Queue</option>
-    //             <option value={1}>On Progress</option>
-    //             <option value={2}>Completed</option>
-    //         </select>
-    //     );
-    // }
+        return (
+            <select
+                value={value}
+                onChange={handleChange}
+                disabled={loading}
+                className="border border-gray-300 rounded-md text-sm p-1 bg-white"
+            >
+                <option value={0}>On Queue</option>
+                <option value={1}>On Progress</option>
+                <option value={2}>Completed</option>
+            </select>
+        );
+    }
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -227,6 +227,20 @@ export default function CompletedRequestList() {
 
                 return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
             },
+        },
+        {
+            accessorFn: row => row.request_admin,
+            id: 'request_admin',
+            header: 'Admin Status',
+            cell: ({ row }) => (
+                <AdminStatusCell
+                    value={row.original.request_admin}
+                    id_request={row.original.id_request}
+                    API_URL={API_URL}
+                    token={user.token}
+                    setData={setData}
+                />
+            ),
         },
         {
             accessorFn: row => row.id_request,

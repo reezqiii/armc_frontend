@@ -178,9 +178,10 @@ export default function CreateRequest() {
             cancelButtonColor: "#d33",
         });
 
-        if (!result.isConfirmed) return;
-
-        setLoadingSubmit(true);
+        if (!result.isConfirmed) {
+            setLoadingSubmit(false);
+            return;
+        }
 
         const payload = {
             full_name: formData.full_name,
@@ -225,7 +226,26 @@ export default function CreateRequest() {
                     showConfirmButton: false,
                 });
 
-                router.replace(router.asPath);
+                setFormData({
+                    created_by_name: user?.full_name || user?.name || '-',
+                    full_name: '',
+                    badge_no: '',
+                    email: '',
+                    project: '',
+                    department: '',
+                    request_reason: '',
+                    approval_hod_by: '',
+                    approval_it_hod_by: '',
+                    approval_lead_it_by: '',
+                    department_name: '',
+                    position_name: '',
+                    project_name: '',
+                    remarks: '',
+                    company: '',
+                    company_name: '',
+                    access_yard_company: [],
+                    access_nav_menu: [],
+                });
             }
         } catch (error) {
             console.error(error.response?.data || error.message);
@@ -439,13 +459,14 @@ export default function CreateRequest() {
                                 {/* HOD Requestor */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <Select
+                                        key={formData.approval_hod_by}
                                         label="Acknowledge By"
                                         placeholder="Select HOD..."
                                         searchable
-                                        value={String(formData.approval_hod_by || '')}
+                                        value={formData.approval_hod_by || ''}
                                         onChange={(val) => handleChange('approval_hod_by', val)}
-                                        data={hodOptions.map(u => ({
-                                            value: String(u.value),
+                                        data={hodOptions.map((u) => ({
+                                            value: u.value,
                                             label: u.label
                                         }))}
                                         classNames={{
