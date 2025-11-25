@@ -9,29 +9,29 @@ import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
-import { canEditCancel } from "@/lib/permissionHelper";
+import { canChangeAdminStatus } from "@/lib/permissionHelper";
+import { canSeeAdminSidebar } from "@/lib/permissionHelper"; 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
 
-export default function ITPendingList() {
-    ITPendingList.title = "Pending IT Manager List";
-
+export default function AdminList() {
     const router = useRouter();
     const { user } = useUser();
     const API = useApi();
     const API_URL = API.API_URL;
     const { encrypt } = useEncrypt();
+    const { status: queryStatus } = router.query;
 
     const [data, setData] = useState([]);
+    const isActive = (val) => status === val;
     const [totalPages, setTotalPages] = useState(1);
-    const [savedFilter, setSavedFilter] = useState({})
+    const [status, setStatus] = useState('onQueue');
     const [isCanceling, setIsCanceling] = useState(false);
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
-    const [canApprove, setCanApprove] = useState(false);
     const [permissions, setPermissions] = useState({
         approvalLeadIt: [],
         approvalItManager: [],
@@ -43,13 +43,57 @@ export default function ITPendingList() {
     });
 
     useEffect(() => {
-        if (user && user.permissions) {
-            setCanApprove(
-                user.permissions.approvalItManager?.includes("2001")
-            );
-            setPermissions(user.permissions);
+        if (queryStatus) setStatus(String(queryStatus));
+    }, [queryStatus]);
+
+    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
+        const [value, setValue] = React.useState(initialValue ?? 0);
+        const [loading, setLoading] = React.useState(false);
+
+        const statusLabel = value === 0 ? "On Queue" : value === 1 ? "On Progress" : "Completed";
+
+        if (!canChangeAdminStatus(permissions)) {
+            return <span>{statusLabel}</span>;
         }
-    }, [user]);
+
+        const handleChange = async (e) => {
+            const newValue = parseInt(e.target.value);
+            setValue(newValue);
+            setLoading(true);
+
+            try {
+                await axios.patch(
+                    `${API_URL}/requests/${id_request}/admin-status`,
+                    { request_admin: newValue },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                setData(prevData =>
+                    prevData.map(item =>
+                        item.id_request === id_request ? { ...item, request_admin: newValue } : item
+                    )
+                );
+            } catch (error) {
+                console.error(error);
+                setValue(initialValue ?? 0);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <select
+                value={value}
+                onChange={handleChange}
+                disabled={loading}
+                className="border border-gray-300 rounded-md text-sm p-1 bg-white"
+            >
+                <option value={0}>On Queue</option>
+                <option value={1}>On Progress</option>
+                <option value={2}>Completed</option>
+            </select>
+        );
+    }
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -67,7 +111,7 @@ export default function ITPendingList() {
         setIsCanceling(true);
         try {
             const encryptedId = encrypt(String(id_request));
-            
+
             await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
@@ -93,116 +137,7 @@ export default function ITPendingList() {
         }
     };
 
-    const handleSubmitMultipleITHOD = async (action) => {
-
-        if (!canApprove) {
-            Swal.fire("Forbidden", "You do not have permission to approve as IT Manager", "error");
-            return;
-        }
-
-        const selectedIds = table
-            .getSelectedRowModel()
-            .rows
-            .map(row => row.original.id_request);
-
-        if (selectedIds.length === 0) {
-            Swal.fire({
-                icon: 'info',
-                title: 'No Selection',
-                text: 'Please select at least one request.',
-            });
-            return;
-        }
-
-        const confirm = await Swal.fire({
-            title: `${action === 'approve'
-                ? 'Approve'
-                : 'Reject'
-                } ${selectedIds.length} selected request(s)?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, proceed',
-            cancelButtonText: 'Cancel',
-        });
-
-        if (!confirm.isConfirmed) return;
-
-        let remarks = "";
-        if (action === "reject") {
-            const { value } = await Swal.fire({
-                title: "Reason for Rejection",
-                input: "textarea",
-                inputPlaceholder: "Enter your reason...",
-                showCancelButton: true,
-            });
-
-            if (!value) {
-                Swal.fire("Cancelled", "You must provide a reason.", "info");
-                return;
-            }
-
-            remarks = value;
-        }
-
-        try {
-            await Promise.all(
-                selectedIds.map(id => {
-                    const encryptedId = encrypt(String(id));
-
-                    return axios.put(
-                        `${API_URL}/requests/${encryptedId}/it-approval`,
-                        { action, remarks },
-                        { headers: { Authorization: `Bearer ${user.token}` } }
-                    );
-                })
-            );
-
-            setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
-
-            table.resetRowSelection();
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: `${selectedIds.length} request(s) processed.`,
-                timer: 1500,
-                showConfirmButton: false,
-            });
-
-        } catch (err) {
-            console.error("ITHOD bulk error:", err);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to process selected requests.',
-            });
-        }
-    };
-
     const columns = useMemo(() => [
-        {
-            id: "select",
-            enableSorting: false,
-            header: ({ table }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={table.getIsAllPageRowsSelected()}
-                        ref={el => { if (el) el.indeterminate = table.getIsSomePageRowsSelected(); }}
-                        onChange={table.getToggleAllPageRowsSelectedHandler()}
-                    />
-                ) : null,
-            cell: ({ row }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={row.getIsSelected()}
-                        ref={el => { if (el) el.indeterminate = row.getIsSomeSelected(); }}
-                        onChange={row.getToggleSelectedHandler()}
-                    />
-                ) : null,
-            size: 40,
-        },
         {
             id: 'no',
             header: 'No',
@@ -291,21 +226,30 @@ export default function ITPendingList() {
             cell: info => info.getValue(),
         },
         {
-            id: 'status',
-            header: 'Status',
+            accessorFn: row => row.request_admin,
+            id: 'request_admin',
+            header: 'Admin Status',
             enableColumnFilter: false,
             enableSorting: true,
-            cell: () => <Badge color="yellow">Pending by IT Manager</Badge>,
+            cell: ({ row }) => (
+                <AdminStatusCell
+                    value={row.original.request_admin}
+                    id_request={row.original.id_request}
+                    API_URL={API_URL}
+                    token={user.token}
+                    setData={setData}
+                    permissions={permissions}
+                />
+            )
         },
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
             enableColumnFilter: false,
-            enableSorting: true,
+            enableSorting: false,
             cell: ({ row }) => {
-                const request = row.original;
-                const encryptedId = encrypt(String(request.id_request));
+                const encryptedId = encrypt(String(row.original.id_request));
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -318,33 +262,29 @@ export default function ITPendingList() {
                             Details
                         </Button>
 
-                        {canEditCancel(request, user, permissions) && (
-                            <>
-                                <Button
-                                    leftSection={<IconEdit size={16} />}
-                                    color="orange"
-                                    fullWidth
-                                    onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                                >
-                                    Edit
-                                </Button>
+                        <Button
+                            leftSection={<IconEdit size={16} />}
+                            color="orange"
+                            fullWidth
+                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                        >
+                            Edit
+                        </Button>
 
-                                <Button
-                                    leftSection={<IconX size={16} />}
-                                    color="red"
-                                    fullWidth
-                                    onClick={() => handleCancel(request.id_request)}
-                                    disabled={isDeleting}
-                                >
-                                    Cancel
-                                </Button>
-                            </>
-                        )}
+                        <Button
+                            leftSection={<IconX size={16} />}
+                            color="red"
+                            fullWidth
+                            onClick={() => handleCancel(row.original.id_request)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
                     </div>
                 );
             }
         }
-    ], [canApprove, encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    ], [data, encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
 
     const table = useReactTable({
         data,
@@ -368,7 +308,9 @@ export default function ITPendingList() {
         manualPagination: true,
     });
 
-    const getData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
+        const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+
         const sort_by = sorting[0]?.id || "id_request";
         const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
@@ -377,7 +319,7 @@ export default function ITPendingList() {
         );
 
         const search = JSON.stringify({
-            request_status: 5,
+            request_admin: statusMap[status],
             ...filterObj
         });
 
@@ -391,13 +333,19 @@ export default function ITPendingList() {
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {
-            console.error("❌ Error fetching draft data:", err);
+            console.error("❌ Error fetching admin data:", err);
         }
-    }, [API_URL, pagination, sorting, columnFilters, user.token]);
+    }, [API_URL, status, sorting, columnFilters, pagination, user.token]);
 
     useEffect(() => {
-        getData();
-    }, [getData]);
+        fetchData();
+    }, [fetchData, status]);
+
+    const titleMap = {
+        onQueue: "On Queue",
+        onProgress: "On Progress",
+        completed: "Completed",
+    };
 
     return (
         <AuthLayout sidebarList={requestorList}>
@@ -407,34 +355,15 @@ export default function ITPendingList() {
 
                         <div className="flex items-center justify-between border-b pb-2 mb-3">
                             <h1 className="text-xl font-bold text-blue-500">
-                                Pending IT Manager Request List
+                                {titleMap[status] || "Request List"}
                             </h1>
                         </div>
 
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
                         </div>
-
-                        <div className="flex justify-between items-center border-t pt-3 mt-4">
-
-                            <span className="text-sm text-gray-700">
-                                Selected: {table.getSelectedRowModel().rows.length}
-                            </span>
-
-                            {canApprove && (
-                                <div className="flex gap-2">
-                                    <Button color="blue" onClick={() => handleSubmitMultipleITHOD("approve")}>
-                                        Approve
-                                    </Button>
-                                    <Button color="red" onClick={() => handleSubmitMultipleITHOD("reject")}>
-                                        Reject
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    </Paper>
-                </div>
+                    </Paper> </div>
             </div>
-        </AuthLayout>
+        </AuthLayout >
     );
 }

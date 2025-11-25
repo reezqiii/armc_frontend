@@ -52,11 +52,11 @@ export default function DraftRequestList() {
 
     setIsCanceling(true);
     try {
-      const res = await axios.put(
-        `${API_URL}/requests/cancel/${id_request}`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
+      const encryptedId = encrypt(String(id_request));
+
+      await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
 
       if (res.status === 200) {
         setData(prev => prev.filter(item => item.id_request !== id_request));
@@ -77,7 +77,7 @@ export default function DraftRequestList() {
         text: 'Failed to cancel the request. Please try again.',
       });
     } finally {
-      setIsCanceling(false);
+      setIsDeleting(false);
     }
   };
 
@@ -322,8 +322,8 @@ export default function DraftRequestList() {
     manualFiltering: true,
     manualPagination: true,
   });
-  
-const getData = useCallback(async () => {
+
+  const getData = useCallback(async () => {
     const sort_by = sorting[0]?.id || "id_request";
     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 

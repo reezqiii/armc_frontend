@@ -6,9 +6,16 @@ import {
   IconUserCheck,
   IconUserCog,
   IconCircleCheck,
-  IconDatabaseExclamation,
+  IconUserExclamation,
   IconUserShield,
 } from '@tabler/icons-react';
+
+// === Tambahkan fungsi di sini ===
+const currentStatus = typeof window !== "undefined"
+  ? new URLSearchParams(window.location.search).get("status")
+  : null;
+
+const isActive = (val) => currentStatus === val;
 
 export const requestorList = [
   {
@@ -45,7 +52,7 @@ export const requestorList = [
         title: "Pending Lead IT Request",
         href: "/user_request/lead_it_pending",
         active: "Pending Lead IT Request",
-        icon: <IconUserCheck size={18} />,
+        icon: <IconUserExclamation size={18} />,
       },
       {
         title: "Pending IT Manager",
@@ -62,6 +69,7 @@ export const requestorList = [
     ],
   },
 
+  
   {
     title: "Admin",
     href: "/",
@@ -70,21 +78,22 @@ export const requestorList = [
     child: [
       {
         title: "On Queue",
-        href: "/",
-        active: "Permission Request List",
+        href: "/admin/admin_list?status=onQueue",
+        active: isActive("onQueue"),
         icon: <IconListLetters size={18} />,
       },
       {
         title: "On Progress",
-        href: "/",
-        active: "Create User Request",
+        href: "/admin/admin_list?status=onProgress",
+        active: isActive("onProgress"),
         icon: <IconUserPlus size={18} />,
       },
       {
         title: "Completed",
-        href: "/",
-        active: "Draft",
-        icon: <IconFileStar size={18} />,
+        href: "/admin/admin_list?status=completed",
+        active: isActive("completed"),
+        icon: <IconCircleCheck size={18} />,
+
       },
     ],
   },

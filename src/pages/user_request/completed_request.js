@@ -9,12 +9,13 @@ import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
+import { canChangeAdminStatus } from "@/lib/permissionHelper";
+import { canEditCancel } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
 
-export default function CompletedRequestList() {
-    CompletedRequestList.title = "Completed Request List";
+function CompletedRequest() {
 
     const router = useRouter();
     const { user } = useUser();
@@ -30,14 +31,35 @@ export default function CompletedRequestList() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
+    const [permissions, setPermissions] = useState({
+        itAction: []
+    });
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     });
 
-    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData }) {
+    useEffect(() => {
+        if (user && user.permissions) {
+            setPermissions(user.permissions);
+        }
+    }, [user]);
+
+    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
         const [value, setValue] = React.useState(initialValue ?? 0);
         const [loading, setLoading] = React.useState(false);
+
+        if (!canChangeAdminStatus(permissions)) {
+            return (
+                <span>
+                    {value === 0
+                        ? "On Queue"
+                        : value === 1
+                            ? "On Progress"
+                            : "Completed"}
+                </span>
+            );
+        }
 
         const handleChange = async (e) => {
             const newValue = parseInt(e.target.value);
@@ -93,7 +115,9 @@ export default function CompletedRequestList() {
 
         setIsCanceling(true);
         try {
-            await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
+            const encryptedId = encrypt(String(id_request));
+
+            await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
 
@@ -232,6 +256,8 @@ export default function CompletedRequestList() {
             accessorFn: row => row.request_admin,
             id: 'request_admin',
             header: 'Admin Status',
+            enableColumnFilter: false,
+            enableSorting: true,
             cell: ({ row }) => (
                 <AdminStatusCell
                     value={row.original.request_admin}
@@ -239,8 +265,9 @@ export default function CompletedRequestList() {
                     API_URL={API_URL}
                     token={user.token}
                     setData={setData}
+                    permissions={permissions}
                 />
-            ),
+            )
         },
         {
             accessorFn: row => row.id_request,
@@ -249,7 +276,8 @@ export default function CompletedRequestList() {
             enableColumnFilter: false,
             enableSorting: false,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request)); // aman
+                const request = row.original;
+                const encryptedId = encrypt(String(request.id_request));
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -262,24 +290,28 @@ export default function CompletedRequestList() {
                             Details
                         </Button>
 
-                        <Button
-                            leftSection={<IconEdit size={16} />}
-                            color="orange"
-                            fullWidth
-                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                        >
-                            Edit
-                        </Button>
+                        {canEditCancel(request, user, permissions) && (
+                            <>
+                                <Button
+                                    leftSection={<IconEdit size={16} />}
+                                    color="orange"
+                                    fullWidth
+                                    onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                                >
+                                    Edit
+                                </Button>
 
-                        <Button
-                            leftSection={<IconX size={16} />}
-                            color="red"
-                            fullWidth
-                            onClick={() => handleCancel(row.original.id_request)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
+                                <Button
+                                    leftSection={<IconX size={16} />}
+                                    color="red"
+                                    fullWidth
+                                    onClick={() => handleCancel(request.id_request)}
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        )}
                     </div>
                 );
             }
@@ -356,3 +388,6 @@ export default function CompletedRequestList() {
         </AuthLayout>
     );
 }
+
+CompletedRequest.title = "Completed Request";
+export default CompletedRequest;

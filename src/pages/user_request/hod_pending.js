@@ -52,7 +52,9 @@ export default function PendingHODList() {
 
     setIsCanceling(true);
     try {
-      await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
+      const encryptedId = encrypt(String(id_request));
+
+      await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -419,7 +421,7 @@ export default function PendingHODList() {
                     onClick={handleApproveMultiple}
                     disabled={table.getSelectedRowModel().rows.length === 0}
                   >
-                    Approve 
+                    Approve
                   </Button>
 
                   <Button

@@ -26,12 +26,12 @@ export default function RequestUserList() {
     const [data, setData] = useState([]);
     const [columnFilters, setColumnFilters] = useState([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isCanceling, setIsCanceling] = useState(false);
     const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [totalPages, setTotalPages] = useState(1);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedRejectData, setSelectedRejectData] = useState(null);
-    const [isCanceling, setIsCanceling] = useState(false);
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -48,7 +48,9 @@ export default function RequestUserList() {
 
         setIsCanceling(true);
         try {
-            await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
+            const encryptedId = encrypt(String(id_request));
+
+            await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
 

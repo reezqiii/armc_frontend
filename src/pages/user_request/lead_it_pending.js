@@ -10,6 +10,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
+import { canEditCancel } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
@@ -33,7 +34,8 @@ export default function LeadITPendingList() {
     const [canApprove, setCanApprove] = useState(false);
     const [permissions, setPermissions] = useState({
         approvalLeadIt: [],
-        approvalItManager: []
+        approvalItManager: [],
+        itAction: []
     });
     const [pagination, setPagination] = useState({
         pageIndex: 0,
@@ -45,6 +47,7 @@ export default function LeadITPendingList() {
             setCanApprove(
                 user.permissions.approvalLeadIt?.includes("2000")
             );
+            setPermissions(user.permissions);
         }
     }, [user]);
 
@@ -61,9 +64,11 @@ export default function LeadITPendingList() {
 
         if (!result.isConfirmed) return;
 
-        setIsDeleting(true);
+        setIsCanceling(true);
         try {
-            await axios.put(`${API_URL}/requests/cancel/${id_request}`, {}, {
+            const encryptedId = encrypt(String(id_request));
+
+            await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
 
@@ -301,7 +306,8 @@ export default function LeadITPendingList() {
             enableColumnFilter: false,
             enableSorting: true,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request));
+                const request = row.original;
+                const encryptedId = encrypt(String(request.id_request));
 
                 return (
                     <div className="flex flex-col gap-2">
@@ -314,24 +320,28 @@ export default function LeadITPendingList() {
                             Details
                         </Button>
 
-                        <Button
-                            leftSection={<IconEdit size={16} />}
-                            color="orange"
-                            fullWidth
-                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                        >
-                            Edit
-                        </Button>
+                        {canEditCancel(request, user, permissions) && (
+                            <>
+                                <Button
+                                    leftSection={<IconEdit size={16} />}
+                                    color="orange"
+                                    fullWidth
+                                    onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                                >
+                                    Edit
+                                </Button>
 
-                        <Button
-                            leftSection={<IconX size={16} />}
-                            color="red"
-                            fullWidth
-                            onClick={() => handleCancel(row.original.id_request)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
+                                <Button
+                                    leftSection={<IconX size={16} />}
+                                    color="red"
+                                    fullWidth
+                                    onClick={() => handleCancel(request.id_request)}
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        )}
                     </div>
                 );
             }
