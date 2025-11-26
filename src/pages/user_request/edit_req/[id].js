@@ -18,7 +18,6 @@ export default function EditRequest() {
     EditRequest.title = "Edit Request Form"
     const router = useRouter()
     const { id } = router.query;
-    console.log('Request ID:', id);
     const { showAlert } = useSwal()
     const API = useApi()
     const API_URL = API.API_URL

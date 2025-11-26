@@ -482,11 +482,11 @@ export default function RequestDetail() {
                 <div className="flex flex-col gap-1 text-sm">
                   <p>
                     <span className="font-medium">Name :</span>{' '}
-                    {hodName || '-'}
+                    {hodName || "-"}
                   </p>
                   <p>
                     <span className="font-medium">Date :</span>{' '}
-                    {data?.approval_hod_date_at
+                    {data.request_status > 1 && data.approval_hod_date_at
                       ? new Date(data.approval_hod_date_at).toLocaleString('en-GB', {
                         day: '2-digit',
                         month: 'long',

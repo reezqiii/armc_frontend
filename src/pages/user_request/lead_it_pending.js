@@ -183,25 +183,26 @@ export default function LeadITPendingList() {
     const columns = useMemo(() => [
         {
             id: "select",
-            enableSorting: false,
-            header: ({ table }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={table.getIsAllPageRowsSelected()}
-                        ref={el => { if (el) el.indeterminate = table.getIsSomePageRowsSelected(); }}
-                        onChange={table.getToggleAllPageRowsSelectedHandler()}
-                    />
-                ) : null,
-            cell: ({ row }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={row.getIsSelected()}
-                        ref={el => { if (el) el.indeterminate = row.getIsSomeSelected(); }}
-                        onChange={row.getToggleSelectedHandler()}
-                    />
-                ) : null,
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={table.getIsAllPageRowsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+                    }}
+                    onChange={table.getToggleAllPageRowsSelectedHandler()}
+                />
+            ),
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = row.getIsSomeSelected();
+                    }}
+                    onChange={row.getToggleSelectedHandler()}
+                />
+            ),
             size: 40,
         },
         {
@@ -380,6 +381,7 @@ export default function LeadITPendingList() {
 
         const search = JSON.stringify({
             request_status: 3,
+            requestor_id: user.id,
             ...filterObj
         });
 

@@ -81,18 +81,21 @@ export const requestorList = [
         href: "/admin/admin_list?status=onQueue",
         active: isActive("onQueue"),
         icon: <IconListLetters size={18} />,
+        restricted: true,
       },
       {
         title: "On Progress",
         href: "/admin/admin_list?status=onProgress",
         active: isActive("onProgress"),
         icon: <IconUserPlus size={18} />,
+        restricted: true,
       },
       {
         title: "Completed",
         href: "/admin/admin_list?status=completed",
         active: isActive("completed"),
         icon: <IconCircleCheck size={18} />,
+        restricted: true,
 
       },
     ],

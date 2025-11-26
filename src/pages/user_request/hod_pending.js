@@ -346,13 +346,13 @@ export default function PendingHODList() {
       columnFilters,
       sorting,
       pagination,
-      rowSelection, // <-- WAJIB supaya checkbox muncul
+      rowSelection,
     },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    onRowSelectionChange: setRowSelection, // <-- WAJIB untuk ceklis
-    enableRowSelection: true, // <-- WAJIB
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: true,
@@ -371,6 +371,7 @@ export default function PendingHODList() {
     const search = JSON.stringify({
       request_status: 1,
       approval_hod_by: user.id,
+      // requestor_id: user.id,
       ...filterObj
     });
 
@@ -384,7 +385,7 @@ export default function PendingHODList() {
       setData(res.data.data);
       setTotalPages(res.data.total_pages);
     } catch (err) {
-      console.error("❌ Error fetching draft data:", err);
+      console.error("Error fetching draft data:", err);
     }
   }, [API_URL, pagination, sorting, columnFilters, user.token]);
 

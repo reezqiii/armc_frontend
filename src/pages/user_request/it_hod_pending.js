@@ -67,7 +67,7 @@ export default function ITPendingList() {
         setIsCanceling(true);
         try {
             const encryptedId = encrypt(String(id_request));
-            
+
             await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
                 headers: { Authorization: `Bearer ${user.token}` },
             });
@@ -182,25 +182,26 @@ export default function ITPendingList() {
     const columns = useMemo(() => [
         {
             id: "select",
-            enableSorting: false,
-            header: ({ table }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={table.getIsAllPageRowsSelected()}
-                        ref={el => { if (el) el.indeterminate = table.getIsSomePageRowsSelected(); }}
-                        onChange={table.getToggleAllPageRowsSelectedHandler()}
-                    />
-                ) : null,
-            cell: ({ row }) =>
-                canApprove ? (
-                    <input
-                        type="checkbox"
-                        checked={row.getIsSelected()}
-                        ref={el => { if (el) el.indeterminate = row.getIsSomeSelected(); }}
-                        onChange={row.getToggleSelectedHandler()}
-                    />
-                ) : null,
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    checked={table.getIsAllPageRowsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+                    }}
+                    onChange={table.getToggleAllPageRowsSelectedHandler()}
+                />
+            ),
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    ref={el => {
+                        if (el) el.indeterminate = row.getIsSomeSelected();
+                    }}
+                    onChange={row.getToggleSelectedHandler()}
+                />
+            ),
             size: 40,
         },
         {
@@ -378,6 +379,7 @@ export default function ITPendingList() {
 
         const search = JSON.stringify({
             request_status: 5,
+            requestor_id: user.id,
             ...filterObj
         });
 

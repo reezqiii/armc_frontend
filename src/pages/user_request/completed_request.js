@@ -350,6 +350,7 @@ function CompletedRequest() {
 
         const search = JSON.stringify({
             request_status: 7,
+            ...(permissions.itAction.length === 0 && { requestor_id: user.id }),
             ...filterObj
         });
 
