@@ -15,9 +15,11 @@ const currentStatus = typeof window !== "undefined"
   ? new URLSearchParams(window.location.search).get("status")
   : null;
 
+console.log("Current Status:", currentStatus);
+
 const isActive = (val) => currentStatus === val;
 
-export const requestorList = [
+const requestorList = [
   {
     title: "User Request",
     href: "/",
@@ -68,9 +70,10 @@ export const requestorList = [
       },
     ],
   },
+];
 
-  
-  {
+if (true == true) {
+  requestorList.push({
     title: "Admin",
     href: "/",
     active: "Permission Request",
@@ -99,5 +102,7 @@ export const requestorList = [
 
       },
     ],
-  },
-];
+  });
+}
+
+export default requestorList;

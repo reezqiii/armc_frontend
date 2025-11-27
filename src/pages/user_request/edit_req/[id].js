@@ -1,5 +1,5 @@
 import AuthLayout from '@/components/layout/authLayout';
-import { requestorList } from '@/data/sidebar/RequestorList';
+import requestorList from '@/data/sidebar/RequestorList';
 import { Button, Paper, TextInput, Textarea, Select, Autocomplete, MultiSelect } from '@mantine/core';
 import { IconArrowLeft, IconDeviceFloppy, IconCalendar } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
@@ -144,6 +144,11 @@ export default function EditRequest() {
                         department: data.dept_id ? String(data.dept_id) : '',
                         position: data.design_id ? String(data.design_id) : '',
                         project: data.project_id ? String(data.project_id) : '',
+                        project_name: data.project_name,
+                        department_name: data.department_name,
+                        position_name: data.position_name,
+                        company_name: data.company?.company_name || '',
+                        company: data.company?.id_company || '',
 
                         access_yard_company: Array.isArray(data.access_yard_company)
                             ? data.access_yard_company.map(item =>
@@ -184,8 +189,8 @@ export default function EditRequest() {
                 department_name: res.data.department.dept ?? '',
                 position_name: res.data.position?.design_desc ?? '',
                 project_name: res.data.project.project_desc ?? '',
-                company_name: res.data.company?.company_name ?? '',
-                company: res.data.company?.id_company ?? '',
+                company_name: res.data.company_name ?? '',
+                company: res.data.company ?? '',
                 department: res.data.department.dept_id ?? '',
                 position: res.data.position?.design_id ?? '',
                 project: res.data.project.project_id ?? '',
@@ -194,65 +199,6 @@ export default function EditRequest() {
             console.error(err);
         } finally {
             setBadgeLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!id) return; 
-        fetchRequest();
-    }, [id]);
-
-    const fetchRequest = async () => {
-        try {
-            const res = await axios.get(`${API_URL}/requests/${id}`, {
-                headers: { Authorization: `Bearer ${user.token}` },
-            });
-
-            const data = res.data;
-
-            setFormData({
-                full_name: data.full_name || '',
-                badge_no: data.badge_no || '',
-                email: data.email || '',
-                project: data.project_id?.toString() || '',
-                project_name: data.project_name || '',
-                department: data.dept_id?.toString() || '',
-                department_name: data.department_name || '',
-                position_name: data.position_name || '',
-                request_reason: data.request_reason || '',
-                remarks: data.remarks || '',
-                created_by_name: data.created_by_name || '-',
-                approval_hod_by: data.approval_hod_by?.id?.toString() || '',
-                approval_it_hod_by: data.approval_it_hod_by?.id?.toString() || '',
-                request_status: data.request_status ?? 0,
-                company_name: data.company_name || data.company?.company_name || '',
-                company: data.company?.id_company || '',
-            });
-
-            setItManagerName(
-                data.approval_it_hod_by
-                    ? `${data.approval_it_hod_by.badge_no} - ${data.approval_it_hod_by.full_name}`
-                    : "-"
-            );
-
-            if (data.approval_hod_by) {
-                const resHod = await axios.get(`${API_URL}/api/user/search`, {
-                    headers: { Authorization: `Bearer ${user.token}` },
-                    params: { role: 'head_of_department' }
-                });
-                const activeHod = resHod.data.filter(u => u.status_user === 1);
-                setHodList(activeHod);
-            }
-
-            setLeadItName(
-                data.approval_lead_it_by
-                    ? `${data.approval_lead_it_by.badge_no} - ${data.approval_lead_it_by.full_name}`
-                    : "-"
-            );
-
-        } catch (err) {
-            console.error('Failed to fetch request:', err);
-            showAlert("Error", "error", "Failed to load request data");
         }
     };
 
@@ -452,7 +398,11 @@ export default function EditRequest() {
                                 <TextInput
                                     required
                                     label="Company"
-                                    value={formData.company_name || ''}
+                                    value={
+                                        formData.company_name ||
+                                        formData.company?.company_name ||
+                                        ''
+                                    }
                                     readOnly
                                     classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
                                 />
@@ -582,7 +532,7 @@ export default function EditRequest() {
                                         Approved By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {itManagerName || 'Loading...'}
+                                        {itManagerName ? itManagerName : '-'}
                                     </div>
                                 </div>
                             </div>

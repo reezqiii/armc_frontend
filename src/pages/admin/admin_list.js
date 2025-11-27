@@ -1,22 +1,23 @@
 import Datatables from '@/components/custom/Datatables';
 import AuthLayout from '@/components/layout/authLayout';
-import { requestorList } from '@/data/sidebar/RequestorList';
+import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconFileSpreadsheet } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
-import { canChangeAdminStatus } from "@/lib/permissionHelper";
-import { canSeeAdminSidebar } from "@/lib/permissionHelper"; 
+import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import { usePathname } from "next/navigation";
 import useEncrypt from '@/hooks/useEncrypt';
 
 export default function AdminList() {
     const router = useRouter();
+    const path = usePathname();
     const { user } = useUser();
     const API = useApi();
     const API_URL = API.API_URL;
@@ -24,7 +25,6 @@ export default function AdminList() {
     const { status: queryStatus } = router.query;
 
     const [data, setData] = useState([]);
-    const isActive = (val) => status === val;
     const [totalPages, setTotalPages] = useState(1);
     const [status, setStatus] = useState('onQueue');
     const [isCanceling, setIsCanceling] = useState(false);
@@ -43,8 +43,15 @@ export default function AdminList() {
     });
 
     useEffect(() => {
-        if (queryStatus) setStatus(String(queryStatus));
-    }, [queryStatus]);
+        if (queryStatus) {
+            setStatus(String(queryStatus));
+        }
+        // console.log("requestorList", requestorList)
+        console.log("path", path)
+        if (user?.permissions) {
+            setPermissions(user.permissions);
+        }
+    }, [queryStatus, user]);
 
     function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
         const [value, setValue] = React.useState(initialValue ?? 0);
@@ -52,7 +59,7 @@ export default function AdminList() {
 
         const statusLabel = value === 0 ? "On Queue" : value === 1 ? "On Progress" : "Completed";
 
-        if (!canChangeAdminStatus(permissions)) {
+        if (!hasPermission(permissions, "itAction")) {
             return <span>{statusLabel}</span>;
         }
 
@@ -135,6 +142,36 @@ export default function AdminList() {
         } finally {
             setIsDeleting(false);
         }
+    };
+
+    const handleExportExcel = async () => {
+        const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+
+        const sort_by = sorting[0]?.id || "id_request";
+        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+
+        const filterObj = Object.fromEntries(
+            columnFilters.map(f => [f.id, f.value])
+        );
+
+        const search = JSON.stringify({
+            request_admin: statusMap[status],
+            ...filterObj
+        });
+
+        const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
+            search
+        )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+
+        const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        const blob = await res.blob();
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "completed_requests.xlsx";
+        link.click();
     };
 
     const columns = useMemo(() => [
@@ -333,7 +370,7 @@ export default function AdminList() {
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {
-            console.error("❌ Error fetching admin data:", err);
+            console.error("Error fetching admin data:", err);
         }
     }, [API_URL, status, sorting, columnFilters, pagination, user.token]);
 
@@ -358,7 +395,15 @@ export default function AdminList() {
                                 {titleMap[status] || "Request List"}
                             </h1>
                         </div>
-
+                        {status === "completed" && hasPermission(permissions, "itAction") && (
+                            <Button
+                                color="green"
+                                leftSection={<IconFileSpreadsheet size={16} />}
+                                onClick={handleExportExcel}
+                            >
+                                Export Excel
+                            </Button>
+                        )}
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
                         </div>

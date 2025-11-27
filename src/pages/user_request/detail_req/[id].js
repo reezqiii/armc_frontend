@@ -1,5 +1,5 @@
 import AuthLayout from '@/components/layout/authLayout'
-import { requestorList } from '@/data/sidebar/RequestorList'
+import requestorList from '@/data/sidebar/RequestorList';
 import { Button, Paper, Textarea, Loader } from '@mantine/core'
 import { IconArrowLeft, IconCalendar } from '@tabler/icons-react'
 import { useRouter } from 'next/router'
@@ -369,6 +369,16 @@ export default function RequestDetail() {
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
                   {data.project_name || "-"}
+                </div>
+              </div>
+
+              {/* Company */}
+              <div>
+                <label className="font-medium mb-1 text-gray-800 text-sm">
+                  Company <span className="text-red-500">*</span>
+                </label>
+                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
+                   {data.company?.company_name}
                 </div>
               </div>
 

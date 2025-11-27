@@ -1,6 +1,6 @@
 import Datatables from '@/components/custom/Datatables';
 import AuthLayout from '@/components/layout/authLayout';
-import { requestorList } from '@/data/sidebar/RequestorList';
+import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
@@ -9,8 +9,7 @@ import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
-import { canChangeAdminStatus } from "@/lib/permissionHelper";
-import { canEditCancel } from "@/lib/permissionHelper";
+import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
@@ -49,7 +48,8 @@ function CompletedRequest() {
         const [value, setValue] = React.useState(initialValue ?? 0);
         const [loading, setLoading] = React.useState(false);
 
-        if (!canChangeAdminStatus(permissions)) {
+        const allowed = hasPermission(permissions, "itAction");
+        if (!allowed) {
             return (
                 <span>
                     {value === 0
@@ -290,7 +290,7 @@ function CompletedRequest() {
                             Details
                         </Button>
 
-                        {canEditCancel(request, user, permissions) && (
+                        {hasPermission(permissions, "itAction") && (
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}
@@ -364,7 +364,7 @@ function CompletedRequest() {
             setData(res.data.data);
             setTotalPages(res.data.total_pages);
         } catch (err) {
-            console.error("❌ Error fetching draft data:", err);
+            console.error("Error fetching draft data:", err);
         }
     }, [API_URL, pagination, sorting, columnFilters, user.token]);
 

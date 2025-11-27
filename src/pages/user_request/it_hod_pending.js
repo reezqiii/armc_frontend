@@ -1,6 +1,6 @@
 import Datatables from '@/components/custom/Datatables';
 import AuthLayout from '@/components/layout/authLayout';
-import { requestorList } from '@/data/sidebar/RequestorList';
+import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
@@ -9,7 +9,7 @@ import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
-import { canEditCancel } from "@/lib/permissionHelper";
+import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
@@ -319,7 +319,7 @@ export default function ITPendingList() {
                             Details
                         </Button>
 
-                        {canEditCancel(request, user, permissions) && (
+                        {hasPermission(permissions, "itAction") && (
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}

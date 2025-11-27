@@ -1,6 +1,6 @@
 import Datatables from '@/components/custom/Datatables';
 import AuthLayout from '@/components/layout/authLayout';
-import { requestorList } from '@/data/sidebar/RequestorList';
+import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
