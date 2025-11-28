@@ -31,7 +31,7 @@ export default function ITPendingList() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
-    const [canApprove, setCanApprove] = useState(false);
+    const canApprove = hasPermission(1);
     const [permissions, setPermissions] = useState({
         approvalLeadIt: [],
         approvalItManager: [],
@@ -42,14 +42,6 @@ export default function ITPendingList() {
         pageSize: 10,
     });
 
-    useEffect(() => {
-        if (user && user.permissions) {
-            setCanApprove(
-                user.permissions.approvalItManager?.includes("2001")
-            );
-            setPermissions(user.permissions);
-        }
-    }, [user]);
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -319,7 +311,7 @@ export default function ITPendingList() {
                             Details
                         </Button>
 
-                        {hasPermission(permissions, "itAction") && (
+                        {hasPermission(2) && (
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}

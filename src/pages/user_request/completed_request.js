@@ -48,7 +48,7 @@ function CompletedRequest() {
         const [value, setValue] = React.useState(initialValue ?? 0);
         const [loading, setLoading] = React.useState(false);
 
-        const allowed = hasPermission(permissions, "itAction");
+        const allowed = hasPermission(2);
         if (!allowed) {
             return (
                 <span>
@@ -290,7 +290,7 @@ function CompletedRequest() {
                             Details
                         </Button>
 
-                        {hasPermission(permissions, "itAction") && (
+                        {hasPermission(2) && (
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}
@@ -350,7 +350,7 @@ function CompletedRequest() {
 
         const search = JSON.stringify({
             request_status: 7,
-            ...(permissions.itAction.length === 0 && { requestor_id: user.id }),
+            ...(permissions.itAction?.length === 0 && { requestor_id: user.id }),
             ...filterObj
         });
 

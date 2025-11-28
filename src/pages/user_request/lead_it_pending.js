@@ -31,7 +31,7 @@ export default function LeadITPendingList() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
-    const [canApprove, setCanApprove] = useState(false);
+    const canApprove = hasPermission(0);
     const [permissions, setPermissions] = useState({
         approvalLeadIt: [],
         approvalItManager: [],
@@ -41,15 +41,6 @@ export default function LeadITPendingList() {
         pageIndex: 0,
         pageSize: 10,
     });
-
-    useEffect(() => {
-        if (user && user.permissions) {
-            setCanApprove(
-                user.permissions.approvalLeadIt?.includes("2000")
-            );
-            setPermissions(user.permissions);
-        }
-    }, [user]);
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -321,7 +312,7 @@ export default function LeadITPendingList() {
                             Details
                         </Button>
 
-                        {hasPermission(permissions, "itAction") && (
+                        {hasPermission(2) && (
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}

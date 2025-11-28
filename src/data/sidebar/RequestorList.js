@@ -15,8 +15,6 @@ const currentStatus = typeof window !== "undefined"
   ? new URLSearchParams(window.location.search).get("status")
   : null;
 
-console.log("Current Status:", currentStatus);
-
 const isActive = (val) => currentStatus === val;
 
 const requestorList = [

@@ -11,6 +11,7 @@ import Swal from 'sweetalert2';
 import useEncrypt from "@/hooks/useEncrypt";
 import { useRouter } from 'next/router';
 import { formatDate } from "@/lib/dateFormat";
+import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 
@@ -232,35 +233,54 @@ export default function RequestUserList() {
             cell: ({ row }) => {
                 const encryptedId = encrypt(String(row.original.id_request));
 
+                const status = row.original.request_status.name;
+
+                const canItAction = hasPermission(user.permissions, 2);
+
+                const allowedStatuses = ["Draft", "Pending by HOD Req"];
+
+                const canEditCancel = canItAction || allowedStatuses.includes(status);
+
                 return (
                     <div className="flex flex-col gap-2">
+
+                        {/* DETAILS selalu muncul */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
                             fullWidth
-                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                            onClick={() =>
+                                router.push(`/user_request/detail_req/${encryptedId}`)
+                            }
                         >
                             Details
                         </Button>
 
-                        <Button
-                            leftSection={<IconEdit size={16} />}
-                            color="orange"
-                            fullWidth
-                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                        >
-                            Edit
-                        </Button>
+                        {/* EDIT */}
+                        {canEditCancel && (
+                            <Button
+                                leftSection={<IconEdit size={16} />}
+                                color="orange"
+                                fullWidth
+                                onClick={() =>
+                                    router.push(`/user_request/edit_req/${encryptedId}`)
+                                }
+                            >
+                                Edit
+                            </Button>
+                        )}
 
-                        <Button
-                            leftSection={<IconX size={16} />}
-                            color="red"
-                            fullWidth
-                            onClick={() => handleCancel(row.original.id_request)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
+                        {/* CANCEL */}
+                        {canEditCancel && (
+                            <Button
+                                leftSection={<IconX size={16} />}
+                                color="red"
+                                fullWidth
+                                onClick={() => handleCancel(row.original.id_request)}
+                            >
+                                Cancel
+                            </Button>
+                        )}
                     </div>
                 );
             }
