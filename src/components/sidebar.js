@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { hasPermission } from "@/lib/permissionHelper";
 import useUser from '@/store/useUser';
-
+import { useMemo } from "react";
 
 export default function Sidebar({ className, sidebarList }) {
   const { sidebarCollapsed } = useCollapseStore();
@@ -13,7 +13,12 @@ export default function Sidebar({ className, sidebarList }) {
   const router = useRouter();
   const user = useUser();
 
-  
+    const filteredSidebar = useMemo(() => {
+    return sidebarList.filter(menu => {
+      if (!menu.requiredPermission) return true;
+      return hasPermission(menu.requiredPermission);
+    });
+  }, [sidebarList, user.permissions]);
 
   return (
     <aside
@@ -23,9 +28,8 @@ export default function Sidebar({ className, sidebarList }) {
         className
       )}
     >
-      {sidebarCollapsed
-        ? null
-        : sidebarList.map((item, index) => (
+       {!sidebarCollapsed &&
+        filteredSidebar.map((item, index) => (
           <NavLink
             key={index}
             onClick={() => router.push(item.child && item.child.length > 0 ? '#' : item.href)}

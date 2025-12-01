@@ -9,8 +9,8 @@ import {
   IconUserExclamation,
   IconUserShield,
 } from '@tabler/icons-react';
+import { hasPermission } from "@/lib/permissionHelper";
 
-// === Tambahkan fungsi di sini ===
 const currentStatus = typeof window !== "undefined"
   ? new URLSearchParams(window.location.search).get("status")
   : null;
@@ -76,6 +76,7 @@ if (true == true) {
     href: "/",
     active: "Permission Request",
     icon: <IconUserShield size={18} />,
+    requiredPermission: 2,
     child: [
       {
         title: "On Queue",
@@ -102,5 +103,13 @@ if (true == true) {
     ],
   });
 }
+
+
+// const filteredSidebar = requestorList.filter(menu => {
+//   if (!menu.requiredPermission) return true;
+//   return hasPermission(menu.requiredPermission);
+// });
+
+// export default filteredSidebar;
 
 export default requestorList;

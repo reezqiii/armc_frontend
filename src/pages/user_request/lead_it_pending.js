@@ -372,7 +372,7 @@ export default function LeadITPendingList() {
 
         const search = JSON.stringify({
             request_status: 3,
-            requestor_id: user.id,
+            // requestor_id: user.id,
             ...filterObj
         });
 

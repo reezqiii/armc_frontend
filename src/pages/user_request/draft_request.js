@@ -54,9 +54,11 @@ export default function DraftRequestList() {
     try {
       const encryptedId = encrypt(String(id_request));
 
-      await axios.put(`${API_URL}/requests/cancel/${encryptedId}`, {}, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const res = await axios.put(
+        `${API_URL}/requests/cancel/${encryptedId}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
 
       if (res.status === 200) {
         setData(prev => prev.filter(item => item.id_request !== id_request));
@@ -333,7 +335,7 @@ export default function DraftRequestList() {
 
     const search = JSON.stringify({
       request_status: 0,
-      requestor_id: user.id,
+      // requestor_id: user.id,
       ...filterObj
     });
 

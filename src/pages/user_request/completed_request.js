@@ -30,19 +30,11 @@ function CompletedRequest() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [rowSelection, setRowSelection] = useState({});
     const [columnFilters, setColumnFilters] = useState([]);
-    const [permissions, setPermissions] = useState({
-        itAction: []
-    });
+    const permissions = user.permissions || {};
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     });
-
-    useEffect(() => {
-        if (user && user.permissions) {
-            setPermissions(user.permissions);
-        }
-    }, [user]);
 
     function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
         const [value, setValue] = React.useState(initialValue ?? 0);
@@ -316,7 +308,7 @@ function CompletedRequest() {
                 );
             }
         }
-    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router]);
+    ], [encrypt, isDeleting, pagination.pageIndex, pagination.pageSize, router, user.permissions]);
 
     const table = useReactTable({
         data,
@@ -350,7 +342,7 @@ function CompletedRequest() {
 
         const search = JSON.stringify({
             request_status: 7,
-            ...(permissions.itAction?.length === 0 && { requestor_id: user.id }),
+            ...(!hasPermission(2) && { requestor_id: user.id }),
             ...filterObj
         });
 
@@ -366,7 +358,7 @@ function CompletedRequest() {
         } catch (err) {
             console.error("Error fetching draft data:", err);
         }
-    }, [API_URL, pagination, sorting, columnFilters, user.token]);
+    }, [API_URL, pagination, sorting, columnFilters, user.token, permissions]);
 
     useEffect(() => {
         getData();

@@ -309,7 +309,7 @@ export default function RequestUserList() {
     const getData = useCallback(async () => {
         const searchQuery = {
             status_active: 1,
-            requestor_id: user.id
+            // requestor_id: user.id
         };
 
         columnFilters.forEach(filter => {

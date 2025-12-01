@@ -3,8 +3,6 @@ import { useCookie } from "../hooks/useCookie";
 import { LoadingOverlay, MantineProvider, Paper } from "@mantine/core";
 import { useRouter } from "next/router";
 import AuthLayout from '@/components/layout/authLayout';
-
-
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import useDecrypt from "@/hooks/useDecrypt";
@@ -20,7 +18,7 @@ import useApi from "@/hooks/useApi";
 const COOKIE_EXPIRE_TIME = 86400;
 
 export default function App({ Component, pageProps }) {
-  const cookieUser = useCookie("portal_user");
+  const cookieUser = useCookie("portal_user_js");
   const { user, setUser } = useUser();
   const router = useRouter();
   const { encrypt } = useEncrypt();
@@ -67,7 +65,7 @@ export default function App({ Component, pageProps }) {
         const isValidUser = await validateUser(encryptUserId);
 
         if (isValidUser) {
-          Cookies.set("portal_user", encryptUserId, {
+          Cookies.set("portal_user_js", encryptUserId, {
             expires: COOKIE_EXPIRE_TIME / 86400,
           });
 
@@ -85,7 +83,7 @@ export default function App({ Component, pageProps }) {
           router.push(`${PORTAL_API}`);
         }
       } else {
-        const cookieValue = Cookies.get("portal_user");
+        const cookieValue = Cookies.get("portal_user_js");
 
         if (!cookieValue) {
           router.push(`${PORTAL_API}`);

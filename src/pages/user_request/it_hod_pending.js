@@ -371,7 +371,7 @@ export default function ITPendingList() {
 
         const search = JSON.stringify({
             request_status: 5,
-            requestor_id: user.id,
+            // requestor_id: user.id,
             ...filterObj
         });
 

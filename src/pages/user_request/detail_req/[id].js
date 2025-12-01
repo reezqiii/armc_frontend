@@ -1,7 +1,7 @@
 import AuthLayout from '@/components/layout/authLayout'
 import requestorList from '@/data/sidebar/RequestorList';
 import { Button, Paper, Textarea, Loader } from '@mantine/core'
-import { IconArrowLeft, IconCalendar } from '@tabler/icons-react'
+import { IconArrowLeft, IconCalendar, IconSend } from '@tabler/icons-react'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
@@ -10,6 +10,7 @@ import useDecrypt from '@/hooks/useDecrypt';
 import useApi from '@/hooks/useApi'
 import useEncrypt from '@/hooks/useEncrypt';
 import { formatDate } from "@/lib/dateFormat";
+import { hasPermission } from "@/lib/permissionHelper";
 import Swal from 'sweetalert2'
 
 export default function RequestDetail() {
@@ -30,8 +31,8 @@ export default function RequestDetail() {
   const [isLeadIt, setIsLeadIt] = useState(false);
   const [isItHod, setIsItHod] = useState(false);
   const [leadItName, setLeadItName] = useState('');
-  const canLeadIt = user.permissions?.approvalLeadIt?.length > 0;
-  const canItHod = user.permissions?.approvalItManager?.length > 0;
+  const canApproveLeadIt = hasPermission(0);
+  const canApproveItHod = hasPermission(1);
 
   useEffect(() => {
     if (!data || !user) return;
@@ -39,19 +40,8 @@ export default function RequestDetail() {
     const userId = String(user.id ?? "");
     const hodId = String(data.approval_hod_by?.id ?? "");
 
-    const canLeadIt = user.permissions?.approvalLeadIt?.length > 0;
-    const canItHod = user.permissions?.approvalItManager?.length > 0;
-
     setIsHod(
       userId === hodId && data.request_status === 1
-    );
-
-    setIsLeadIt(
-      data.request_status === 3 && canLeadIt
-    );
-
-    setIsItHod(
-      data.request_status === 5 && canItHod
     );
 
     setHodName(data.approval_hod_by?.full_name ?? "-");
@@ -125,6 +115,42 @@ export default function RequestDetail() {
     5: 'text-yellow-500',
     6: 'text-red-500',
     7: 'text-green-500',
+  };
+
+  const handleSubmitToHOD = async () => {
+    const confirm = await Swal.fire({
+      title: `Submit this request to HOD?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axios.put(
+        `${API_URL}/requests/${id}/submit-to-hod`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: `Request submitted to HOD.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      fetchData();
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to submit request.',
+      });
+    }
   };
 
   const handleHodAction = async (action) => {
@@ -378,7 +404,7 @@ export default function RequestDetail() {
                   Company <span className="text-red-500">*</span>
                 </label>
                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center text-sm">
-                   {data.company?.company_name}
+                  {data.company?.company_name}
                 </div>
               </div>
 
@@ -399,7 +425,7 @@ export default function RequestDetail() {
               {/* Application Access */}
               <div>
                 <label className="font-medium mb-1 text-gray-800 text-sm">
-                  Applicaiton Access <span className="text-red-500">*</span>
+                  Application Access <span className="text-red-500">*</span>
                 </label>
                 <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-sm min-h-[36px] flex items-start">
                   <span>
@@ -550,7 +576,7 @@ export default function RequestDetail() {
                       : '-'}
                   </p>
                 </div>
-                {isLeadIt && data.request_status === 3 && (
+                {canApproveLeadIt && data.request_status === 3 && (
                   <div className="mt-3 flex gap-2">
                     <Button color="green" size="sm" onClick={() => handleLeadItAction("approve")}>
                       Approve
@@ -584,7 +610,7 @@ export default function RequestDetail() {
                       : '-'}
                   </p>
                 </div>
-                {isItHod && data.request_status === 5 && (
+                {canApproveItHod && data.request_status === 5 && (
                   <div className="mt-3 flex gap-2">
                     <Button color="green" size="sm" onClick={() => handleItHodAction("approve")}>
                       Approve
@@ -598,8 +624,8 @@ export default function RequestDetail() {
             </div>
           </div >
 
-          {/* Footer */}
-          < div className="flex justify-between pt-6" >
+          <div className="flex justify-between items-center pt-6">
+
             <Button
               leftSection={<IconArrowLeft size={16} />}
               color="gray"
@@ -609,13 +635,29 @@ export default function RequestDetail() {
               Back
             </Button>
 
-            <div className="text-sm font-semibold text-gray-600 flex items-center">
-              Status:
-              <span className={`ml-2 ${statusColorMap[data.request_status] || 'text-gray-600'}`}>
-                {statusMap[data.request_status]}
-              </span>
+            <div className="flex items-center gap-4">
+              {data.request_status === 0 && (
+                <Button
+                  rightSection={<IconSend size={16} />}
+                  color="green"
+                  size="sm"
+                  onClick={handleSubmitToHOD}
+                >
+                  Submit to HOD
+                </Button>
+              )}
+
+              <div className="text-sm font-semibold text-gray-600 flex items-center">
+                Status:
+                <span
+                  className={`ml-2 ${statusColorMap[data.request_status] || "text-gray-600"
+                    }`}
+                >
+                  {statusMap[data.request_status]}
+                </span>
+              </div>
             </div>
-          </div >
+          </div>
         </Paper >
       </div >
     </AuthLayout >

@@ -92,7 +92,7 @@ export default function EditRequest() {
         };
 
         fetchBadges();
-    }, [debouncedSearch]);
+    }, [debouncedSearch, isEditable]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -138,9 +138,8 @@ export default function EditRequest() {
                         email: data.email || '',
                         request_reason: data.request_reason || '',
                         remarks: data.remarks || '',
-                        approval_hod_by: data.approval_hod_by || '',
                         approval_it_hod_by: data.approval_it_hod_by || '',
-                        company: data.id_company ? String(data.id_company) : '',
+                        company: data.company?.id_company ? String(data.company.id_company) : '',
                         department: data.dept_id ? String(data.dept_id) : '',
                         position: data.design_id ? String(data.design_id) : '',
                         project: data.project_id ? String(data.project_id) : '',
@@ -148,8 +147,10 @@ export default function EditRequest() {
                         department_name: data.department_name,
                         position_name: data.position_name,
                         company_name: data.company?.company_name || '',
-                        company: data.company?.id_company || '',
-
+                        approval_hod_by:
+                            data.approval_hod_by?.id
+                                ? String(data.approval_hod_by.id)
+                                : '',
                         access_yard_company: Array.isArray(data.access_yard_company)
                             ? data.access_yard_company.map(item =>
                                 typeof item === 'object' ? String(item.id) : String(item)
@@ -204,15 +205,12 @@ export default function EditRequest() {
 
     const handleChange = (field, value) => {
         if (field === 'approval_hod_by') {
-            const num = Number(value);
             setFormData(prev => ({
                 ...prev,
-                [field]: isNaN(num) ? null : num
+                approval_hod_by: value 
             }));
-        } else {
-            setFormData(prev => ({ ...prev, [field]: value }));
+            return;
         }
-
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
     };
 
