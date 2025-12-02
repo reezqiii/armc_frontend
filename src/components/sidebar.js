@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import useCollapseStore from "@/store/useLayout";
 import { NavLink } from "@mantine/core";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import { hasPermission } from "@/lib/permissionHelper";
 import useUser from '@/store/useUser';
@@ -10,15 +10,25 @@ import { useMemo } from "react";
 export default function Sidebar({ className, sidebarList }) {
   const { sidebarCollapsed } = useCollapseStore();
   const path = usePathname();
+  const searchParams = useSearchParams();
+  const status = searchParams.get("status");
   const router = useRouter();
   const user = useUser();
 
-    const filteredSidebar = useMemo(() => {
+  const filteredSidebar = useMemo(() => {
     return sidebarList.filter(menu => {
       if (!menu.requiredPermission) return true;
       return hasPermission(menu.requiredPermission);
     });
   }, [sidebarList, user.permissions]);
+
+  const isChildActive = (child) => {
+    if (child.restricted) { 
+      const childStatus = new URLSearchParams(child.href.split('?')[1]).get("status");
+      return path === "/admin/admin_list" && status === childStatus;
+    }
+    return path === child.href; 
+  };
 
   return (
     <aside
@@ -28,7 +38,7 @@ export default function Sidebar({ className, sidebarList }) {
         className
       )}
     >
-       {!sidebarCollapsed &&
+      {!sidebarCollapsed &&
         filteredSidebar.map((item, index) => (
           <NavLink
             key={index}
@@ -52,7 +62,7 @@ export default function Sidebar({ className, sidebarList }) {
                   label={child.title}
                   leftSection={child.icon}
                   variant="filled"
-                  active={child.href === path}
+                  active={isChildActive(child)}
                   childrenOffset={28}
                   bg="bg-slate-800"
                   style={{ color: "white" }}

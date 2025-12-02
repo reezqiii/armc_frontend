@@ -12,8 +12,8 @@ import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
 
-export default function CreateRequest() {
-    CreateRequest.title = "Create Request Form"
+function CreateRequest() {
+ 
     const router = useRouter()
     const { showAlert } = useSwal()
     const API = useApi();
@@ -526,3 +526,6 @@ export default function CreateRequest() {
         </AuthLayout >
     )
 }
+
+CreateRequest.title = "Create Request Form";
+export default CreateRequest;

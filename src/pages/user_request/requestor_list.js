@@ -169,6 +169,7 @@ export default function RequestUserList() {
             header: 'Status',
             accessorFn: row => row.request_status.name,
             cell: ({ row }) => {
+
                 const status = row.original.request_status.name;
 
                 const colorMap = {
@@ -181,23 +182,34 @@ export default function RequestUserList() {
                     "Rejected by IT Manager": "red",
                     Completed: "green",
                 };
+                console.log(row.original)
 
-                if (status.startsWith("Rejected")) {
 
-                    const rejectField = {
-                        by: row.original.approval_hod_by?.full_name
-                            || row.original.approval_lead_it_by?.full_name
-                            || row.original.approval_it_hod_by?.full_name,
+                let rejectField = null;
 
-                        at: row.original.approval_hod_date_at
-                            || row.original.approval_lead_date_at
-                            || row.original.approval_it_date_at,
-
-                        reason: row.original.rejected_hod_remarks
-                            || row.original.rejected_lead_remarks
-                            || row.original.rejected_it_remarks,
+                if (status === "Rejected by HOD Req") {
+                    rejectField = {
+                        by: row.original.approval_hod_by?.full_name,
+                        at: row.original.approval_hod_date_at,
+                        reason: row.original.rejected_hod_remarks,
                     };
+                }
+                else if (status === "Rejected by Lead IT") {
+                    rejectField = {
+                        by: row.original.approval_lead_it_by?.full_name,
+                        at: row.original.approval_lead_date_at,
+                        reason: row.original.rejected_lead_remarks,
+                    };
+                }
+                else if (status === "Rejected by IT Manager") {
+                    rejectField = {
+                        by: row.original.approval_it_hod_by?.full_name,
+                        at: row.original.approval_it_date_at,
+                        reason: row.original.rejected_it_remarks,
+                    };
+                }
 
+                if (rejectField) {
                     return (
                         <div className="flex flex-col gap-1">
                             <Badge color="red">{status}</Badge>
@@ -221,8 +233,9 @@ export default function RequestUserList() {
                         </div>
                     );
                 }
-                return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
-            },
+
+                return <Badge color={colorMap[status] || "gray"}>{status}</Badge>;
+            }
         },
         {
             accessorFn: row => row.id_request,

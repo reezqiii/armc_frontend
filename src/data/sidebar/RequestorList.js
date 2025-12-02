@@ -9,7 +9,6 @@ import {
   IconUserExclamation,
   IconUserShield,
 } from '@tabler/icons-react';
-import { hasPermission } from "@/lib/permissionHelper";
 
 const currentStatus = typeof window !== "undefined"
   ? new URLSearchParams(window.location.search).get("status")

@@ -638,7 +638,7 @@ export default function RequestDetail() {
             <div className="flex items-center gap-4">
               {data.request_status === 0 && (
                 <Button
-                  rightSection={<IconSend size={16} />}
+                  leftSection={<IconSend size={16} />}
                   color="green"
                   size="sm"
                   onClick={handleSubmitToHOD}

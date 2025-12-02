@@ -77,7 +77,18 @@ export default function App({ Component, pageProps }) {
           });
 
           setIsAuthenticated(true);
-          router.push('/')
+          // router.push('/')
+          const currentPath = window.location.pathname;
+
+          if (currentPath === "/login" || currentPath === "/") {
+            // Jika user akses login page atau root, baru redirect ke "/"
+            router.push("/");
+          } else {
+            // Otherwise: biarkan user tetap di halaman yang sedang dibuka
+            // Tidak perlu redirect
+            router.push(currentPath);
+          }
+
           return;
         } else {
           router.push(`${PORTAL_API}`);

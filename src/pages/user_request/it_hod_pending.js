@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -417,10 +417,16 @@ export default function ITPendingList() {
 
                             {canApprove && (
                                 <div className="flex gap-2">
-                                    <Button color="blue" onClick={() => handleSubmitMultipleITHOD("approve")}>
+                                    <Button
+                                        leftSection={<IconCheck size={16} />}
+                                        color="green"
+                                        onClick={() => handleSubmitMultipleITHOD("approve")}>
                                         Approve
                                     </Button>
-                                    <Button color="red" onClick={() => handleSubmitMultipleITHOD("reject")}>
+                                    <Button
+                                        leftSection={<IconX size={16} />}
+                                        color="red"
+                                        onClick={() => handleSubmitMultipleITHOD("reject")}>
                                         Reject
                                     </Button>
                                 </div>

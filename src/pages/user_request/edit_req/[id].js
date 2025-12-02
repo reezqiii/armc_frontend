@@ -204,14 +204,14 @@ export default function EditRequest() {
     };
 
     const handleChange = (field, value) => {
-        if (field === 'approval_hod_by') {
-            setFormData(prev => ({
-                ...prev,
-                approval_hod_by: value 
-            }));
-            return;
+        setFormData(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: null }));
         }
-        if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
     };
 
     const handleSubmit = async (e) => {

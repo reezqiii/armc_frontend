@@ -14,6 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import { usePathname } from "next/navigation";
 import useEncrypt from '@/hooks/useEncrypt';
+import Head from 'next/head';
 
 export default function AdminList() {
     const router = useRouter();
@@ -46,12 +47,32 @@ export default function AdminList() {
         if (queryStatus) {
             setStatus(String(queryStatus));
         }
-        // console.log("requestorList", requestorList)
-        console.log("path", path)
+
         if (user?.permissions) {
             setPermissions(user.permissions);
         }
     }, [queryStatus, user]);
+
+    const titleMap = {
+        onQueue: "On Queue - ARMC",
+        onProgress: "On Progress - ARMC",
+        completed: "Completed - ARMC",
+    };
+
+    const pageTitle = titleMap[status] || "Admin List";
+
+    const updatedSidebarList = requestorList.map(item => {
+        if (item.title === "Admin") {
+            return {
+                ...item,
+                child: item.child.map(child => ({
+                    ...child,
+                    active: child.href.endsWith(status)
+                }))
+            };
+        }
+        return item;
+    });
 
     function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
         const [value, setValue] = React.useState(initialValue ?? 0);
@@ -144,35 +165,35 @@ export default function AdminList() {
         }
     };
 
-    const handleExportExcel = async () => {
-        const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+    // const handleExportExcel = async () => {
+    //     const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
 
-        const sort_by = sorting[0]?.id || "id_request";
-        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+    //     const sort_by = sorting[0]?.id || "id_request";
+    //     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
-        const filterObj = Object.fromEntries(
-            columnFilters.map(f => [f.id, f.value])
-        );
+    //     const filterObj = Object.fromEntries(
+    //         columnFilters.map(f => [f.id, f.value])
+    //     );
 
-        const search = JSON.stringify({
-            request_admin: statusMap[status],
-            ...filterObj
-        });
+    //     const search = JSON.stringify({
+    //         request_admin: statusMap[status],
+    //         ...filterObj
+    //     });
 
-        const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
-            search
-        )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+    //     const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
+    //         search
+    //     )}&sort_by=${sort_by}&sort_order=${sort_order}`;
 
-        const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${user.token}` },
-        });
+    //     const res = await fetch(url, {
+    //         headers: { Authorization: `Bearer ${user.token}` },
+    //     });
 
-        const blob = await res.blob();
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = "completed_requests.xlsx";
-        link.click();
-    };
+    //     const blob = await res.blob();
+    //     const link = document.createElement('a');
+    //     link.href = window.URL.createObjectURL(blob);
+    //     link.download = "completed_requests.xlsx";
+    //     link.click();
+    // };
 
     const columns = useMemo(() => [
         {
@@ -378,37 +399,30 @@ export default function AdminList() {
         fetchData();
     }, [fetchData, status]);
 
-    const titleMap = {
-        onQueue: "On Queue",
-        onProgress: "On Progress",
-        completed: "Completed",
-    };
-
     return (
-        <AuthLayout sidebarList={requestorList}>
-            <div className="py-6">
-                <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-                    <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+        <>
+            <Head>
+                <title>{pageTitle}</title>
+            </Head>
 
-                        <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-xl font-bold text-blue-500">
-                                {titleMap[status] || "Request List"}
-                            </h1>
-                        </div>
-                        {status === "completed" && hasPermission(permissions, "itAction") && (
-                            <Button
-                                color="green"
-                                leftSection={<IconFileSpreadsheet size={16} />}
-                                onClick={handleExportExcel}
-                            >
-                                Export Excel
-                            </Button>
-                        )}
-                        <div className="overflow-x-auto">
-                            <Datatables table={table} totalPages={totalPages} />
-                        </div>
-                    </Paper> </div>
-            </div>
-        </AuthLayout >
+            <AuthLayout sidebarList={updatedSidebarList}>
+                <div className="py-6">
+                    <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
+                        <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+                            <div className="flex items-center justify-between border-b pb-2 mb-3">
+                                <h1 className="text-xl font-bold text-blue-500">
+                                    {titleMap[status] || "Request List"}
+                                </h1>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <Datatables table={table} totalPages={totalPages} />
+                            </div>
+                        </Paper>
+                    </div>
+                </div>
+            </AuthLayout>
+        </>
     );
 }
+

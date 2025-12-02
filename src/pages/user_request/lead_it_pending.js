@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
 import useEncrypt from "@/hooks/useEncrypt";
 import Swal from "sweetalert2";
@@ -416,10 +416,16 @@ export default function LeadITPendingList() {
 
                             {canApprove && (
                                 <div className="flex gap-2">
-                                    <Button color="blue" onClick={() => handleSubmitMultipleLeadIT("approve")}>
+                                    <Button
+                                        leftSection={<IconCheck size={16} />}
+                                        color="green"
+                                        onClick={() => handleSubmitMultipleLeadIT("approve")}>
                                         Approve
                                     </Button>
-                                    <Button color="red" onClick={() => handleSubmitMultipleLeadIT("reject")}>
+                                    <Button
+                                        leftSection={<IconX size={16} />}
+                                        color="red"
+                                        onClick={() => handleSubmitMultipleLeadIT("reject")}>
                                         Reject
                                     </Button>
                                 </div>

@@ -84,25 +84,29 @@ export default function DraftRequestList() {
   };
 
   const handleSubmitMultipleToHOD = async () => {
-    const selectedIds = table
-      .getSelectedRowModel()
-      .rows
-      .map(row => row.original.id_request);
+    const selectedRows = table.getSelectedRowModel().rows;
 
-    if (selectedIds.length === 0) {
-      Swal.fire({
+    const encryptedIds = selectedRows.map(
+      row => encrypt(String(row.original.id_request))
+    );
+
+    const selectedRequestIds = selectedRows.map(
+      row => row.original.id_request
+    );
+
+    if (encryptedIds.length === 0) {
+      return Swal.fire({
         icon: 'info',
         title: 'No Selection',
-        text: 'Please select at least one request to submit.',
+        text: 'Please select at least one request.',
       });
-      return;
     }
 
     const confirm = await Swal.fire({
-      title: `Submit ${selectedIds.length} selected request(s) to HOD?`,
+      title: `Submit ${encryptedIds.length} request(s) to HOD?`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Yes, submit',
+      confirmButtonText: 'Yes',
       cancelButtonText: 'Cancel',
     });
 
@@ -110,23 +114,26 @@ export default function DraftRequestList() {
 
     try {
       await Promise.all(
-        selectedIds.map(id =>
+        encryptedIds.map(encId =>
           axios.put(
-            `${API_URL}/requests/${id}/submit-to-hod`,
+            `${API_URL}/requests/${encId}/submit-to-hod`,
             {},
             { headers: { Authorization: `Bearer ${user.token}` } }
           )
         )
       );
 
-      setData(prev => prev.filter(item => !selectedIds.includes(item.id_request)));
+      // remove submitted rows
+      setData(prev => prev.filter(
+        item => !selectedRequestIds.includes(item.id_request)
+      ));
 
       table.resetRowSelection();
 
       Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: `${selectedIds.length} request(s) submitted to HOD.`,
+        text: `${encryptedIds.length} request(s) submitted.`,
         timer: 1500,
         showConfirmButton: false,
       });

@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -418,7 +418,8 @@ export default function PendingHODList() {
               {user?.id && data.some(item => item.approval_hod_by?.id === user.id) && (
                 <div className="flex gap-2">
                   <Button
-                    color="blue"
+                    leftSection={<IconCheck size={16} />}
+                    color="green"
                     onClick={handleApproveMultiple}
                     disabled={table.getSelectedRowModel().rows.length === 0}
                   >
@@ -426,6 +427,7 @@ export default function PendingHODList() {
                   </Button>
 
                   <Button
+                    leftSection={<IconX size={16} />}
                     color="red"
                     onClick={handleRejectMultiple}
                     disabled={table.getSelectedRowModel().rows.length === 0}
