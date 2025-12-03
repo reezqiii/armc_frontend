@@ -165,35 +165,35 @@ export default function AdminList() {
         }
     };
 
-    // const handleExportExcel = async () => {
-    //     const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+    const handleExportExcel = async () => {
+        const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
 
-    //     const sort_by = sorting[0]?.id || "id_request";
-    //     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+        const sort_by = sorting[0]?.id || "id_request";
+        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
-    //     const filterObj = Object.fromEntries(
-    //         columnFilters.map(f => [f.id, f.value])
-    //     );
+        const filterObj = Object.fromEntries(
+            columnFilters.map(f => [f.id, f.value])
+        );
 
-    //     const search = JSON.stringify({
-    //         request_admin: statusMap[status],
-    //         ...filterObj
-    //     });
+        const search = JSON.stringify({
+            request_admin: statusMap[status],
+            ...filterObj
+        });
 
-    //     const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
-    //         search
-    //     )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+        const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
+            search
+        )}&sort_by=${sort_by}&sort_order=${sort_order}`;
 
-    //     const res = await fetch(url, {
-    //         headers: { Authorization: `Bearer ${user.token}` },
-    //     });
+        const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${user.token}` },
+        });
 
-    //     const blob = await res.blob();
-    //     const link = document.createElement('a');
-    //     link.href = window.URL.createObjectURL(blob);
-    //     link.download = "completed_requests.xlsx";
-    //     link.click();
-    // };
+        const blob = await res.blob();
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "completed_requests.xlsx";
+        link.click();
+    };
 
     const columns = useMemo(() => [
         {
@@ -413,6 +413,16 @@ export default function AdminList() {
                                 <h1 className="text-xl font-bold text-blue-500">
                                     {titleMap[status] || "Request List"}
                                 </h1>
+
+
+                                {/* Export Button */}
+                                <Button
+                                    color="green"
+                                    size="sm"
+                                    onClick={handleExportExcel}
+                                >
+                                    Export Excel
+                                </Button>
                             </div>
 
                             <div className="overflow-x-auto">

@@ -13,8 +13,8 @@ import { formatDate } from "@/lib/dateFormat";
 import { hasPermission } from "@/lib/permissionHelper";
 import Swal from 'sweetalert2'
 
-export default function RequestDetail() {
-  RequestDetail.title = "Request Detail Form"
+function RequestDetail() {
+
   const router = useRouter()
   const { id } = router.query
   const API = useApi()
@@ -664,3 +664,6 @@ export default function RequestDetail() {
   )
 }
 
+RequestDetail.title = "Request Detail Form";
+export default RequestDetail;
+  
