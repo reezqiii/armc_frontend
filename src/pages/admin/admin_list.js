@@ -166,33 +166,49 @@ export default function AdminList() {
     };
 
     const handleExportExcel = async () => {
-        const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+        try {
+            const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
 
-        const sort_by = sorting[0]?.id || "id_request";
-        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+            const sort_by = sorting[0]?.id || "id_request";
+            const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
-        const filterObj = Object.fromEntries(
-            columnFilters.map(f => [f.id, f.value])
-        );
+            const filterObj = Object.fromEntries(
+                columnFilters.map(f => [f.id, f.value])
+            );
 
-        const search = JSON.stringify({
-            request_admin: statusMap[status],
-            ...filterObj
-        });
+            const search = JSON.stringify({
+                request_admin: statusMap[status],
+                ...filterObj
+            });
 
-        const url = `${API_URL}/excel/export-completed?search=${encodeURIComponent(
-            search
-        )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+            const url = `${API_URL}/excel/export-list?search=${encodeURIComponent(
+                search
+            )}&sort_by=${sort_by}&sort_order=${sort_order}`;
 
-        const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${user.token}` },
-        });
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                }
+            });
 
-        const blob = await res.blob();
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = "completed_requests.xlsx";
-        link.click();
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Export failed:", errorText);
+                throw new Error("Gagal export excel");
+            }
+
+            const blob = await res.blob();
+
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = "export_requests_list.xlsx";
+            link.click();
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Export Excel gagal. Cek console.");
+        }
     };
 
     const columns = useMemo(() => [

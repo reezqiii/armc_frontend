@@ -21,22 +21,15 @@ function CreateRequest() {
     const { user } = useUser()
 
     const [formData, setFormData] = React.useState({
-        created_by_name: '',
         full_name: '',
         badge_no: '',
         email: '',
-        project: '',
-        department: '',
+        project_id: '',
+        dept_id: '',
+        design_id: '',
+        company_id: '',
         request_reason: '',
-        approval_hod_by: '',
-        approval_it_hod_by: '',
-        approval_lead_it_by: '',
-        department_name: '',
-        position_name: '',
-        project_name: '',
         remarks: '',
-        company: '',
-        company_name: '',
         access_yard_company: [],
         access_nav_menu: [],
     });
@@ -76,14 +69,16 @@ function CreateRequest() {
             setLoading(true);
             try {
                 const [companyRes, navMenuRes] = await Promise.all([
-                    axios.get(`${API_URL}/requests/hods`),
                     axios.get(`${API_URL}/portal_company/list`),
                     axios.get(`${API_URL}/portal_nav_menu/list`)
                 ]);
+                // Access Yard
                 setAccessYardOptions(companyRes.data.map(c => ({
                     value: String(c.id_company),
                     label: c.company_name,
                 })));
+
+                // Application Access
                 setNavMenuOptions(navMenuRes.data.map(n => ({
                     value: String(n.id_application),
                     label: n.application_name,
@@ -169,33 +164,26 @@ function CreateRequest() {
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
-            request_status: 0,
+            request_status: 3,
             remarks: formData.remarks,
-            created_by: user.id,
             status_active: 1,
             project_id: Number(formData.project_id),
             dept_id: Number(formData.dept_id),
             design_id: Number(formData.design_id),
             id_company: Number(formData.company_id),
-            approval_hod_by: formData.approval_hod_by,
             approval_it_hod_by: formData.approval_it_hod_by,
             access_yard_company: formData.access_yard_company,
             access_nav_menu: formData.access_nav_menu,
         };
 
         try {
-            const response = await axios.post(
-                `${API_URL}/requests/public/create`,
-                formData
-            );
+            const response = await axios.post(`${API_URL}/requests/public/create`, payload);
 
             if (response.status === 200 || response.status === 201) {
                 const newRequest = response.data;
 
                 setFormData(prev => ({
                     ...prev,
-                    created_by: newRequest.created_by,
-                    created_by_name: newRequest.created_by_name,
                     created_date: newRequest.created_date,
                 }));
 
@@ -215,7 +203,6 @@ function CreateRequest() {
                     project: '',
                     department: '',
                     request_reason: '',
-                    approval_hod_by: '',
                     approval_it_hod_by: '',
                     approval_lead_it_by: '',
                     department_name: '',
@@ -270,15 +257,6 @@ function CreateRequest() {
                                             : formatDate(new Date())}
                                     </span>
                                     <IconCalendar size={16} className="text-gray-500" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block font-medium mb-1 text-gray-800 text-sm">
-                                    Requestor <span className="text-red-500">*</span>
-                                </label>
-                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                    {formData.full_name || '-'}
                                 </div>
                             </div>
                         </div>
@@ -423,89 +401,53 @@ function CreateRequest() {
                             />
                         </div>
 
-                        {/* Signature Section */}
                         <div className="space-y-2 mt-6">
                             <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-4 text-center">
-                                    <div>Requestor</div>
-                                    <div>HOD Requestor</div>
+                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-2 text-center">
                                     <div>Lead IT</div>
-                                    <div>Asst. IT Manager/IT Manager</div>
+                                    <div>IT Manager</div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-4 text-sm">
-                                {/* Requestor Department */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {formData?.created_by_name || '-'}
-                                    </div>
-                                </div>
+                        {/* Signature Boxes */}
+                        <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-2 text-sm">
 
-                                {/* HOD Requestor */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <Select
-                                        key={formData.approval_hod_by}
-                                        label="Acknowledge By"
-                                        placeholder="Select HOD..."
-                                        searchable
-                                        value={formData.approval_hod_by || ''}
-                                        onChange={(val) => handleChange('approval_hod_by', val)}
-                                        data={hodOptions.map((u) => ({
-                                            value: u.value,
-                                            label: u.label
-                                        }))}
-                                        classNames={{
-                                            input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
-                                            label: "font-medium mb-1 text-gray-800 text-sm",
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Lead IT */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Checked By
-                                    </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {/* {leadItName || 'Loading...'} */}
-                                    </div>
-                                </div>
-
-                                {/* Asst. IT Manager / IT Manager */}
-                                <div className="p-3">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Approved By
-                                    </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {/* {itManagerName || 'Loading...'} */}
-                                    </div>
-                                </div>
+                            {/* Lead IT */}
+                            <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
+                                <label className="font-medium mb-1 text-gray-800 text-sm">Checked By</label>
+                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center"></div>
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex justify-between pt-6">
-                                <Button
-                                    leftSection={<IconArrowLeft size={18} />}
-                                    color="gray"
-                                    size="sm"
-                                    onClick={() => router.back()}
-                                >
-                                    Back
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    leftSection={<IconDeviceFloppy size={18} />}
-                                    color="blue"
-                                    radius="sm"
-                                    size="sm"
-                                    loading={loadingSubmit}
-                                    disabled={loadingSubmit}
-                                >
-                                    Submit
-                                </Button>
+                            {/* IT Manager */}
+                            <div className="p-3">
+                                <label className="font-medium mb-1 text-gray-800 text-sm">Approved By</label>
+                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center"></div>
                             </div>
+                        </div>
+
+                        {/* ACTION BUTTONS - OUTSIDE GRID */}
+                        <div className="w-full flex justify-between items-center pt-6">
+                            <Button
+                                leftSection={<IconArrowLeft size={18} />}
+                                color="gray"
+                                size="sm"
+                                onClick={() => router.back()}
+                            >
+                                Back
+                            </Button>
+
+                            <Button
+                                type="submit"
+                                leftSection={<IconDeviceFloppy size={18} />}
+                                color="blue"
+                                radius="sm"
+                                size="sm"
+                                loading={loadingSubmit}
+                                disabled={loadingSubmit}
+                            >
+                                Submit
+                            </Button>
                         </div>
                     </form>
                 </Paper >

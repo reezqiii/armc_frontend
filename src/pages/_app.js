@@ -50,6 +50,14 @@ export default function App({ Component, pageProps }) {
     const initAuth = async () => {
       if (!router.isReady) return;
 
+      const currentPath = window.location.pathname;
+
+      if (currentPath.startsWith("/public_request")) {
+        console.log("Halaman public, skip auth");
+        setIsAuthenticated(true);
+        return;
+      }
+
       const { id, auth_user } = router.query;
       let idUser = null;
 
@@ -78,7 +86,6 @@ export default function App({ Component, pageProps }) {
 
           setIsAuthenticated(true);
           // router.push('/')
-          const currentPath = window.location.pathname;
 
           if (currentPath === "/login" || currentPath === "/") {
             // Jika user akses login page atau root, baru redirect ke "/"

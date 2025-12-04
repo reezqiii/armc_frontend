@@ -182,8 +182,6 @@ export default function RequestUserList() {
                     "Rejected by IT Manager": "red",
                     Completed: "green",
                 };
-                console.log(row.original)
-
 
                 let rejectField = null;
 
