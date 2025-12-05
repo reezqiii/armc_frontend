@@ -288,6 +288,14 @@ export default function PendingHODList() {
       cell: info => info.getValue(),
     },
     {
+      accessorFn: row => row.type,
+      id: 'type',
+      header: 'Type',
+      enableColumnFilter: true,
+      enableSorting: true,
+      cell: ({ row }) => (row.original.type === 1 ? 'Public' : 'Login'),
+    },
+    {
       id: 'status',
       header: 'Status',
       enableColumnFilter: false,

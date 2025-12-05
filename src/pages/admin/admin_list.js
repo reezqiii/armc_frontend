@@ -300,6 +300,14 @@ export default function AdminList() {
             cell: info => info.getValue(),
         },
         {
+            accessorFn: row => row.type,
+            id: 'type',
+            header: 'Type',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: ({ row }) => (row.original.type === 1 ? 'Public' : 'Login'),
+        },
+        {
             accessorFn: row => row.request_admin,
             id: 'request_admin',
             header: 'Admin Status',

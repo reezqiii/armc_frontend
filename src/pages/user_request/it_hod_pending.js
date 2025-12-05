@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck, IconRefresh } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -171,6 +171,34 @@ export default function ITPendingList() {
         }
     };
 
+    const handleReturn = async (id) => {
+        Swal.fire({
+            title: "Return to Draft?",
+            text: "Request akan dikembalikan ke Draft tanpa lewat HOD lagi",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Ya, Return",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const encryptedId = encrypt(String(id));
+
+                    await axios.post(
+                        `${API_URL}/requests/${encryptedId}/return`,
+                        {},
+                        { headers: { Authorization: `Bearer ${user.token}` } }
+                    );
+
+                    Swal.fire("Success", "Request berhasil dikembalikan ke Draft", "success");
+                    fetchData();
+
+                } catch (err) {
+                    Swal.fire("Error", err.response?.data?.message || "Terjadi kesalahan", "error");
+                }
+            }
+        });
+    };
+
     const columns = useMemo(() => [
         {
             id: "select",
@@ -284,6 +312,14 @@ export default function ITPendingList() {
             cell: info => info.getValue(),
         },
         {
+            accessorFn: row => row.type,
+            id: 'type',
+            header: 'Type',
+            enableColumnFilter: true,
+            enableSorting: true,
+            cell: ({ row }) => (row.original.type === 1 ? 'Public' : 'Login'),
+        },
+        {
             id: 'status',
             header: 'Status',
             enableColumnFilter: false,
@@ -330,6 +366,15 @@ export default function ITPendingList() {
                                     disabled={isDeleting}
                                 >
                                     Cancel
+                                </Button>
+
+                                <Button
+                                    leftSection={<IconRefresh size={16} />}
+                                    color="yellow"
+                                    fullWidth
+                                    onClick={() => handleReturn(request.id_request)}
+                                >
+                                    Return
                                 </Button>
                             </>
                         )}

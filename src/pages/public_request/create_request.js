@@ -45,9 +45,6 @@ function CreateRequest() {
 
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
-    const [hodOptions, setHodOptions] = useState([]);
-    const [leadItOptions, setLeadItOptions] = useState([]);
-    const [itManagerOptions, setItManagerOptions] = useState([]);
     const [search, setSearch] = useState('');
     const [accessYardOptions, setAccessYardOptions] = useState([]);
     const [navMenuOptions, setNavMenuOptions] = useState([]);
@@ -200,17 +197,14 @@ function CreateRequest() {
                     full_name: '',
                     badge_no: '',
                     email: '',
-                    project: '',
-                    department: '',
+                    project_id: null,
+                    dept_id: null,
+                    design_id: null,
+                    company_id: null,
                     request_reason: '',
                     approval_it_hod_by: '',
                     approval_lead_it_by: '',
-                    department_name: '',
-                    position_name: '',
-                    project_name: '',
                     remarks: '',
-                    company: '',
-                    company_name: '',
                     access_yard_company: [],
                     access_nav_menu: [],
                 });
@@ -228,13 +222,14 @@ function CreateRequest() {
     };
 
     return (
-        <AuthLayout sidebarList={requestorList}>
-            <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
+        <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
+            <div className=" max-w-5xl mx-auto w-full">
                 <Paper
                     radius="md"
                     shadow="xl"
                     className="bg-white py-8 px-10 w-full space-y-6 text-sm leading-relaxed"
                 >
+
 
                     {/* Header */}
                     <div className=" border-b py-4 text-center">
@@ -294,7 +289,7 @@ function CreateRequest() {
                                     label="Department"
                                     placeholder="Select Department"
                                     data={deptOptions}
-                                    value={formData.dept_id || ""}
+                                    value={formData.dept_id ?? null}
                                     onChange={(value) => handleChange("dept_id", value)}
                                 />
 
@@ -305,7 +300,7 @@ function CreateRequest() {
                                     label="Position"
                                     placeholder="Select Position"
                                     data={positionOptions}
-                                    value={formData.design_id || ""}
+                                    value={formData.design_id ?? null}
                                     onChange={(value) => handleChange("design_id", value)}
                                 />
 
@@ -316,7 +311,7 @@ function CreateRequest() {
                                     label="Project"
                                     placeholder="Select Project"
                                     data={projectOptions}
-                                    value={formData.project_id || ""}
+                                    value={formData.project_id ?? null}
                                     onChange={(value) => handleChange("project_id", value)}
                                 />
 
@@ -327,7 +322,7 @@ function CreateRequest() {
                                     label="Company"
                                     placeholder="Select Company"
                                     data={companyOptions}
-                                    value={formData.company_id || ""}
+                                    value={formData.company_id ?? null}
                                     onChange={(value) => handleChange("company_id", value)}
                                 />
 
@@ -401,31 +396,6 @@ function CreateRequest() {
                             />
                         </div>
 
-                        <div className="space-y-2 mt-6">
-                            <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-2 text-center">
-                                    <div>Lead IT</div>
-                                    <div>IT Manager</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Signature Boxes */}
-                        <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-2 text-sm">
-
-                            {/* Lead IT */}
-                            <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                <label className="font-medium mb-1 text-gray-800 text-sm">Checked By</label>
-                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center"></div>
-                            </div>
-
-                            {/* IT Manager */}
-                            <div className="p-3">
-                                <label className="font-medium mb-1 text-gray-800 text-sm">Approved By</label>
-                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center"></div>
-                            </div>
-                        </div>
-
                         {/* ACTION BUTTONS - OUTSIDE GRID */}
                         <div className="w-full flex justify-between items-center pt-6">
                             <Button
@@ -452,7 +422,7 @@ function CreateRequest() {
                     </form>
                 </Paper >
             </div >
-        </AuthLayout >
+        </div >
     )
 }
 

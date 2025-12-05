@@ -40,10 +40,7 @@ function EditRequest() {
         company_name: '',
     })
 
-    const encryptedId = id;
-
     const [errors, setErrors] = useState({})
-    const [hodList, setHodList] = useState([])
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
     const [search, setSearch] = useState('');
@@ -57,8 +54,9 @@ function EditRequest() {
     const [leadItName, setLeadItName] = useState('');
 
     const isEditable = useMemo(() => {
-        return formData.request_status === 0 || formData.request_status === 1;
-    }, [formData.request_status]);
+        return (formData.request_status === 0 || formData.request_status === 1)
+            && user.permissions.includes(2); // cek permission
+    }, [formData.request_status, user.permissions]);
 
     useEffect(() => {
         if (!debouncedSearch || !isEditable) {
@@ -137,7 +135,9 @@ function EditRequest() {
                         email: data.email || '',
                         request_reason: data.request_reason || '',
                         remarks: data.remarks || '',
-                        approval_it_hod_by: data.approval_it_hod_by || '',
+                        approval_hod_by_name: data.approval_hod_by?.full_name || '-',
+                        approval_lead_it_by_name: data.approval_lead_it_by?.full_name || '-',
+                        approval_it_hod_by_name: data.approval_it_hod_by?.full_name || '-',
                         company: data.company?.id_company ? String(data.company.id_company) : '',
                         department: data.dept_id ? String(data.dept_id) : '',
                         position: data.design_id ? String(data.design_id) : '',
@@ -519,7 +519,7 @@ function EditRequest() {
                                         Checked By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {leadItName || '-'}
+                                         {formData.approval_lead_it_by_name || '-'}
                                     </div>
                                 </div>
 
@@ -529,7 +529,7 @@ function EditRequest() {
                                         Approved By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {itManagerName ? itManagerName : '-'}
+                                        {formData.approval_it_hod_by_name || '-'}
                                     </div>
                                 </div>
                             </div>
