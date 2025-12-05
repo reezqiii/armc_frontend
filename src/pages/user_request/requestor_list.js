@@ -188,7 +188,8 @@ export default function RequestUserList() {
                     "Rejected by Lead IT": "red",
                     "Pending by IT Manager": "yellow",
                     "Rejected by IT Manager": "red",
-                    Completed: "green",
+                    "Completed": "green",
+                    "Returned": "gray",
                 };
 
                 let rejectField = null;

@@ -104,6 +104,7 @@ function RequestDetail() {
     5: 'Pending by IT Manager',
     6: 'Rejected by IT Manager',
     7: 'Completed',
+    8: 'Returned',
   };
 
   const statusColorMap = {
@@ -115,6 +116,7 @@ function RequestDetail() {
     5: 'text-yellow-500',
     6: 'text-red-500',
     7: 'text-green-500',
+    8: 'text-gray-500',
   };
 
   const handleSubmitToHOD = async () => {
@@ -666,4 +668,3 @@ function RequestDetail() {
 
 RequestDetail.title = "Request Detail Form";
 export default RequestDetail;
-  

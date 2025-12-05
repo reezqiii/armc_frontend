@@ -136,28 +136,30 @@ function CompletedRequest() {
 
     const handleReturn = async (id) => {
         Swal.fire({
-            title: "Return to Draft?",
-            text: "Request akan dikembalikan ke Draft tanpa lewat HOD lagi",
+            title: "Return for Revision?",
+            text: "This request will be returned to the requestor for revision.",
             icon: "warning",
             showCancelButton: true,
-            confirmButtonText: "Ya, Return",
+            confirmButtonText: "Yes, Return",
         }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const encryptedId = encrypt(String(id));
+            if (!result.isConfirmed) return;
 
-                    await axios.post(
-                        `${API_URL}/requests/${encryptedId}/return`,
-                        {},
-                        { headers: { Authorization: `Bearer ${user.token}` } }
-                    );
+            try {
+                const encryptedId = encrypt(String(id));
 
-                    Swal.fire("Success", "Request berhasil dikembalikan ke Draft", "success");
-                    fetchData();
+                const res = await axios.post(
+                    `${API_URL}/requests/${encryptedId}/return`,
+                    {},
+                    { headers: { Authorization: `Bearer ${user.token}` } }
+                );
 
-                } catch (err) {
-                    Swal.fire("Error", err.response?.data?.message || "Terjadi kesalahan", "error");
-                }
+                Swal.fire("Success", "The request has been returned for revision.", "success");
+
+                getData();
+
+            } catch (err) {
+                console.log("Axios Error:", err);
+                Swal.fire("Error", err.response?.data?.message || "An error occurred.", "error");
             }
         });
     };
@@ -275,6 +277,7 @@ function CompletedRequest() {
                     'Pending by IT Manager': 'yellow',
                     'Rejected by IT Manager': 'red',
                     'Completed': 'green',
+                    'Returned': 'gray',
                 };
 
                 return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;

@@ -8,6 +8,7 @@ import {
   IconCircleCheck,
   IconUserExclamation,
   IconUserShield,
+  IconRefresh,
 } from '@tabler/icons-react';
 
 const currentStatus = typeof window !== "undefined"
@@ -34,6 +35,12 @@ const requestorList = [
         href: "/user_request/add_request",
         active: "Create User Request",
         icon: <IconUserPlus size={18} />,
+      },
+      {
+        title: "Return Request",
+        href: "/user_request/return_request",
+        active: "Return Request",
+        icon: <IconRefresh size={18} />,
       },
       {
         title: "Draft",

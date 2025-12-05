@@ -48,18 +48,16 @@ function EditRequest() {
     const [badgeOptions, setBadgeOptions] = useState([]);
     const [badgeLoading, setBadgeLoading] = useState(false);
     const [hodOptions, setHodOptions] = useState([]);
-    const [itManagerName, setItManagerName] = useState('');
     const [accessYardOptions, setAccessYardOptions] = useState([]);
     const [navMenuOptions, setNavMenuOptions] = useState([]);
-    const [leadItName, setLeadItName] = useState('');
 
-    const isEditable = useMemo(() => {
-        return (formData.request_status === 0 || formData.request_status === 1)
-            && user.permissions.includes(2); // cek permission
-    }, [formData.request_status, user.permissions]);
+    // cons = useMemo(() => {
+    //     return (formData.request_status === 0 || formData.request_status === 1)
+    //         && user.permissions.includes(2); // cek permission
+    // }, [formData.request_status, user.permissions]);
 
     useEffect(() => {
-        if (!debouncedSearch || !isEditable) {
+        if (!debouncedSearch) {
             setBadgeOptions([]);
             return;
         }
@@ -89,7 +87,7 @@ function EditRequest() {
         };
 
         fetchBadges();
-    }, [debouncedSearch, isEditable]);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -505,7 +503,6 @@ function EditRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
-                                        disabled={!isEditable}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",
