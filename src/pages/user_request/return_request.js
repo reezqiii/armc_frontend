@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
 export default function ReturnList() {
-  ReturnList.title = "Return List";
+  ReturnList.title = "Return Request List";
 
   const router = useRouter();
   const { user } = useUser();
@@ -175,31 +175,55 @@ export default function ReturnList() {
     }
   };
 
+  const statusMap = {
+    0: 'Draft',
+    1: 'Pending by HOD Req',
+    2: 'Rejected by HOD Req',
+    3: 'Pending by Lead IT',
+    4: 'Rejected by Lead IT',
+    5: 'Pending by IT Manager',
+    6: 'Rejected by IT Manager',
+    7: 'Completed',
+    8: 'Returned',
+  };
+
+  const statusColorMap = {
+    0: 'text-gray-500',
+    1: 'text-yellow-500',
+    2: 'text-red-500',
+    3: 'text-yellow-500',
+    4: 'text-red-500',
+    5: 'text-yellow-500',
+    6: 'text-red-500',
+    7: 'text-green-500',
+    8: 'text-gray-500',
+  };
+
   const columns = useMemo(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllPageRowsSelected()}
-          ref={el => {
-            if (el) el.indeterminate = table.getIsSomePageRowsSelected();
-          }}
-          onChange={table.getToggleAllPageRowsSelectedHandler()}
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={row.getIsSelected()}
-          ref={el => {
-            if (el) el.indeterminate = row.getIsSomeSelected();
-          }}
-          onChange={row.getToggleSelectedHandler()}
-        />
-      ),
-      size: 40,
-    },
+    // {
+    //   id: "select",
+    //   header: ({ table }) => (
+    //     <input
+    //       type="checkbox"
+    //       checked={table.getIsAllPageRowsSelected()}
+    //       ref={el => {
+    //         if (el) el.indeterminate = table.getIsSomePageRowsSelected();
+    //       }}
+    //       onChange={table.getToggleAllPageRowsSelectedHandler()}
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <input
+    //       type="checkbox"
+    //       checked={row.getIsSelected()}
+    //       ref={el => {
+    //         if (el) el.indeterminate = row.getIsSomeSelected();
+    //       }}
+    //       onChange={row.getToggleSelectedHandler()}
+    //     />
+    //   ),
+    //   size: 40,
+    // },
     {
       id: 'no',
       header: 'No',
@@ -300,7 +324,26 @@ export default function ReturnList() {
       header: 'Status',
       enableColumnFilter: false,
       enableSorting: true,
-      cell: () => <Badge color="gray">Returned</Badge>,
+      cell: ({ row }) => {
+        const statusName = row.original.request_status?.name; 
+        const prev = row.original.previous_status;              
+
+        const statusKey = Object.keys(statusMap).find(
+          key => statusMap[key] === statusName
+        );
+
+        const finalStatusKey =
+          statusName === "Returned" ? prev : Number(statusKey);
+
+        const displayStatus = statusMap[finalStatusKey] || "Unknown";
+        const displayColor = statusColorMap[finalStatusKey] || "text-gray-500";
+
+        return (
+          <span className={`font-medium ${displayColor}`}>
+            {displayStatus}
+          </span>
+        );
+      },
     },
     {
       accessorFn: row => row.id_request,

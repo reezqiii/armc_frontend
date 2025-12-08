@@ -50,6 +50,8 @@ function EditRequest() {
     const [hodOptions, setHodOptions] = useState([]);
     const [accessYardOptions, setAccessYardOptions] = useState([]);
     const [navMenuOptions, setNavMenuOptions] = useState([]);
+    const isReturned = formData.request_status === 8;
+
 
     // cons = useMemo(() => {
     //     return (formData.request_status === 0 || formData.request_status === 1)
@@ -235,7 +237,7 @@ function EditRequest() {
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
-            request_status: formData.request_status,
+            // request_status: formData.request_status,
             status_active: 1,
             remarks: formData.remarks,
             project: { id: Number(formData.project) },
@@ -503,6 +505,7 @@ function EditRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
+                                        disabled={!isReturned} 
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",

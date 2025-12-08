@@ -1,7 +1,7 @@
 import AuthLayout from '@/components/layout/authLayout'
 import requestorList from '@/data/sidebar/RequestorList';
 import { Button, Paper, Textarea, Loader } from '@mantine/core'
-import { IconArrowLeft, IconCalendar, IconSend } from '@tabler/icons-react'
+import { IconArrowLeft, IconCalendar, IconSend, IconArrowUpRight } from '@tabler/icons-react'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
@@ -28,8 +28,8 @@ function RequestDetail() {
   const [hodName, setHodName] = useState('');
   const [itManagerName, setItManagerName] = useState('');
   const [isHod, setIsHod] = useState(false);
-  const [isLeadIt, setIsLeadIt] = useState(false);
-  const [isItHod, setIsItHod] = useState(false);
+  // const [isLeadIt, setIsLeadIt] = useState(false);
+  // const [isItHod, setIsItHod] = useState(false);
   const [leadItName, setLeadItName] = useState('');
   const canApproveLeadIt = hasPermission(0);
   const canApproveItHod = hasPermission(1);
@@ -300,6 +300,42 @@ function RequestDetail() {
     } catch (err) {
       console.error("Error updating status:", err);
       Swal.fire("Error", "Failed to update request. Please try again.", "error");
+    }
+  };
+
+  const handleSubmitReturn = async () => {
+    const confirm = await Swal.fire({
+      title: `Submit this returned request back to previous step?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axios.put(
+        `${API_URL}/requests/${id}/submit-return`,
+        { target_status: data.previous_status },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Request has been submitted back to its previous step.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      fetchData(); // Refresh detail or table
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to submit returned request.',
+      });
     }
   };
 
@@ -649,14 +685,34 @@ function RequestDetail() {
                 </Button>
               )}
 
-              <div className="text-sm font-semibold text-gray-600 flex items-center">
-                Status:
-                <span
-                  className={`ml-2 ${statusColorMap[data.request_status] || "text-gray-600"
-                    }`}
-                >
-                  {statusMap[data.request_status]}
-                </span>
+              <div className="flex flex-col items-start gap-2">
+                {data.request_status === 8 && (
+                  <Button
+                    leftSection={<IconArrowUpRight size={16} />}
+                    color="green"
+                    size="sm"
+                    onClick={handleSubmitReturn}
+                  >
+                    Submit Returned Request
+                  </Button>
+                )}
+
+                <div className="text-sm font-semibold text-gray-600">
+                  Status:
+                  {(() => {
+                    const status = data.request_status;
+                    const prev = data.previous_status;
+
+                    const finalStatus = status === 8 ? prev : status;
+
+                    return (
+                      <span className={`ml-2 ${statusColorMap[finalStatus] || "text-gray-600"}`}>
+                        {statusMap[finalStatus]}
+                      </span>
+                    );
+                  })()}
+
+                </div>
               </div>
             </div>
           </div>
