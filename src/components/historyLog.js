@@ -5,11 +5,12 @@ import { formatDateTime } from "@/lib/dateFormat";
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import useEncrypt from '@/hooks/useEncrypt';
+import axios from 'axios'
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
 
-const HistoryLog = ({ logData }) => {
+const HistoryLog = ({ logData, idApplication }) => {
   const router = useRouter();
   const { user } = useUser();
   const API = useApi();
@@ -21,7 +22,6 @@ const HistoryLog = ({ logData }) => {
   const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
-  const [idApplication, setIdApplication] = useState(null);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -37,23 +37,21 @@ const HistoryLog = ({ logData }) => {
       size: 40,
     },
     {
-      accessorFn: row => row.table,
-      id: "table",
-      header: "Table",
-      enableColumnFilter: true,
-      enableSorting: true,
-      cell: info => info.getValue(),
-    },
-    {
-      accessorFn: row => row.index,
-      id: 'index',
-      header: 'Index',
-      enableColumnFilter: true,
-      enableSorting: true,
-      cell: info => info.getValue(),
-    },
-    {
-      accessorFn: row => row.before ? JSON.stringify(JSON.parse(row.before), null, 2) : '-',
+      accessorFn: row => {
+        try {
+          if (!row.before) return "-";
+
+          // jika bukan json, langsung return
+          const trimmed = row.before.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return trimmed;
+          }
+
+          return JSON.stringify(JSON.parse(row.before), null, 2);
+        } catch (e) {
+          return row.before;
+        }
+      },
       id: "before",
       header: "Before",
       enableColumnFilter: true,
@@ -61,7 +59,20 @@ const HistoryLog = ({ logData }) => {
       cell: info => info.getValue(),
     },
     {
-      accessorFn: row => row.after ? JSON.stringify(JSON.parse(row.after), null, 2) : '-',
+      accessorFn: row => {
+        try {
+          if (!row.after) return "-";
+
+          const trimmed = row.after.trim();
+          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            return trimmed;
+          }
+
+          return JSON.stringify(JSON.parse(row.after), null, 2);
+        } catch (e) {
+          return row.after;
+        }
+      },
       id: "after",
       header: "After",
       enableColumnFilter: true,
@@ -69,7 +80,7 @@ const HistoryLog = ({ logData }) => {
       cell: info => info.getValue(),
     },
     {
-      accessorFn: row => row.user,
+      accessorFn: row => row.full_name ?? row.user,
       id: 'user',
       header: 'User',
       enableColumnFilter: true,
@@ -84,22 +95,7 @@ const HistoryLog = ({ logData }) => {
       enableSorting: true,
       cell: ({ row }) => formatDateTime(row.original.date),
     },
-    {
-      accessorFn: row => {
-        switch (row.type) {
-          case 1: return "Update";
-          case 2: return "Insert";
-          case 3: return "Delete";
-          default: return row.type;
-        }
-      },
-      id: "type",
-      header: "Type",
-      enableColumnFilter: true,
-      enableSorting: true,
-      cell: info => info.getValue(),
-    },
-
+ 
   ], []);
 
   // ========================= TABLE DATA =========================
@@ -126,7 +122,6 @@ const HistoryLog = ({ logData }) => {
   });
 
   const getLogData = useCallback(async () => {
-     if (!idApplication) return;
     const sort_by = sorting[0]?.id || "date";
     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
@@ -135,7 +130,7 @@ const HistoryLog = ({ logData }) => {
     );
 
     const search = JSON.stringify({
-      id_application: idApplication, 
+      id_application: idApplication,
       ...filterObj
     });
 
@@ -155,7 +150,7 @@ const HistoryLog = ({ logData }) => {
 
   useEffect(() => {
     getLogData();
-  }, [getLogData, idApplication]);
+  }, [getLogData]);
 
   return (
     <Paper radius="sm" withBorder shadow="xs" className="p-4 mt-4">

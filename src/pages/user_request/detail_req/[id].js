@@ -36,29 +36,28 @@ function RequestDetail() {
   const canApproveItHod = hasPermission(1);
 
   useEffect(() => {
-    // ================= FETCH DETAIL =================
     if (id && user?.token) {
       fetchData();
     }
+  }, [id, user?.token]);
 
-    // ================= SET APPROVAL & NAME =================
-    if (data && user) {
-      const userId = String(user.id ?? "");
-      const hodId = String(data.approval_hod_by?.id ?? "");
+  useEffect(() => {
+    if (!data || !user) return;
 
-      setIsHod(userId === hodId && data.request_status === 1);
+    const userId = String(user.id ?? "");
+    const hodId = String(data.approval_hod_by?.id ?? "");
 
-      setHodName(data.approval_hod_by?.full_name ?? "-");
-      setLeadItName(data.approval_lead_it_by?.full_name ?? "-");
-      setItManagerName(data.approval_it_hod_by?.full_name ?? "-");
-    }
+    setIsHod(userId === hodId && data.request_status === 1);
+    setHodName(data.approval_hod_by?.full_name ?? "-");
+    setLeadItName(data.approval_lead_it_by?.full_name ?? "-");
+    setItManagerName(data.approval_it_hod_by?.full_name ?? "-");
+  }, [data, user]);
 
-    // ================= FETCH LOG =================
+  useEffect(() => {
     if (data?.id_application && user?.token) {
       fetchLogs();
     }
-
-  }, [id, data, user, user?.token, API_URL]);
+  }, [data?.id_application, user?.token]);
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -736,7 +735,11 @@ function RequestDetail() {
 
             {/* ================= TAB LOG ================= */}
             <Tabs.Panel value="log" pt="md">
-              <HistoryLog logs={logs} statusMap={statusMap} />
+              <HistoryLog
+                logs={logs}
+                statusMap={statusMap}
+                idApplication={data?.id_application}
+              />
             </Tabs.Panel>
           </Tabs>
         </Paper>
