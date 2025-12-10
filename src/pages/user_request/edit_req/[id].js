@@ -11,7 +11,7 @@ import useApi from '@/hooks/useApi';
 import useDecrypt from '@/hooks/useDecrypt';
 import useEncrypt from '@/hooks/useEncrypt';
 import Swal from "sweetalert2";
-import { formatDate } from "@/lib/dateFormat";
+import { formatDateTime } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
 
 function EditRequest() {
@@ -318,8 +318,8 @@ function EditRequest() {
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
                                     <span>
                                         {formData.created_date
-                                            ? formatDate(formData.created_date)
-                                            : formatDate(new Date())}
+                                            ? formatDateTime(formData.created_date)
+                                            : formatDateTime(new Date())}
                                     </span>
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>

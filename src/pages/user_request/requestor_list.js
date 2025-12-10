@@ -10,7 +10,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import useEncrypt from "@/hooks/useEncrypt";
 import { useRouter } from 'next/router';
-import { formatDate } from "@/lib/dateFormat";
+import { formatDateTime } from "@/lib/dateFormat";
 import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
@@ -98,7 +98,7 @@ export default function RequestUserList() {
             header: 'Request Date',
             enableColumnFilter: true,
             enableSorting: true,
-            cell: ({ row }) => formatDate(row.original.created_date),
+            cell: ({ row }) => formatDateTime(row.original.created_date),
         },
         {
             accessorFn: row => row.requestor_name,

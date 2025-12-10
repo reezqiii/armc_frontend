@@ -9,7 +9,7 @@ import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
 import useEncrypt from "@/hooks/useEncrypt";
-import { formatDate } from "@/lib/dateFormat";
+import { formatDateTime } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
@@ -221,7 +221,7 @@ export default function PendingHODList() {
       header: 'Request Date',
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDate(row.original.created_date),
+      cell: ({ row }) => formatDateTime(row.original.created_date),
     },
     {
       accessorFn: row => row.requestor_name,
