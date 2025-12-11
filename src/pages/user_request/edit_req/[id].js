@@ -52,12 +52,6 @@ function EditRequest() {
     const [navMenuOptions, setNavMenuOptions] = useState([]);
     const isReturned = formData.request_status === 8;
 
-
-    // cons = useMemo(() => {
-    //     return (formData.request_status === 0 || formData.request_status === 1)
-    //         && user.permissions.includes(2); // cek permission
-    // }, [formData.request_status, user.permissions]);
-
     useEffect(() => {
         if (!debouncedSearch) {
             setBadgeOptions([]);
@@ -121,9 +115,10 @@ function EditRequest() {
                     value: String(n.id_application),
                     label: n.application_name,
                 })));
+
                 if (id) {
                     const res = await axios.get(`${API_URL}/requests/${id}`, {
-                        headers: { Authorization: `Bearer ${user.token}` },
+                        headers: { Authorization: `Bearer ${user.token}` }
                     });
 
                     const data = res.data;
@@ -135,36 +130,30 @@ function EditRequest() {
                         email: data.email || '',
                         request_reason: data.request_reason || '',
                         remarks: data.remarks || '',
-                        approval_hod_by_name: data.approval_hod_by?.full_name || '-',
+                        approval_hod_by: data.approval_hod_by?.id_user ? String(data.approval_hod_by.id_user) : '',
                         approval_lead_it_by_name: data.approval_lead_it_by?.full_name || '-',
                         approval_it_hod_by_name: data.approval_it_hod_by?.full_name || '-',
                         company: data.company?.id_company ? String(data.company.id_company) : '',
                         department: data.dept_id ? String(data.dept_id) : '',
-                        position: data.design_id ? String(data.design_id) : '',
                         project: data.project_id ? String(data.project_id) : '',
                         project_name: data.project_name,
                         department_name: data.department_name,
-                        position_name: data.position_name,
+                        position: data.design_id ? String(data.design_id) : '',
+                        position_name: data.position_name ?? data.position ?? '',
+
                         company_name: data.company?.company_name || '',
-                        approval_hod_by:
-                            data.approval_hod_by?.id
-                                ? String(data.approval_hod_by.id)
-                                : '',
-                        access_yard_company: Array.isArray(data.access_yard_company)
-                            ? data.access_yard_company.map(item =>
-                                typeof item === 'object' ? String(item.id) : String(item)
-                            )
-                            : typeof data.access_yard_company === 'string'
-                                ? data.access_yard_company.split(',').map(s => s.trim())
-                                : [],
+
+                        approval_hod_by: data.approval_hod_by?.id
+                            ? String(data.approval_hod_by.id)
+                            : '',
 
                         access_nav_menu: Array.isArray(data.access_nav_menu)
-                            ? data.access_nav_menu.map(item =>
-                                typeof item === 'object' ? String(item.id) : String(item)
-                            )
-                            : typeof data.access_nav_menu === 'string'
-                                ? data.access_nav_menu.split(',').map(s => s.trim())
-                                : [],
+                            ? data.access_nav_menu.map(item => String(item.id))
+                            : [],
+
+                        access_yard_company: Array.isArray(data.access_yard_company)
+                            ? data.access_yard_company.map(item => String(item.id))
+                            : [],
                     }));
                 }
             } catch (err) {
@@ -175,7 +164,7 @@ function EditRequest() {
         };
 
         fetchInitialData();
-    }, [API_URL, user.token]);
+    }, [id]);
 
     const handleSelectBadge = async (value) => {
         try {
@@ -240,8 +229,9 @@ function EditRequest() {
             // request_status: formData.request_status,
             status_active: 1,
             remarks: formData.remarks,
-            project: { id: Number(formData.project) },
-            department: { id_department: Number(formData.department) },
+            project_id: Number(formData.project),
+            dept_id: Number(formData.department),
+            design_id: Number(formData.position),
             id_company: Number(formData.company),
             access_yard_company: Array.isArray(formData.access_yard_company)
                 ? formData.access_yard_company.join(',')
@@ -251,7 +241,7 @@ function EditRequest() {
                 : formData.access_nav_menu || '',
         };
         payload.approval_hod_by = formData.approval_hod_by
-            ? { id_user: Number(formData.approval_hod_by) }
+            ? { id: Number(formData.approval_hod_by) }
             : null;
 
         try {
@@ -505,7 +495,7 @@ function EditRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
-                                        disabled={!isReturned} 
+                                        disabled={!isReturned}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",
@@ -519,7 +509,7 @@ function EditRequest() {
                                         Checked By
                                     </label>
                                     <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                         {formData.approval_lead_it_by_name || '-'}
+                                        {formData.approval_lead_it_by_name || '-'}
                                     </div>
                                 </div>
 

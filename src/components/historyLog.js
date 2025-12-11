@@ -38,47 +38,57 @@ const HistoryLog = ({ logData, idApplication }) => {
     },
     {
       accessorFn: row => {
-        try {
-          if (!row.before) return "-";
+        const val = row.before;
+        if (!val) return "-";
 
-          // jika bukan json, langsung return
-          const trimmed = row.before.trim();
-          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
-            return trimmed;
+        // Jika langsung object → langsung stringify
+        if (typeof val === "object") {
+          return JSON.stringify(val, null, 2);
+        }
+
+        // Jika string lama (TEXT)
+        try {
+          const trimmed = String(val).trim();
+
+          if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+            return JSON.stringify(JSON.parse(trimmed), null, 2);
           }
 
-          return JSON.stringify(JSON.parse(row.before), null, 2);
-        } catch (e) {
-          return row.before;
+          return trimmed;
+        } catch {
+          return String(val);
         }
       },
       id: "before",
       header: "Before",
-      enableColumnFilter: true,
-      enableSorting: true,
       cell: info => info.getValue(),
     },
     {
       accessorFn: row => {
-        try {
-          if (!row.after) return "-";
+        const val = row.after;
+        if (!val) return "-";
 
-          const trimmed = row.after.trim();
-          if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
-            return trimmed;
+        if (typeof val === "object") {
+          return JSON.stringify(val, null, 2);
+        }
+
+        try {
+          const trimmed = String(val).trim();
+
+          if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+            return JSON.stringify(JSON.parse(trimmed), null, 2);
           }
 
-          return JSON.stringify(JSON.parse(row.after), null, 2);
-        } catch (e) {
-          return row.after;
+          return trimmed;
+        } catch {
+          return String(val);
         }
       },
       id: "after",
       header: "After",
-      enableColumnFilter: true,
-      enableSorting: true,
       cell: info => info.getValue(),
     },
+
     {
       accessorFn: row => row.full_name ?? row.user,
       id: 'user',
@@ -95,7 +105,7 @@ const HistoryLog = ({ logData, idApplication }) => {
       enableSorting: true,
       cell: ({ row }) => formatDateTime(row.original.date),
     },
- 
+
   ], []);
 
   // ========================= TABLE DATA =========================

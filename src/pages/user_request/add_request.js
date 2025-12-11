@@ -103,6 +103,7 @@ function CreateRequest() {
     }, [debouncedSearch]);
 
     useEffect(() => {
+           console.log("Fetch initial data running...");
         const fetchInitialData = async () => {
             setLoading(true);
             try {
@@ -137,7 +138,7 @@ function CreateRequest() {
         };
 
         fetchInitialData();
-    }, [API_URL, user.token]);
+    }, []);
 
     const handleSelectBadge = async (value) => {
         try {

@@ -45,12 +45,10 @@ function RequestDetail() {
     if (!data || !user) return;
 
     const userId = String(user.id ?? "");
-    const hodId = String(data.approval_hod_by?.id ?? "");
-
-    setIsHod(userId === hodId && data.request_status === 1);
-    setHodName(data.approval_hod_by?.full_name ?? "-");
-    setLeadItName(data.approval_lead_it_by?.full_name ?? "-");
-    setItManagerName(data.approval_it_hod_by?.full_name ?? "-");
+    // const hodId = String(data.approval_hod_by ?? "");
+    setHodName(data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-");
+    setLeadItName(data.approval_lead_it_by_name ?? "-");
+    setItManagerName(data.approval_it_hod_by_name ?? "-");
   }, [data, user]);
 
   useEffect(() => {
@@ -507,6 +505,7 @@ function RequestDetail() {
                         {data.access_yard_company?.length
                           ? data.access_yard_company.map(c => c.company_name).join(', ')
                           : '-'}
+
                       </span>
                     </div>
                   </div>
@@ -598,7 +597,7 @@ function RequestDetail() {
                     <div className="flex flex-col gap-1 text-sm">
                       <p>
                         <span className="font-medium">Name :</span>{' '}
-                        {hodName || "-"}
+                        {data.approval_hod_by?.full_name || "-"}
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
@@ -631,7 +630,7 @@ function RequestDetail() {
                     <div className="flex flex-col gap-1 text-sm">
                       <p>
                         <span className="font-medium">Name :</span>{' '}
-                        {leadItName || '-'}
+                        {data.approval_lead_it_by_name || "-"}
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
@@ -656,7 +655,7 @@ function RequestDetail() {
                     <div className="flex flex-col gap-1 text-sm">
                       <p>
                         <span className="font-medium">Name :</span>{' '}
-                        {itManagerName || '-'}
+                        {data.approval_it_hod_by_name || "-"}
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
