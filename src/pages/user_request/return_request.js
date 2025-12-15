@@ -13,9 +13,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function ReturnList() {
-  ReturnList.title = "Return Request List";
-
+function ReturnList() {
   const router = useRouter();
   const { user } = useUser();
   const API = useApi();
@@ -30,8 +28,6 @@ export default function ReturnList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRejectData, setSelectedRejectData] = useState(null);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -76,102 +72,6 @@ export default function ReturnList() {
       });
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const handleApproveMultiple = async () => {
-    const ids = table.getSelectedRowModel().rows.map(r => r.original.id_request);
-
-    if (ids.length === 0) return;
-
-    const confirm = await Swal.fire({
-      title: `Approve ${ids.length} selected request(s)?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, approve",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      await axios.put(
-        `${API_URL}/requests/hod-approval/bulk`,
-        {
-          ids,
-          action: "approve",
-          remarks: "",
-        },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      Swal.fire({
-        icon: "success",
-        title: "Approved!",
-        text: `${ids.length} request(s) approved successfully.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      table.resetRowSelection();
-      getData();
-
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to approve requests.", "error");
-    }
-  };
-
-  const handleRejectMultiple = async () => {
-    const ids = table.getSelectedRowModel().rows.map(r => r.original.id_request);
-
-    if (ids.length === 0) return;
-
-    const confirm = await Swal.fire({
-      title: `Reject ${ids.length} selected request(s)?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, reject",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    const { value: remarks } = await Swal.fire({
-      title: "Reason for Rejection",
-      input: "textarea",
-      inputPlaceholder: "Enter your reason...",
-      showCancelButton: true,
-    });
-
-    if (!remarks) {
-      Swal.fire("Cancelled", "You must provide a reason.", "info");
-      return;
-    }
-
-    try {
-      await axios.put(
-        `${API_URL}/requests/hod-approval/bulk`,
-        {
-          ids,
-          action: "reject",
-          remarks,
-        },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      Swal.fire({
-        icon: "success",
-        title: "Rejected!",
-        text: `${ids.length} request(s) rejected successfully.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      table.resetRowSelection();
-      getData();
-
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to reject requests.", "error");
     }
   };
 
@@ -245,7 +145,7 @@ export default function ReturnList() {
       header: 'Request Date',
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDateTime(row.original.created_date),
+      cell: ({ row }) => formatDateTime(row.original.created_date, false),
     },
     {
       accessorFn: row => row.requestor_name,
@@ -325,8 +225,8 @@ export default function ReturnList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const statusName = row.original.request_status?.name; 
-        const prev = row.original.previous_status;              
+        const statusName = row.original.request_status?.name;
+        const prev = row.original.previous_status;
 
         const statusKey = Object.keys(statusMap).find(
           key => statusMap[key] === statusName
@@ -352,14 +252,14 @@ export default function ReturnList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const encryptedId = encrypt(String(row.original.id_request)); // aman
+        const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-row gap-2 justify-center">
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
-              fullWidth
+              size="xs"
               onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
             >
               Details
@@ -367,17 +267,17 @@ export default function ReturnList() {
 
             <Button
               leftSection={<IconEdit size={16} />}
-              color="orange"
-              fullWidth
+              color="yellow"
+              size="xs"
               onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
             >
-              Edit
+              Update
             </Button>
 
             <Button
               leftSection={<IconX size={16} />}
               color="red"
-              fullWidth
+              size="xs"
               onClick={() => handleCancel(row.original.id_request)}
               disabled={isDeleting}
             >
@@ -461,32 +361,6 @@ export default function ReturnList() {
             </div>
 
             <div className="flex justify-between items-center border-t pt-3 mt-4">
-
-              <span className="text-sm text-gray-700">
-                Selected: {table.getSelectedRowModel().rows.length}
-              </span>
-
-              {user?.id && data.some(item => item.approval_hod_by?.id === user.id) && (
-                <div className="flex gap-2">
-                  <Button
-                    leftSection={<IconCheck size={16} />}
-                    color="green"
-                    onClick={handleApproveMultiple}
-                    disabled={table.getSelectedRowModel().rows.length === 0}
-                  >
-                    Approve
-                  </Button>
-
-                  <Button
-                    leftSection={<IconX size={16} />}
-                    color="red"
-                    onClick={handleRejectMultiple}
-                    disabled={table.getSelectedRowModel().rows.length === 0}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              )}
             </div>
           </Paper>
         </div>
@@ -494,3 +368,6 @@ export default function ReturnList() {
     </AuthLayout>
   );
 }
+
+ReturnList.title = "Return Request List";
+export default ReturnList

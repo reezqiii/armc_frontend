@@ -87,10 +87,9 @@ const HistoryLog = ({ logData, idRequest }) => {
       header: "After",
       cell: info => info.getValue(),
     },
-
     {
       accessorFn: row => row.full_name ?? row.user,
-      id: 'user',
+      id: 'full_name',
       header: 'User',
       enableColumnFilter: true,
       enableSorting: true,
@@ -102,7 +101,7 @@ const HistoryLog = ({ logData, idRequest }) => {
       header: "Date",
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDateTime(row.original.date),
+      cell: ({ row }) => formatDateTime(row.original.date, false),
     },
 
   ], []);

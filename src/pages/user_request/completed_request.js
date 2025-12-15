@@ -15,7 +15,6 @@ import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/r
 import useEncrypt from '@/hooks/useEncrypt';
 
 function CompletedRequest() {
-
     const router = useRouter();
     const { user } = useUser();
     const API = useApi();
@@ -186,7 +185,7 @@ function CompletedRequest() {
             header: 'Request Date',
             enableColumnFilter: true,
             enableSorting: true,
-            cell: ({ row }) => formatDateTime(row.original.created_date),
+            cell: ({ row }) => formatDateTime(row.original.created_date, false),
         },
         {
             accessorFn: row => row.requestor_name,
@@ -311,11 +310,11 @@ function CompletedRequest() {
                 const encryptedId = encrypt(String(request.id_request));
 
                 return (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-row gap-2 justify-center">
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
-                            fullWidth
+                            size="xs"
                             onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
                         >
                             Details
@@ -325,17 +324,17 @@ function CompletedRequest() {
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}
-                                    color="orange"
-                                    fullWidth
+                                    color="yellow"
+                                    size="xs"
                                     onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
                                 >
-                                    Edit
+                                    Update
                                 </Button>
 
                                 <Button
                                     leftSection={<IconX size={16} />}
                                     color="red"
-                                    fullWidth
+                                    size="xs"
                                     onClick={() => handleCancel(request.id_request)}
                                     disabled={isDeleting}
                                 >
@@ -344,8 +343,8 @@ function CompletedRequest() {
 
                                 <Button
                                     leftSection={<IconRefresh size={16} />}
-                                    color="yellow"
-                                    fullWidth
+                                    color="orange"
+                                    size="xs"
                                     onClick={() => handleReturn(request.id_request)}
                                 >
                                     Return

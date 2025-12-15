@@ -189,7 +189,7 @@ function RequestDetail() {
 
   const handleHodAction = async (action) => {
     const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action.toUpperCase()} this request?`,
+      title: `Are you sure you want to approve this request?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: `Yes, ${action}`,
@@ -370,7 +370,7 @@ function RequestDetail() {
       });
     }
   };
-
+ 
   return (
     <AuthLayout sidebarList={requestorList}>
       <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
@@ -417,7 +417,7 @@ function RequestDetail() {
                     Request Date <span className="text-red-500">*</span>
                   </label>
                   <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                    <span>{formatDateTime(data.created_date)}</span>
+                    <span>{formatDateTime(data.created_date || new Date(), false)}</span>
                     <IconCalendar size={16} className="text-gray-500" />
                   </div>
                 </div>
@@ -592,7 +592,7 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.created_date)}
+                        {formatDateTime(data?.created_date, false)}
                       </p>
                     </div>
                   </div>
@@ -607,10 +607,10 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_hod_date_at)}
+                        {formatDateTime(data?.approval_hod_date_at, false)}
                       </p>
                     </div>
-                    {isHod && data.request_status === 1 && (
+                    {data.request_status === 1 && (
                       <div className="mt-3 flex gap-2">
                         <Button
                           color="green"
@@ -636,11 +636,11 @@ function RequestDetail() {
                     <div className="flex flex-col gap-1 text-sm">
                       <p>
                         <span className="font-medium">Name :</span>{' '}
-                        {data.approval_lead_it_by_name || "-"}
+                        {data.approval_lead_it_by?.full_name  || "-"}
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_lead_date_at)}
+                        {formatDateTime(data?.approval_lead_date_at, false)}
                       </p>
                     </div>
                     {canApproveLeadIt && data.request_status === 3 && (
@@ -661,11 +661,11 @@ function RequestDetail() {
                     <div className="flex flex-col gap-1 text-sm">
                       <p>
                         <span className="font-medium">Name :</span>{' '}
-                        {data.approval_it_hod_by_name || "-"}
+                        {data.approval_it_hod_by?.full_name || "-"}
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_it_date_at)}
+                        {formatDateTime(data?.approval_it_date_at, false)}
                       </p>
                     </div>
                     {canApproveItHod && data.request_status === 5 && (

@@ -14,9 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
 
-export default function ITPendingList() {
-    ITPendingList.title = "Pending IT Manager List";
-
+function ITPendingList() {
     const router = useRouter();
     const { user } = useUser();
     const API = useApi();
@@ -247,7 +245,7 @@ export default function ITPendingList() {
             header: 'Request Date',
             enableColumnFilter: true,
             enableSorting: true,
-            cell: ({ row }) => formatDateTime(row.original.created_date),
+            cell: ({ row }) => formatDateTime(row.original.created_date, false),
         },
         {
             accessorFn: row => row.requestor_name,
@@ -339,11 +337,11 @@ export default function ITPendingList() {
                 const encryptedId = encrypt(String(request.id_request));
 
                 return (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-row gap-2 justify-center">
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
-                            fullWidth
+                            size="xs"
                             onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
                         >
                             Details
@@ -353,17 +351,17 @@ export default function ITPendingList() {
                             <>
                                 <Button
                                     leftSection={<IconEdit size={16} />}
-                                    color="orange"
-                                    fullWidth
+                                    color="yellow"
+                                    size="xs"
                                     onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
                                 >
-                                    Edit
+                                    Update
                                 </Button>
 
                                 <Button
                                     leftSection={<IconX size={16} />}
                                     color="red"
-                                    fullWidth
+                                    size="xs"
                                     onClick={() => handleCancel(request.id_request)}
                                     disabled={isDeleting}
                                 >
@@ -372,8 +370,8 @@ export default function ITPendingList() {
 
                                 <Button
                                     leftSection={<IconRefresh size={16} />}
-                                    color="yellow"
-                                    fullWidth
+                                    color="orange"
+                                    size="xs"
                                     onClick={() => handleReturn(request.id_request)}
                                 >
                                     Return
@@ -485,3 +483,6 @@ export default function ITPendingList() {
         </AuthLayout>
     );
 }
+
+ITPendingList.title = "Pending IT Manager List";
+export default ITPendingList

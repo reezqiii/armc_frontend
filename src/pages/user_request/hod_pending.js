@@ -13,9 +13,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function PendingHODList() {
-  PendingHODList.title = "Pending HOD List";
-
+function PendingHODList() {
   const router = useRouter();
   const { user } = useUser();
   const API = useApi();
@@ -30,8 +28,7 @@ export default function PendingHODList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRejectData, setSelectedRejectData] = useState(null);
+
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -221,7 +218,7 @@ export default function PendingHODList() {
       header: 'Request Date',
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDateTime(row.original.created_date),
+      cell: ({ row }) => formatDateTime(row.original.created_date, false),
     },
     {
       accessorFn: row => row.requestor_name,
@@ -309,14 +306,14 @@ export default function PendingHODList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const encryptedId = encrypt(String(row.original.id_request)); // aman
+        const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-row gap-2 justify-center">
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
-              fullWidth
+              size="xs"
               onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
             >
               Details
@@ -324,17 +321,17 @@ export default function PendingHODList() {
 
             <Button
               leftSection={<IconEdit size={16} />}
-              color="orange"
-              fullWidth
+              color="yellow"
+              size="xs"
               onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
             >
-              Edit
+              Update
             </Button>
 
             <Button
               leftSection={<IconX size={16} />}
               color="red"
-              fullWidth
+              size="xs"
               onClick={() => handleCancel(row.original.id_request)}
               disabled={isDeleting}
             >
@@ -451,3 +448,6 @@ export default function PendingHODList() {
     </AuthLayout>
   );
 }
+
+PendingHODList.title = "Pending HOD List";
+export default PendingHODList

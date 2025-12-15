@@ -15,9 +15,7 @@ import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 
-export default function RequestUserList() {
-    RequestUserList.title = "Request User List";
-
+function RequestUserList() {
     const router = useRouter();
     const { user } = useUser();
     const API = useApi();
@@ -98,7 +96,7 @@ export default function RequestUserList() {
             header: 'Request Date',
             enableColumnFilter: true,
             enableSorting: true,
-            cell: ({ row }) => formatDateTime(row.original.created_date),
+            cell: ({ row }) => formatDateTime(row.original.created_date, false),
         },
         {
             accessorFn: row => row.requestor_name,
@@ -252,23 +250,18 @@ export default function RequestUserList() {
             enableSorting: false,
             cell: ({ row }) => {
                 const encryptedId = encrypt(String(row.original.id_request));
-
                 const status = row.original.request_status.name;
-
-                const canItAction = hasPermission(user.permissions, 2);
-
-                const allowedStatuses = ["Draft", "Pending by HOD Req"];
-
-                const canEditCancel = canItAction || allowedStatuses.includes(status);
+                const editableStatuses = ["Draft", "Pending by HOD Req"];
+                const canEditCancel = hasPermission(2) || editableStatuses.includes(status);
 
                 return (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-row gap-2 justify-center">
 
                         {/* DETAILS selalu muncul */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
-                            fullWidth
+                            size="xs"
                             onClick={() =>
                                 router.push(`/user_request/detail_req/${encryptedId}`)
                             }
@@ -280,13 +273,13 @@ export default function RequestUserList() {
                         {canEditCancel && (
                             <Button
                                 leftSection={<IconEdit size={16} />}
-                                color="orange"
-                                fullWidth
+                                color="yellow"
+                                size="xs"
                                 onClick={() =>
                                     router.push(`/user_request/edit_req/${encryptedId}`)
                                 }
                             >
-                                Edit
+                                Update
                             </Button>
                         )}
 
@@ -295,7 +288,7 @@ export default function RequestUserList() {
                             <Button
                                 leftSection={<IconX size={16} />}
                                 color="red"
-                                fullWidth
+                                size="xs"
                                 onClick={() => handleCancel(row.original.id_request)}
                             >
                                 Cancel
@@ -392,3 +385,6 @@ export default function RequestUserList() {
         </AuthLayout>
     );
 }
+
+RequestUserList.title = "Request User List";
+export default RequestUserList

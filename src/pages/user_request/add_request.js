@@ -13,7 +13,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
 
 function CreateRequest() {
- 
+
     const router = useRouter()
     const { showAlert } = useSwal()
     const API = useApi();
@@ -103,7 +103,7 @@ function CreateRequest() {
     }, [debouncedSearch]);
 
     useEffect(() => {
-           console.log("Fetch initial data running...");
+        console.log("Fetch initial data running...");
         const fetchInitialData = async () => {
             setLoading(true);
             try {
@@ -285,9 +285,7 @@ function CreateRequest() {
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
                                     <span>
-                                        {formData.created_date
-                                            ? formatDateTime(formData.created_date)
-                                            : formatDateTime(new Date())}
+                                        {formatDateTime(formData.created_date || new Date(), false)}
                                     </span>
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>

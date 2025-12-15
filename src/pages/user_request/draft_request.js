@@ -14,9 +14,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
-export default function DraftRequestList() {
-  DraftRequestList.title = "Draft Request List";
-
+function DraftRequestList() {
   const router = useRouter();
   const { user } = useUser();
   const API = useApi();
@@ -192,7 +190,7 @@ export default function DraftRequestList() {
       header: 'Request Date',
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDateTime(row.original.created_date),
+      cell: ({ row }) => formatDateTime(row.original.created_date, false),
     },
     {
       accessorFn: row => row.requestor_name,
@@ -284,11 +282,11 @@ export default function DraftRequestList() {
         const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-row gap-2 justify-center">
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
-              fullWidth
+              size="xs"
               onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
             >
               Details
@@ -296,17 +294,17 @@ export default function DraftRequestList() {
 
             <Button
               leftSection={<IconEdit size={16} />}
-              color="orange"
-              fullWidth
+              color="yellow"
+              size="xs"
               onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
             >
-              Edit
+              Update
             </Button>
 
             <Button
               leftSection={<IconX size={16} />}
               color="red"
-              fullWidth
+              size="xs"
               onClick={() => handleCancel(row.original.id_request)}
               disabled={isDeleting}
             >
@@ -412,3 +410,6 @@ export default function DraftRequestList() {
   );
 
 }
+
+DraftRequestList.title = "Draft Request List";
+export default DraftRequestList
