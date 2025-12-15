@@ -52,10 +52,10 @@ function RequestDetail() {
   }, [data, user]);
 
   useEffect(() => {
-    if (data?.id_application && user?.token) {
+    if (data?.id_request && user?.token) {
       fetchLogs();
     }
-  }, [data?.id_application, user?.token]);
+  }, [data?.id_request, user?.token])
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -82,24 +82,32 @@ function RequestDetail() {
   }, [id, user?.token, API_URL]);
 
   const fetchLogs = useCallback(async () => {
-    if (!data?.id_application || !user?.token) return;
+    if (!data?.id_request || !user?.token) return;
 
     try {
       setLoadingLog(true);
 
-      const res = await axios.get(
-        `${API_URL}/log_portal/${data.id_application}`,
+      const searchObj = { index: data.id_request };
+
+      const sort_by = "date";
+      const sort_order = "DESC";
+      const page = 0;
+      const size = 50;
+
+      const res = await axios.post(
+        `${API_URL}/log_portal/serverside_list?search=${encodeURIComponent(JSON.stringify(searchObj))}&sort_by=${sort_by}&sort_order=${sort_order}&page=${page}&size=${size}`,
+        {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
-      setLogs(res.data || []);
+      setLogs(res.data?.data ?? res.data ?? []);
 
     } catch (err) {
       console.error("Failed to fetch log:", err);
     } finally {
       setLoadingLog(false);
     }
-  }, [data?.id_application, user?.token, API_URL]);
+  }, [data?.id_request, user?.token, API_URL]);
 
   if (loading) {
     return (
@@ -353,7 +361,7 @@ function RequestDetail() {
         showConfirmButton: false,
       });
 
-      fetchData(); // Refresh detail or table
+      fetchData();
     } catch (err) {
       Swal.fire({
         icon: 'error',
@@ -371,8 +379,6 @@ function RequestDetail() {
           shadow="xl"
           className="bg-white py-8 px-10 w-full space-y-6 text-sm leading-relaxed"
         >
-
-          {/* ===== SEMUA KODE DETAIL KAMU MASUKKAN DI SINI ===== */}
 
           {/* Header */}
           <div className=" pb-2 text-center">
@@ -737,7 +743,7 @@ function RequestDetail() {
               <HistoryLog
                 logs={logs}
                 statusMap={statusMap}
-                idApplication={data?.id_application}
+                idRequest={data?.id_request}
               />
             </Tabs.Panel>
           </Tabs>

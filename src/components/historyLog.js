@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 
 
-const HistoryLog = ({ logData, idApplication }) => {
+const HistoryLog = ({ logData, idRequest }) => {
   const router = useRouter();
   const { user } = useUser();
   const API = useApi();
@@ -27,7 +27,6 @@ const HistoryLog = ({ logData, idApplication }) => {
     pageSize: 10,
   });
 
-  // ========================= TABLE COLUMNS =========================
   const columns = useMemo(() => [
     {
       id: 'no',
@@ -108,7 +107,6 @@ const HistoryLog = ({ logData, idApplication }) => {
 
   ], []);
 
-  // ========================= TABLE DATA =========================
   const table = useReactTable({
     data,
     columns,
@@ -140,7 +138,7 @@ const HistoryLog = ({ logData, idApplication }) => {
     );
 
     const search = JSON.stringify({
-      id_application: idApplication,
+           index: idRequest,
       ...filterObj
     });
 
@@ -156,11 +154,12 @@ const HistoryLog = ({ logData, idApplication }) => {
     } catch (err) {
       console.error("Error fetching log data:", err);
     }
-  }, [API_URL, pagination, sorting, columnFilters, user.token]);
+  }, [API_URL, pagination, sorting, columnFilters, user.token, idRequest]);
 
   useEffect(() => {
-    getLogData();
-  }, [getLogData]);
+  if (!idRequest) return;
+  getLogData();
+}, [getLogData, idRequest]);
 
   return (
     <Paper radius="sm" withBorder shadow="xs" className="p-4 mt-4">

@@ -140,7 +140,7 @@ function EditRequest() {
                         department_name: data.department_name,
                         position: data.design_id ? String(data.design_id) : '',
                         position_name: data.position_name ?? data.position ?? '',
-
+                        request_status: data.request_status,
                         company_name: data.company?.company_name || '',
 
                         approval_hod_by: data.approval_hod_by?.id
@@ -204,7 +204,6 @@ function EditRequest() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setLoadingSubmit(true)
 
         const result = await Swal.fire({
             title: id ? "Are you sure you want to update this data?" : "Are you sure you want to create a new request?",
@@ -216,7 +215,7 @@ function EditRequest() {
             cancelButtonColor: "#d33",
         });
 
-        if (!result.isConfirmed) return;
+        if (!result.isConfirmed) return; 
 
         setLoadingSubmit(true);
 
@@ -226,7 +225,6 @@ function EditRequest() {
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
-            // request_status: formData.request_status,
             status_active: 1,
             remarks: formData.remarks,
             project_id: Number(formData.project),
@@ -241,7 +239,7 @@ function EditRequest() {
                 : formData.access_nav_menu || '',
         };
         payload.approval_hod_by = formData.approval_hod_by
-            ? { id: Number(formData.approval_hod_by) }
+            ? { id_user: Number(formData.approval_hod_by) }
             : null;
 
         try {
@@ -495,7 +493,7 @@ function EditRequest() {
                                             value: String(u.value),
                                             label: u.label
                                         }))}
-                                        disabled={!isReturned}
+                                        disabled={isReturned}
                                         classNames={{
                                             input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
                                             label: "font-medium mb-1 text-gray-800 text-sm",
