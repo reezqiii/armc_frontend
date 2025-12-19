@@ -62,79 +62,60 @@ function CreateRequest() {
     };
 
     useEffect(() => {
-        const fetchInitialData = async () => {
+        const fetchAllData = async () => {
             setLoading(true);
             try {
-                const [companyRes, navMenuRes] = await Promise.all([
+                const [
+                    deptRes,
+                    posRes,
+                    projectRes,
+                    companyRes,
+                    navMenuRes
+                ] = await Promise.all([
+                    axios.get(`${API_URL}/iss_dept`),
+                    axios.get(`${API_URL}/position`),
+                    axios.get(`${API_URL}/iss_project`),
                     axios.get(`${API_URL}/portal_company/list`),
                     axios.get(`${API_URL}/portal_nav_menu/list`)
                 ]);
-                // Access Yard
-                setAccessYardOptions(companyRes.data.map(c => ({
+
+                const companyOptions = companyRes.data.map(c => ({
                     value: String(c.id_company),
                     label: c.company_name,
+                }));
+
+                setCompanyOptions(companyOptions);
+                setAccessYardOptions(companyOptions);
+
+                setDeptOptions(deptRes.data.map(d => ({
+                    value: String(d.dept_id),
+                    label: d.dept,
                 })));
 
-                // Application Access
+                setPositionOptions(posRes.data.map(p => ({
+                    value: String(p.design_id),
+                    label: p.design_desc,
+                })));
+
+                setProjectOptions(projectRes.data.map(p => ({
+                    value: String(p.project_id),
+                    label: p.project_desc,
+                })));
+
                 setNavMenuOptions(navMenuRes.data.map(n => ({
                     value: String(n.id_application),
                     label: n.application_name,
                 })));
+
             } catch (err) {
-                console.error(err);
+                console.error("Failed to load data", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchInitialData();
-    }, [API_URL, user.token]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [deptRes, posRes, projectRes, companyRes] = await Promise.all([
-                    axios.get(`${API_URL}/iss_dept`),
-                    axios.get(`${API_URL}/position`),
-                    axios.get(`${API_URL}/iss_project`),
-                    axios.get(`${API_URL}/portal_company/list`)
-                ]);
-
-                // Format Department
-                const deptOptions = deptRes.data.map(item => ({
-                    value: String(item.dept_id),
-                    label: item.dept
-                }));
-
-                // Format Position
-                const positionOptions = posRes.data.map(item => ({
-                    value: String(item.design_id),
-                    label: item.design_desc
-                }));
-
-                // Format Project
-                const projectOptions = projectRes.data.map(item => ({
-                    value: String(item.project_id),
-                    label: item.project_desc
-                }));
-
-                // Format Company
-                const companyOptions = companyRes.data.map(item => ({
-                    value: String(item.id_company),
-                    label: item.company_name,
-                }));
-
-                setDeptOptions(deptOptions);
-                setPositionOptions(positionOptions);
-                setProjectOptions(projectOptions);
-                setCompanyOptions(companyOptions);
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-            }
-        };
-
-        fetchData();
-    }, []);
+        fetchAllData();
+    }, [API_URL]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -157,7 +138,7 @@ function CreateRequest() {
 
         const payload = {
             full_name: formData.full_name,
-            badge_no: formData.badge_no ? Number(formData.badge_no) : undefined,
+            badge_no: formData.badge_no ? Number(formData.badge_no) : null,
             email: formData.email,
             request_type: 1,
             request_reason: formData.request_reason,
@@ -168,7 +149,6 @@ function CreateRequest() {
             dept_id: Number(formData.dept_id),
             design_id: Number(formData.design_id),
             id_company: Number(formData.company_id),
-            approval_it_hod_by: formData.approval_it_hod_by,
             access_yard_company: formData.access_yard_company,
             access_nav_menu: formData.access_nav_menu,
         };
@@ -184,10 +164,24 @@ function CreateRequest() {
                     created_date: newRequest.created_date,
                 }));
 
-                const formattedId = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
+                const requestNo = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
 
-                router.push(`/public_request/request_status/${newRequest.id_request}`);
+                const result = await Swal.fire({
+                    icon: "success",
+                    title: "Request Submitted",
+                    html: `
+    <p>Your Request Number:</p>
+    <b style="font-size:18px">${requestNo}</b>
+    <p style="margin-top:8px;font-size:12px">
+      Please save this number to track your request status.
+    </p>
+  `,
+                    confirmButtonText: "Track Request",
+                });
 
+                if (result.isConfirmed) {
+                    router.push(`/public_request/track_request?no=${requestNo}`);
+                }
                 setFormData({
                     created_by_name: user?.full_name || user?.name || '-',
                     full_name: '',
@@ -198,8 +192,6 @@ function CreateRequest() {
                     design_id: null,
                     company_id: null,
                     request_reason: '',
-                    approval_it_hod_by: '',
-                    approval_lead_it_by: '',
                     remarks: '',
                     access_yard_company: [],
                     access_nav_menu: [],
@@ -218,8 +210,17 @@ function CreateRequest() {
     };
 
     return (
-        <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
-            <div className=" max-w-5xl mx-auto w-full">
+        <div
+            className="min-h-screen py-10 px-6 md:px-10 w-full"
+            style={{
+                backgroundImage: "url('/images/seatrium_1.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+            }}
+        >
+            {/* Overlay supaya Paper tetap terbaca */}
+            <div className="max-w-5xl mx-auto w-full">
                 <Paper
                     radius="md"
                     shadow="xl"
@@ -388,23 +389,14 @@ function CreateRequest() {
                             />
                         </div>
 
-                        {/* ACTION BUTTONS - OUTSIDE GRID */}
-                        <div className="w-full flex justify-between items-center pt-6">
-                            <Button
-                                leftSection={<IconArrowLeft size={18} />}
-                                color="gray"
-                                size="sm"
-                                onClick={() => router.back()}
-                            >
-                                Back
-                            </Button>
-
+                        <div className="pt-6 flex justify-center">
                             <Button
                                 type="submit"
                                 leftSection={<IconDeviceFloppy size={18} />}
                                 color="blue"
                                 radius="sm"
                                 size="sm"
+                                className="w-full"
                                 loading={loadingSubmit}
                                 disabled={loadingSubmit}
                             >

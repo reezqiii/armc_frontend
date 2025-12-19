@@ -53,7 +53,6 @@ export default function App({ Component, pageProps }) {
       const currentPath = window.location.pathname;
 
       if (currentPath.startsWith("/public_request")) {
-        console.log("Halaman public, skip auth");
         setIsAuthenticated(true);
         return;
       }
