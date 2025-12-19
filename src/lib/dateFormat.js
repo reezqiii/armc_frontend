@@ -14,22 +14,23 @@ export const formatDateTime = (dateString, showTime = true) => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "-";
 
-  const options = {
+  const dateOptions = {
     day: "2-digit",
     month: "long",
     year: "numeric",
-    ...(showTime && {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }),
   };
 
-  let formatted = date.toLocaleString("en-GB", options);
+  const timeOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  };
 
-  if (!showTime) return formatted;
+  const formattedDate = date.toLocaleDateString("en-GB", dateOptions);
 
-  // kalau showTime true, tambahkan "at" di antara date & time
-  const [dayMonthYear, time] = formatted.split(", ");
-  return `${dayMonthYear} at ${time}`;
+  if (!showTime) return formattedDate;
+
+  const formattedTime = date.toLocaleTimeString("en-GB", timeOptions);
+  return `${formattedDate} at ${formattedTime}`;
 };
+

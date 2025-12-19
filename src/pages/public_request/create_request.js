@@ -184,13 +184,9 @@ function CreateRequest() {
                     created_date: newRequest.created_date,
                 }));
 
-                await Swal.fire({
-                    icon: "success",
-                    title: "Success!",
-                    text: "Your account request has been successfully submitted.",
-                    timer: 1500,
-                    showConfirmButton: false,
-                });
+                const formattedId = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
+
+                router.push(`/public_request/request_status/${newRequest.id_request}`);
 
                 setFormData({
                     created_by_name: user?.full_name || user?.name || '-',
@@ -246,11 +242,7 @@ function CreateRequest() {
                                     Request Date <span className="text-red-500">*</span>
                                 </label>
                                 <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                                    <span>
-                                        {formData.created_date
-                                            ? formatDateTime(formData.created_date)
-                                            : formatDateTime(new Date())}
-                                    </span>
+                                    {formatDateTime(formData.created_date || new Date(), false)}
                                     <IconCalendar size={16} className="text-gray-500" />
                                 </div>
                             </div>

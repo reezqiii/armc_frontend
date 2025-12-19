@@ -592,7 +592,7 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.created_date, false)}
+                        {formatDateTime(data?.created_date)}
                       </p>
                     </div>
                   </div>
@@ -607,7 +607,7 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_hod_date_at, false)}
+                        {formatDateTime(data?.approval_hod_date_at)}
                       </p>
                     </div>
                     {data.request_status === 1 && (
@@ -640,7 +640,7 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_lead_date_at, false)}
+                        {formatDateTime(data?.approval_lead_date_at)}
                       </p>
                     </div>
                     {canApproveLeadIt && data.request_status === 3 && (
@@ -665,7 +665,7 @@ function RequestDetail() {
                       </p>
                       <p>
                         <span className="font-medium">Date :</span>{' '}
-                        {formatDateTime(data?.approval_it_date_at, false)}
+                        {formatDateTime(data?.approval_it_date_at)}
                       </p>
                     </div>
                     {canApproveItHod && data.request_status === 5 && (

@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge } from '@mantine/core';
-import { IconEdit, IconInfoCircle, IconTrash, IconX } from '@tabler/icons-react';
+import { IconEdit, IconInfoCircle, IconRefresh, IconX, IconSend } from '@tabler/icons-react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -12,6 +12,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import { useRouter } from 'next/router';
 import { formatDateTime } from "@/lib/dateFormat";
 import { hasPermission } from "@/lib/permissionHelper";
+import { getRequestActionPermission } from "@/lib/requestStatus";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 
@@ -71,6 +72,44 @@ function RequestUserList() {
             });
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleSubmitToHOD = async (id_request) => {
+        const encryptedId = encrypt(String(id_request));
+
+        const confirm = await Swal.fire({
+            title: "Submit request to HOD?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes",
+            cancelButtonText: "Cancel",
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        try {
+            await axios.put(
+                `${API_URL}/requests/${encryptedId}/submit-to-hod`,
+                {},
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: `Request submitted to HOD.`,
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            getData(); // refresh list
+        } catch (err) {
+            Swal.fire({
+                icon: "error",
+                title: "Failed",
+                text: "Failed to submit request.",
+            });
         }
     };
 
@@ -249,15 +288,20 @@ function RequestUserList() {
             enableColumnFilter: false,
             enableSorting: false,
             cell: ({ row }) => {
+                const request = row.original;
                 const encryptedId = encrypt(String(row.original.id_request));
                 const status = row.original.request_status.name;
                 const editableStatuses = ["Draft", "Pending by HOD Req"];
                 const canEditCancel = hasPermission(2) || editableStatuses.includes(status);
+                const {
+                    canSubmitToHOD,
+                    canReturn,
+                } = getRequestActionPermission(status, hasPermission(2));
+
 
                 return (
                     <div className="flex flex-row gap-2 justify-center">
 
-                        {/* DETAILS selalu muncul */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
@@ -269,7 +313,6 @@ function RequestUserList() {
                             Details
                         </Button>
 
-                        {/* EDIT */}
                         {canEditCancel && (
                             <Button
                                 leftSection={<IconEdit size={16} />}
@@ -283,7 +326,17 @@ function RequestUserList() {
                             </Button>
                         )}
 
-                        {/* CANCEL */}
+                        {canSubmitToHOD && (
+                            <Button
+                                leftSection={<IconSend size={16} />}
+                                color="green"
+                                size="xs"
+                                onClick={() => handleSubmitToHOD(request.id_request)}
+                            >
+                                Submit to HOD
+                            </Button>
+                        )}
+
                         {canEditCancel && (
                             <Button
                                 leftSection={<IconX size={16} />}
@@ -292,6 +345,17 @@ function RequestUserList() {
                                 onClick={() => handleCancel(row.original.id_request)}
                             >
                                 Cancel
+                            </Button>
+                        )}
+
+                        {canReturn && (
+                            <Button
+                                leftSection={<IconRefresh size={16} />}
+                                color="orange"
+                                size="xs"
+                                onClick={() => handleReturn(request.id_request)}
+                            >
+                                Return
                             </Button>
                         )}
                     </div>
