@@ -111,14 +111,10 @@ function DraftRequestList() {
     if (!confirm.isConfirmed) return;
 
     try {
-      await Promise.all(
-        encryptedIds.map(encId =>
-          axios.put(
-            `${API_URL}/requests/${encId}/submit-to-hod`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          )
-        )
+      await axios.put(
+        `${API_URL}/requests/submit-to-hod/bulk`,
+        { encryptedIds }, 
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       // remove submitted rows

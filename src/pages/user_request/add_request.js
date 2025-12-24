@@ -428,7 +428,7 @@ function CreateRequest() {
 
                             <Textarea
                                 label={<span className="font-medium text-sm">Remarks (Optional)</span>}
-                                placeholder="Input Remarks (Optional)"
+                                placeholder="Input Remarks"
                                 minRows={3}
                                 value={formData.remarks}
                                 onChange={(e) => handleChange('remarks', e.target.value)}
