@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, ButtonGroup } from '@mantine/core';
 import { IconSend, IconInfoCircle, IconEdit, IconX } from '@tabler/icons-react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -113,7 +113,7 @@ function DraftRequestList() {
     try {
       await axios.put(
         `${API_URL}/requests/submit-to-hod/bulk`,
-        { encryptedIds }, 
+        { encryptedIds },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
@@ -266,7 +266,14 @@ function DraftRequestList() {
       header: 'Status',
       enableColumnFilter: false,
       enableSorting: true,
-      cell: () => <Badge color="gray">Draft</Badge>,
+      cell: ({ row }) => {
+        const status = row.original.request_status?.name || "Unknown";
+        return (
+          <Badge color="gray" variant="light">
+            {status}
+          </Badge>
+        );
+      }
     },
     {
       accessorFn: row => row.id_request,
@@ -278,7 +285,7 @@ function DraftRequestList() {
         const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-row gap-2 justify-center">
+          <ButtonGroup>
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
@@ -306,7 +313,7 @@ function DraftRequestList() {
             >
               Cancel
             </Button>
-          </div>
+          </ButtonGroup>
         );
       }
     }

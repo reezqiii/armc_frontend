@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, ButtonGroup } from '@mantine/core';
 import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
@@ -75,28 +75,16 @@ function ReturnList() {
     }
   };
 
-  const statusMap = {
-    0: 'Draft',
-    1: 'Pending by HOD Req',
-    2: 'Rejected by HOD Req',
-    3: 'Pending by Lead IT',
-    4: 'Rejected by Lead IT',
-    5: 'Pending by IT Manager',
-    6: 'Rejected by IT Manager',
-    7: 'Completed',
-    8: 'Returned',
-  };
-
-  const statusColorMap = {
-    0: 'text-gray-500',
-    1: 'text-yellow-500',
-    2: 'text-red-500',
-    3: 'text-yellow-500',
-    4: 'text-red-500',
-    5: 'text-yellow-500',
-    6: 'text-red-500',
-    7: 'text-green-500',
-    8: 'text-gray-500',
+  const StatusMap = {
+    0: { label: "Draft", color: "gray" },
+    1: { label: "Pending by HOD Req", color: "yellow" },
+    2: { label: "Rejected by HOD Req", color: "red" },
+    3: { label: "Pending by Lead IT", color: "yellow" },
+    4: { label: "Rejected by Lead IT", color: "red" },
+    5: { label: "Pending by IT Manager", color: "yellow" },
+    6: { label: "Rejected by IT Manager", color: "red" },
+    7: { label: "Completed", color: "green" },
+    8: { label: "Returned", color: "gray" },
   };
 
   const columns = useMemo(() => [
@@ -225,37 +213,32 @@ function ReturnList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const statusName = row.original.request_status?.name;
-        const prev = row.original.previous_status;
+        let statusId = null;
 
-        const statusKey = Object.keys(statusMap).find(
-          key => statusMap[key] === statusName
-        );
+        if (row.original.request_status?.name?.toLowerCase() === "returned" && row.original.previous_status != null) {
+          statusId = Number(row.original.previous_status);
+        } else if (row.original.request_status?.id != null) {
+          statusId = row.original.request_status.id;
+        }
 
-        const finalStatusKey =
-          statusName === "Returned" ? prev : Number(statusKey);
-
-        const displayStatus = statusMap[finalStatusKey] || "Unknown";
-        const displayColor = statusColorMap[finalStatusKey] || "text-gray-500";
+        const status = StatusMap[statusId] || { label: "Draft", color: "gray" };
 
         return (
-          <span className={`font-medium ${displayColor}`}>
-            {displayStatus}
-          </span>
+          <Badge color={status.color} variant="light">
+            {status.label}
+          </Badge>
         );
-      },
+      }
     },
     {
       accessorFn: row => row.id_request,
       id: 'action',
       header: 'Action',
-      enableColumnFilter: false,
-      enableSorting: true,
       cell: ({ row }) => {
         const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-row gap-2 justify-center">
+          <ButtonGroup>
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
@@ -283,7 +266,7 @@ function ReturnList() {
             >
               Cancel
             </Button>
-          </div>
+          </ButtonGroup>
         );
       }
     }

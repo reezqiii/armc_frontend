@@ -266,21 +266,13 @@ function CompletedRequest() {
             enableColumnFilter: false,
             enableSorting: true,
             cell: ({ row }) => {
-                const status = row.original.request_status.name;
-                const colorMap = {
-                    'Draft': 'gray',
-                    'Pending by HOD Req': 'yellow',
-                    'Rejected by HOD Req': 'red',
-                    'Pending by Lead IT': 'yellow',
-                    'Rejected by Lead IT': 'red',
-                    'Pending by IT Manager': 'yellow',
-                    'Rejected by IT Manager': 'red',
-                    'Completed': 'green',
-                    'Returned': 'gray',
-                };
-
-                return <Badge color={colorMap[status] || 'gray'}>{status}</Badge>;
-            },
+                const status = row.original.request_status?.name || "Unknown";
+                return (
+                    <Badge color="green" variant="light">
+                        {status}
+                    </Badge>
+                );
+            }
         },
         {
             accessorFn: row => row.request_admin,
@@ -310,7 +302,8 @@ function CompletedRequest() {
                 const encryptedId = encrypt(String(request.id_request));
 
                 return (
-                    <div className="flex flex-row gap-2 justify-center">
+                    <Button.Group>
+                        {/* details button */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
@@ -351,7 +344,7 @@ function CompletedRequest() {
                                 </Button>
                             </>
                         )}
-                    </div>
+                    </Button.Group>
                 );
             }
         }

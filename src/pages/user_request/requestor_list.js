@@ -215,18 +215,24 @@ function RequestUserList() {
             accessorFn: row => row.request_status.name,
             cell: ({ row }) => {
 
-                const status = row.original.request_status.name;
+                const rawStatus = row.original.request_status?.name || "";
+                const key = rawStatus.toLowerCase();
 
-                const colorMap = {
-                    Draft: "gray",
-                    "Pending by HOD Req": "yellow",
-                    "Rejected by HOD Req": "red",
-                    "Pending by Lead IT": "yellow",
-                    "Rejected by Lead IT": "red",
-                    "Pending by IT Manager": "yellow",
-                    "Rejected by IT Manager": "red",
-                    "Completed": "green",
-                    "Returned": "gray",
+                const statusMap = {
+                    "draft": { label: "Draft", color: "gray" },
+                    "pending by hod req": { label: "Pending by HOD", color: "yellow" },
+                    "rejected by hod req": { label: "Rejected by HOD", color: "red" },
+                    "pending by lead it": { label: "Pending by Lead IT", color: "yellow" },
+                    "rejected by lead it": { label: "Rejected by Lead IT", color: "red" },
+                    "pending by it manager": { label: "Pending by IT Manager", color: "yellow" },
+                    "rejected by it manager": { label: "Rejected by IT Manager", color: "red" },
+                    "completed": { label: "Completed", color: "green" },
+                    "returned": { label: "Returned", color: "gray" },
+                };
+
+                const status = statusMap[key] || {
+                    label: rawStatus || "Unknown",
+                    color: "gray",
                 };
 
                 let rejectField = null;
@@ -256,7 +262,9 @@ function RequestUserList() {
                 if (rejectField) {
                     return (
                         <div className="flex flex-col gap-1">
-                            <Badge color="red">{status}</Badge>
+                            <Badge color={status.color} variant="light">
+                                {status.label}
+                            </Badge>
 
                             <Button
                                 size="xs"
@@ -278,15 +286,17 @@ function RequestUserList() {
                     );
                 }
 
-                return <Badge color={colorMap[status] || "gray"}>{status}</Badge>;
+                return (
+                    <Badge color={status.color} variant="light">
+                        {status.label}
+                    </Badge>
+                );
             }
         },
         {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
-            enableColumnFilter: false,
-            enableSorting: false,
             cell: ({ row }) => {
                 const request = row.original;
                 const encryptedId = encrypt(String(row.original.id_request));
@@ -300,8 +310,8 @@ function RequestUserList() {
 
 
                 return (
-                    <div className="flex flex-row gap-2 justify-center">
-
+                    <Button.Group>
+                        {/* details button */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
@@ -358,7 +368,7 @@ function RequestUserList() {
                                 Return
                             </Button>
                         )}
-                    </div>
+                    </Button.Group>
                 );
             }
         }

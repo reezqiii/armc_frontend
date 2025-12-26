@@ -160,7 +160,7 @@ function ITPendingList() {
             });
 
         } catch (err) {
-            console.error("ITHOD bulk error:", err);
+            console.error("IT HOD bulk error:", err);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -324,7 +324,14 @@ function ITPendingList() {
             header: 'Status',
             enableColumnFilter: false,
             enableSorting: true,
-            cell: () => <Badge color="yellow">Pending by IT Manager</Badge>,
+            cell: ({ row }) => {
+                const status = row.original.request_status?.name || "Unknown";
+                return (
+                    <Badge color="yellow" variant="light">
+                        {status}
+                    </Badge>
+                );
+            }
         },
         {
             accessorFn: row => row.id_request,
@@ -337,7 +344,8 @@ function ITPendingList() {
                 const encryptedId = encrypt(String(request.id_request));
 
                 return (
-                    <div className="flex flex-row gap-2 justify-center">
+                    <Button.Group>
+                        {/* details button */}
                         <Button
                             leftSection={<IconInfoCircle size={16} />}
                             color="blue"
@@ -378,7 +386,7 @@ function ITPendingList() {
                                 </Button>
                             </>
                         )}
-                    </div>
+                    </Button.Group>
                 );
             }
         }

@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, ButtonGroup } from '@mantine/core';
 import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
@@ -297,7 +297,14 @@ function PendingHODList() {
       header: 'Status',
       enableColumnFilter: false,
       enableSorting: true,
-      cell: () => <Badge color="yellow">Pending by HOD Req</Badge>,
+      cell: ({ row }) => {
+        const status = row.original.request_status?.name || "Unknown";
+        return (
+          <Badge color="yellow" variant="light">
+            {status}
+          </Badge>
+        );
+      }
     },
     {
       accessorFn: row => row.id_request,
@@ -309,7 +316,7 @@ function PendingHODList() {
         const encryptedId = encrypt(String(row.original.id_request));
 
         return (
-          <div className="flex flex-row gap-2 justify-center">
+          <ButtonGroup>
             <Button
               leftSection={<IconInfoCircle size={16} />}
               color="blue"
@@ -337,7 +344,7 @@ function PendingHODList() {
             >
               Cancel
             </Button>
-          </div>
+          </ButtonGroup>
         );
       }
     }
