@@ -167,20 +167,23 @@ function CreateRequest() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoadingSubmit(true);
 
-        const result = await Swal.fire({
-            title: "Ready to Submit?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Yes, Submit!",
-            cancelButtonText: "Cancel",
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-        });
+        const newErrors = {};
 
-        if (!result.isConfirmed) {
-            setLoadingSubmit(false);
+        if (!formData.access_yard_company || formData.access_yard_company.length === 0) {
+            newErrors.access_yard_company = 'Access Yard Company is required';
+        }
+
+        if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
+            newErrors.access_nav_menu = 'Application Access is required';
+        }
+
+        if (!formData.approval_hod_by) {
+            newErrors.approval_hod_by = 'HOD must be selected';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
@@ -366,7 +369,7 @@ function CreateRequest() {
                                 />
 
                                 <MultiSelect
-                                    required
+                                    error={errors.access_yard_company}
                                     label="Access Yard Company"
                                     placeholder="Select Access Yard"
                                     data={accessYardOptions}
@@ -381,7 +384,7 @@ function CreateRequest() {
                                 />
 
                                 <MultiSelect
-                                    required
+                                    error={errors.access_nav_menu}
                                     label="Application Access"
                                     placeholder="Select Application Access"
                                     data={navMenuOptions}
@@ -458,6 +461,7 @@ function CreateRequest() {
                                 {/* HOD Requestor */}
                                 <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
                                     <Select
+                                        error={errors.approval_hod_by}
                                         key={formData.approval_hod_by}
                                         label="Acknowledge By"
                                         placeholder="Select HOD..."
