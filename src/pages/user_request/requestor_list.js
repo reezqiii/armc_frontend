@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, Group } from '@mantine/core';
 import { IconEdit, IconInfoCircle, IconRefresh, IconX, IconSend } from '@tabler/icons-react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
@@ -297,6 +297,8 @@ function RequestUserList() {
             accessorFn: row => row.id_request,
             id: 'action',
             header: 'Action',
+            enableColumnFilter: false,
+            enableSorting: true,
             cell: ({ row }) => {
                 const request = row.original;
                 const encryptedId = encrypt(String(row.original.id_request));
@@ -308,67 +310,68 @@ function RequestUserList() {
                     canReturn,
                 } = getRequestActionPermission(status, hasPermission(2));
 
-
                 return (
-                    <Button.Group>
-                        {/* details button */}
-                        <Button
-                            leftSection={<IconInfoCircle size={16} />}
-                            color="blue"
-                            size="xs"
-                            onClick={() =>
-                                router.push(`/user_request/detail_req/${encryptedId}`)
-                            }
-                        >
-                            Details
-                        </Button>
-
-                        {canEditCancel && (
+                    <Group justify="center">
+                        <Button.Group>
+                            {/* details button */}
                             <Button
-                                leftSection={<IconEdit size={16} />}
-                                color="yellow"
+                                leftSection={<IconInfoCircle size={16} />}
+                                color="blue"
                                 size="xs"
                                 onClick={() =>
-                                    router.push(`/user_request/edit_req/${encryptedId}`)
+                                    router.push(`/user_request/detail_req/${encryptedId}`)
                                 }
                             >
-                                Update
+                                Details
                             </Button>
-                        )}
 
-                        {canSubmitToHOD && (
-                            <Button
-                                leftSection={<IconSend size={16} />}
-                                color="green"
-                                size="xs"
-                                onClick={() => handleSubmitToHOD(request.id_request)}
-                            >
-                                Submit to HOD
-                            </Button>
-                        )}
+                            {canEditCancel && (
+                                <Button
+                                    leftSection={<IconEdit size={16} />}
+                                    color="yellow"
+                                    size="xs"
+                                    onClick={() =>
+                                        router.push(`/user_request/edit_req/${encryptedId}`)
+                                    }
+                                >
+                                    Update
+                                </Button>
+                            )}
 
-                        {canEditCancel && (
-                            <Button
-                                leftSection={<IconX size={16} />}
-                                color="red"
-                                size="xs"
-                                onClick={() => handleCancel(row.original.id_request)}
-                            >
-                                Cancel
-                            </Button>
-                        )}
+                            {canSubmitToHOD && (
+                                <Button
+                                    leftSection={<IconSend size={16} />}
+                                    color="green"
+                                    size="xs"
+                                    onClick={() => handleSubmitToHOD(request.id_request)}
+                                >
+                                    Submit to HOD
+                                </Button>
+                            )}
 
-                        {canReturn && (
-                            <Button
-                                leftSection={<IconRefresh size={16} />}
-                                color="orange"
-                                size="xs"
-                                onClick={() => handleReturn(request.id_request)}
-                            >
-                                Return
-                            </Button>
-                        )}
-                    </Button.Group>
+                            {canEditCancel && (
+                                <Button
+                                    leftSection={<IconX size={16} />}
+                                    color="red"
+                                    size="xs"
+                                    onClick={() => handleCancel(row.original.id_request)}
+                                >
+                                    Cancel
+                                </Button>
+                            )}
+
+                            {canReturn && (
+                                <Button
+                                    leftSection={<IconRefresh size={16} />}
+                                    color="orange"
+                                    size="xs"
+                                    onClick={() => handleReturn(request.id_request)}
+                                >
+                                    Return
+                                </Button>
+                            )}
+                        </Button.Group>
+                    </Group>
                 );
             }
         }

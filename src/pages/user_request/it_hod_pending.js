@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, Group } from '@mantine/core';
 import { IconInfoCircle, IconEdit, IconX, IconCheck, IconRefresh } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
@@ -344,49 +344,51 @@ function ITPendingList() {
                 const encryptedId = encrypt(String(request.id_request));
 
                 return (
-                    <Button.Group>
-                        {/* details button */}
-                        <Button
-                            leftSection={<IconInfoCircle size={16} />}
-                            color="blue"
-                            size="xs"
-                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
-                        >
-                            Details
-                        </Button>
+                    <Group justify="center">
+                        <Button.Group>
+                            {/* details button */}
+                            <Button
+                                leftSection={<IconInfoCircle size={16} />}
+                                color="blue"
+                                size="xs"
+                                onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                            >
+                                Details
+                            </Button>
 
-                        {hasPermission(2) && (
-                            <>
-                                <Button
-                                    leftSection={<IconEdit size={16} />}
-                                    color="yellow"
-                                    size="xs"
-                                    onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                                >
-                                    Update
-                                </Button>
+                            {hasPermission(2) && (
+                                <>
+                                    <Button
+                                        leftSection={<IconEdit size={16} />}
+                                        color="yellow"
+                                        size="xs"
+                                        onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                                    >
+                                        Update
+                                    </Button>
 
-                                <Button
-                                    leftSection={<IconX size={16} />}
-                                    color="red"
-                                    size="xs"
-                                    onClick={() => handleCancel(request.id_request)}
-                                    disabled={isDeleting}
-                                >
-                                    Cancel
-                                </Button>
+                                    <Button
+                                        leftSection={<IconX size={16} />}
+                                        color="red"
+                                        size="xs"
+                                        onClick={() => handleCancel(request.id_request)}
+                                        disabled={isDeleting}
+                                    >
+                                        Cancel
+                                    </Button>
 
-                                <Button
-                                    leftSection={<IconRefresh size={16} />}
-                                    color="orange"
-                                    size="xs"
-                                    onClick={() => handleReturn(request.id_request)}
-                                >
-                                    Return
-                                </Button>
-                            </>
-                        )}
-                    </Button.Group>
+                                    <Button
+                                        leftSection={<IconRefresh size={16} />}
+                                        color="orange"
+                                        size="xs"
+                                        onClick={() => handleReturn(request.id_request)}
+                                    >
+                                        Return
+                                    </Button>
+                                </>
+                            )}
+                        </Button.Group>
+                    </Group>
                 );
             }
         }

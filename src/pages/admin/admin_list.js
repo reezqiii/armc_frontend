@@ -3,7 +3,7 @@ import AuthLayout from '@/components/layout/authLayout';
 import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
-import { Button, Paper, Badge } from '@mantine/core';
+import { Button, Paper, Badge, ButtonGroup, Group } from '@mantine/core';
 import { IconInfoCircle, IconEdit, IconX, IconFileSpreadsheet } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
@@ -15,6 +15,7 @@ import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/r
 import { usePathname } from "next/navigation";
 import useEncrypt from '@/hooks/useEncrypt';
 import Head from 'next/head';
+import AdminStatusCell from "@/data/status/AdminStatusCell";
 
 export default function AdminList() {
     const router = useRouter();
@@ -73,55 +74,6 @@ export default function AdminList() {
         }
         return item;
     });
-
-    function AdminStatusCell({ value: initialValue, id_request, API_URL, token, setData, permissions }) {
-        const [value, setValue] = React.useState(initialValue ?? 0);
-        const [loading, setLoading] = React.useState(false);
-
-        const statusLabel = value === 0 ? "On Queue" : value === 1 ? "On Progress" : "Completed";
-
-        if (!hasPermission(permissions, "itAction")) {
-            return <span>{statusLabel}</span>;
-        }
-
-        const handleChange = async (e) => {
-            const newValue = parseInt(e.target.value);
-            setValue(newValue);
-            setLoading(true);
-
-            try {
-                await axios.patch(
-                    `${API_URL}/requests/${id_request}/admin-status`,
-                    { request_admin: newValue },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-
-                setData(prevData =>
-                    prevData.map(item =>
-                        item.id_request === id_request ? { ...item, request_admin: newValue } : item
-                    )
-                );
-            } catch (error) {
-                console.error(error);
-                setValue(initialValue ?? 0);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        return (
-            <select
-                value={value}
-                onChange={handleChange}
-                disabled={loading}
-                className="border border-gray-300 rounded-md text-sm p-1 bg-white"
-            >
-                <option value={0}>On Queue</option>
-                <option value={1}>On Progress</option>
-                <option value={2}>Completed</option>
-            </select>
-        );
-    }
 
     const handleCancel = async (id_request) => {
         const result = await Swal.fire({
@@ -334,35 +286,37 @@ export default function AdminList() {
                 const encryptedId = encrypt(String(row.original.id_request));
 
                 return (
-                    <div className="flex flex-row gap-2 justify-center">
-                        <Button
-                            leftSection={<IconInfoCircle size={16} />}
-                            color="blue"
-                            size="xs"
-                            onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
-                        >
-                            Details
-                        </Button>
+                    <Group justify="center">
+                        <ButtonGroup>
+                            <Button
+                                leftSection={<IconInfoCircle size={16} />}
+                                color="blue"
+                                size="xs"
+                                onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                            >
+                                Details
+                            </Button>
 
-                        <Button
-                            leftSection={<IconEdit size={16} />}
-                            color="yellow"
-                            size="xs"
-                            onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
-                        >
-                            Update
-                        </Button>
+                            <Button
+                                leftSection={<IconEdit size={16} />}
+                                color="yellow"
+                                size="xs"
+                                onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                            >
+                                Update
+                            </Button>
 
-                        <Button
-                            leftSection={<IconX size={16} />}
-                            color="red"
-                            size="xs"
-                            onClick={() => handleCancel(row.original.id_request)}
-                            disabled={isDeleting}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
+                            <Button
+                                leftSection={<IconX size={16} />}
+                                color="red"
+                                size="xs"
+                                onClick={() => handleCancel(row.original.id_request)}
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </Button>
+                        </ButtonGroup>
+                    </Group>
                 );
             }
         }

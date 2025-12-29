@@ -33,7 +33,7 @@ const navigation = [
   },
 
   {
-    name: "User Permission Request",
+    name: "User Request",
     url: "/user_request/requestor_list",
     icon: <IconUser size={20} />,
     permission: 1,
