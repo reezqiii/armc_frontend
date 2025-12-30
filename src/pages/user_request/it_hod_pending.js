@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge, Group } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX, IconCheck, IconRefresh } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck, IconRefresh, IconUserCog, IconFileSpreadsheet } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -199,6 +199,60 @@ function ITPendingList() {
             }
         });
     };
+
+    const handleExportExcel = async () => {
+        const sort_by = sorting[0]?.id || "id_request";
+        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+
+        const filterObj = Object.fromEntries(
+            columnFilters.map(f => [f.id, f.value])
+        );
+
+        const searchParams = JSON.stringify({
+            request_status: 5,
+            ...filterObj
+        });
+
+        try {
+            Swal.fire({
+                title: 'Preparing your file...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            const response = await axios.get(`${API_URL}/excel/export-list`, {
+                params: {
+                    search: searchParams,
+                    sort_by: sort_by,
+                    sort_order: sort_order,
+                    status: 'awaiting_it_manager_approval',
+                },
+                headers: { Authorization: `Bearer ${user.token}` },
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            link.setAttribute('download', `IT_HOD_Pending_Requests_${new Date().getTime()}.xlsx`);
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            Swal.close();
+        } catch (err) {
+            console.error("Export Error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Export Failed',
+                text: 'Something went wrong while generating the Excel file.',
+            });
+        }
+    };
+
 
     const columns = useMemo(() => [
         {
@@ -454,14 +508,41 @@ function ITPendingList() {
         <AuthLayout sidebarList={requestorList}>
             <div className="py-6">
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-                    <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+                    <Paper
+                        radius="md"
+                        shadow="sm"
+                        withBorder
+                        className="p-5 bg-white"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b pb-4 mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                    <IconUserCog size={22} />
+                                </div>
 
-                        <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-xl font-bold text-blue-500">
-                                Pending IT Manager Request List
-                            </h1>
+                                <div>
+                                    <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                                        Pending IT Manager Request List
+                                    </h1>
+                                    <p className="text-xs text-gray-500">
+                                        Requests awaiting IT Manager approval
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Tombol Export Excel di Header */}
+                            <Button
+                                color="green"
+                                size="sm"
+                                leftSection={<IconFileSpreadsheet size={16} />}
+                                onClick={handleExportExcel}
+                            >
+                                Export Excel
+                            </Button>
                         </div>
 
+                        {/* Table */}
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
                         </div>

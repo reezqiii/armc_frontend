@@ -327,7 +327,7 @@ function EditRequest() {
 
                             {/* 2. DESCRIPTION SECTION */}
                             <div className="space-y-6">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Employee Description
                                     </div>
@@ -449,7 +449,7 @@ function EditRequest() {
 
                             {/* 3. REMARKS SECTION */}
                             <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Remarks
                                     </div>
@@ -466,7 +466,7 @@ function EditRequest() {
 
                             {/* 4. APPROVAL WORKFLOW SECTION */}
                             <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Approval Workflow
                                     </div>

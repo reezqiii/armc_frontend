@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge, ButtonGroup, Group } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX, IconFileSpreadsheet } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconFileSpreadsheet, IconClipboardList } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -117,51 +117,51 @@ export default function AdminList() {
         }
     };
 
-    // const handleExportExcel = async () => {
-    //     try {
-    //         const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+    const handleExportExcel = async () => {
+        try {
+            const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
 
-    //         const sort_by = sorting[0]?.id || "id_request";
-    //         const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+            const sort_by = sorting[0]?.id || "id_request";
+            const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
-    //         const filterObj = Object.fromEntries(
-    //             columnFilters.map(f => [f.id, f.value])
-    //         );
+            const filterObj = Object.fromEntries(
+                columnFilters.map(f => [f.id, f.value])
+            );
 
-    //         const search = JSON.stringify({
-    //             request_admin: statusMap[status],
-    //             ...filterObj
-    //         });
+            const search = JSON.stringify({
+                request_admin: statusMap[status],
+                ...filterObj
+            });
 
-    //         const url = `${API_URL}/excel/export-list?search=${encodeURIComponent(
-    //             search
-    //         )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+            const url = `${API_URL}/excel/export-list?search=${encodeURIComponent(
+                search
+            )}&sort_by=${sort_by}&sort_order=${sort_order}`;
 
-    //         const res = await fetch(url, {
-    //             method: "GET",
-    //             headers: {
-    //                 Authorization: `Bearer ${user.token}`,
-    //             }
-    //         });
+            const res = await fetch(url, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                }
+            });
 
-    //         if (!res.ok) {
-    //             const errorText = await res.text();
-    //             console.error("Export failed:", errorText);
-    //             throw new Error("Gagal export excel");
-    //         }
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Export failed:", errorText);
+                throw new Error("Gagal export excel");
+            }
 
-    //         const blob = await res.blob();
+            const blob = await res.blob();
 
-    //         const link = document.createElement('a');
-    //         link.href = window.URL.createObjectURL(blob);
-    //         link.download = "export_requests_list.xlsx";
-    //         link.click();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = "export_requests_list.xlsx";
+            link.click();
 
-    //     } catch (error) {
-    //         console.error("Error:", error);
-    //         alert("Export Excel gagal. Cek console.");
-    //     }
-    // };
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Export Excel gagal. Cek console.");
+        }
+    };
 
     const columns = useMemo(() => [
         {
@@ -382,26 +382,46 @@ export default function AdminList() {
             <Head>
                 <title>{pageTitle}</title>
             </Head>
+
             <AuthLayout sidebarList={updatedSidebarList}>
                 <div className="py-6">
                     <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-                        <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
-                            <div className="flex items-center justify-between border-b pb-2 mb-3">
-                                <h1 className="text-xl font-bold text-blue-500">
-                                    {titleMap[status] || "Request List"}
-                                </h1>
+                        <Paper
+                            radius="md"
+                            shadow="sm"
+                            withBorder
+                            className="p-5 bg-white"
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b pb-4 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                        <IconClipboardList size={22} />
+                                    </div>
 
+                                    <div>
+                                        <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                                            {titleMap[status] || "Request List"}
+                                        </h1>
+                                        <p className="text-xs text-gray-500">
+                                            Manage and review request data
+                                        </p>
+                                    </div>
+                                </div>
 
-                                {/* Export Button
+                                {/* Optional Action */}
                                 <Button
                                     color="green"
                                     size="sm"
                                     onClick={handleExportExcel}
+                                    leftSection={<IconFileSpreadsheet size={16} />}
                                 >
                                     Export Excel
-                                </Button> */}
+                                </Button>
+
                             </div>
 
+                            {/* Table */}
                             <div className="overflow-x-auto">
                                 <Datatables table={table} totalPages={totalPages} />
                             </div>

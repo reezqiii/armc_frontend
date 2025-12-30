@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge, ButtonGroup, Group } from '@mantine/core';
-import { IconInfoCircle, IconEdit, IconX, IconCheck } from '@tabler/icons-react';
+import { IconInfoCircle, IconEdit, IconX, IconCheck, IconClock } from '@tabler/icons-react';
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
@@ -331,7 +331,7 @@ function PendingHODList() {
 
               <Button
                 leftSection={<IconEdit size={16} />}
-                color="yellow"
+                color="blue"
                 size="xs"
                 onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
               >
@@ -413,14 +413,31 @@ function PendingHODList() {
     <AuthLayout sidebarList={requestorList}>
       <div className="py-6">
         <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-          <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
+          <Paper
+            radius="md"
+            shadow="sm"
+            withBorder
+            className="p-5 bg-white"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                  <IconClock size={22} />
+                </div>
 
-            <div className="flex items-center justify-between border-b pb-2 mb-3">
-              <h1 className="text-xl font-bold text-blue-500">
-                Pending HOD Request List
-              </h1>
+                <div>
+                  <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                    Pending HOD Request List
+                  </h1>
+                  <p className="text-xs text-gray-500">
+                    Requests awaiting Head of Department approval
+                  </p>
+                </div>
+              </div>
             </div>
 
+            {/* Table */}
             <div className="overflow-x-auto">
               <Datatables table={table} totalPages={totalPages} />
             </div>

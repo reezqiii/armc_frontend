@@ -2,7 +2,7 @@ import {
   IconListLetters,
   IconListDetails,
   IconUserPlus,
-  IconFileStar,
+  IconFileText,
   IconUserCheck,
   IconUserCog,
   IconCircleCheck,
@@ -46,7 +46,7 @@ const requestorList = [
         title: "Draft",
         href: "/user_request/draft_request",
         active: "Draft",
-        icon: <IconFileStar size={18} />,
+        icon: <IconFileText size={18} />,
       },
       {
         title: "Pending HOD Request",
@@ -78,7 +78,7 @@ const requestorList = [
 
 if (true == true) {
   requestorList.push({
-    title: "Admin",
+    title: "IT Action",
     href: "/",
     active: "Permission Request",
     icon: <IconUserShield size={18} />,

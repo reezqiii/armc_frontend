@@ -305,7 +305,7 @@ function CreateRequest() {
 
                             {/* 2. DESCRIPTION SECTION */}
                             <div className="space-y-6">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Employee Description
                                     </div>
@@ -368,30 +368,45 @@ function CreateRequest() {
                                         required
                                         label="Company"
                                         placeholder="Input Company"
+                                        value={formData.company_name || ''}
                                         readOnly
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
                                     <MultiSelect
+                                        required
                                         error={errors.access_yard_company}
                                         label="Access Yard Company"
                                         placeholder="Select Yard"
                                         data={accessYardOptions}
                                         value={formData.access_yard_company}
-                                        onChange={(val) => handleChange('access_yard_company', val)}
+                                        onChange={(val) => {
+                                            handleChange('access_yard_company', val);
+                                            if (val.length > 0) setErrors(prev => ({ ...prev, access_yard_company: null }));
+                                        }}
                                         searchable
-                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                        classNames={{
+                                            label: "font-semibold mb-1 text-gray-700",
+                                            input: `min-h-[40px] ${errors.access_yard_company ? 'border-red-500' : ''}`
+                                        }}
                                     />
 
                                     <MultiSelect
+                                        required
                                         error={errors.access_nav_menu}
                                         label="Application Access"
                                         placeholder="Select Access"
                                         data={navMenuOptions}
                                         value={formData.access_nav_menu}
-                                        onChange={(val) => handleChange('access_nav_menu', val)}
+                                        onChange={(val) => {
+                                            handleChange('access_nav_menu', val);
+                                            if (val.length > 0) setErrors(prev => ({ ...prev, access_nav_menu: null }));
+                                        }}
                                         searchable
-                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                        classNames={{
+                                            label: "font-semibold mb-1 text-gray-700",
+                                            input: `min-h-[40px] ${errors.access_nav_menu ? 'border-red-500' : ''}`
+                                        }}
                                     />
 
                                     <TextInput
@@ -420,7 +435,7 @@ function CreateRequest() {
 
                             {/* 3. REMARKS SECTION */}
                             <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Remarks
                                     </div>
@@ -437,7 +452,7 @@ function CreateRequest() {
 
                             {/* 4. APPROVAL WORKFLOW SECTION */}
                             <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                                         Approval Workflow
                                     </div>
@@ -458,7 +473,7 @@ function CreateRequest() {
                                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Acknowledge By</span>
                                         <Select
                                             error={errors.approval_hod_by}
-                                            placeholder="Select HOD"
+                                            placeholder="Select HOD Requestor"
                                             searchable
                                             value={formData.approval_hod_by || ''}
                                             onChange={(val) => handleChange('approval_hod_by', val)}
@@ -474,7 +489,7 @@ function CreateRequest() {
                                     <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
                                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Checked By</span>
                                         <div className="text-sm font-medium text-gray-400 py-2 italic border-b border-dashed border-gray-200">
-                                            Pending IT Check...
+                                            Waiting Lead IT Check...
                                         </div>
                                         <span className="text-[10px] text-gray-400 italic mt-1">Lead IT</span>
                                     </div>
@@ -483,7 +498,7 @@ function CreateRequest() {
                                     <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
                                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Approved By</span>
                                         <div className="text-sm font-medium text-gray-400 py-2 italic border-b border-dashed border-gray-200">
-                                            Waiting Manager...
+                                            Waiting IT Manager Check...
                                         </div>
                                         <span className="text-[10px] text-gray-400 italic mt-1">IT Manager</span>
                                     </div>

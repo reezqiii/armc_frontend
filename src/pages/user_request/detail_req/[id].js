@@ -425,7 +425,7 @@ function RequestDetail() {
 
                   {/* 2. DESCRIPTION SECTION */}
                   <div className="space-y-6">
-                    <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                       <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                         Employee Description
                       </div>
@@ -433,57 +433,57 @@ function RequestDetail() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Badge ID</label>
+                        <label className="font-semibold text-gray-700 text-sm">Badge ID <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.badge_no || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Full Name</label>
+                        <label className="font-semibold text-gray-700 text-sm">Full Name <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.full_name || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Department</label>
+                        <label className="font-semibold text-gray-700 text-sm">Department <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.department_name || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Position</label>
+                        <label className="font-semibold text-gray-700 text-sm">Position <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.position_name || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Project</label>
+                        <label className="font-semibold text-gray-700 text-sm">Project <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.project_name || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Company</label>
+                        <label className="font-semibold text-gray-700 text-sm">Company <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.company?.company_name || "-"}</div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Access Yard Company</label>
+                        <label className="font-semibold text-gray-700 text-sm">Access Yard Company <span className="text-red-500">*</span></label>
                         <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
                           {data.access_yard_company?.length ? data.access_yard_company.map(c => c.company_name).join(', ') : '-'}
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Application Access</label>
+                        <label className="font-semibold text-gray-700 text-sm">Application Access <span className="text-red-500">*</span></label>
                         <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
                           {data.access_nav_menu?.length ? data.access_nav_menu.map(n => n.application_name).join(', ') : '-'}
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Email Address</label>
+                        <label className="font-semibold text-gray-700 text-sm">Email Address <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.email || "-"}</div>
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="font-semibold text-gray-700 text-sm">Purpose of Request</label>
+                      <label className="font-semibold text-gray-700 text-sm">Purpose of Request <span className="text-red-500">*</span></label>
                       <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
                         {data.request_reason || "-"}
                       </div>
@@ -492,19 +492,24 @@ function RequestDetail() {
 
                   {/* 3. REMARKS SECTION */}
                   <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                       <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                         Remarks
                       </div>
                     </div>
-                    <div className="min-h-[60px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
-                      {data.remarks || "-"}
+                    <div className="space-y-1">
+                      <label className="font-semibold text-gray-700 text-sm">
+                        Additional Remarks (Optional)
+                      </label>
+                      <div className="min-h-[60px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
+                        {data.remarks || "-"}
+                      </div>
                     </div>
                   </div>
 
                   {/* 4. APPROVAL WORKFLOW SECTION */}
                   <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                       <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                         Approval Workflow
                       </div>
@@ -580,7 +585,7 @@ function RequestDetail() {
                   </div>
 
                   {/* ACTION BUTTONS & STATUS */}
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-100">
+                  <div className="flex justify-between pt-6">
                     <Button
                       leftSection={<IconArrowLeft size={18} />}
                       color="gray"
@@ -590,9 +595,12 @@ function RequestDetail() {
                       Back
                     </Button>
 
-                    <div className="flex flex-wrap justify-center items-center gap-4">
-                      <div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                        <span className="text-xs font-bold text-gray-500 uppercase mr-2">Status:</span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Status */}
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/70 rounded-md">
+                        <span className="text-[11px] font-medium text-gray-500 uppercase">
+                          Status:
+                        </span>
                         {(() => {
                           const status = data.request_status;
                           const prev = data.previous_status;
@@ -611,7 +619,7 @@ function RequestDetail() {
                           color="green"
                           onClick={handleSubmitToHOD}
                         >
-                          Submit to HOD
+                          Submit to HOD Request
                         </Button>
                       )}
 
@@ -640,8 +648,8 @@ function RequestDetail() {
             </Tabs>
           </div>
         </Paper>
-      </div>
-    </AuthLayout>
+      </div >
+    </AuthLayout >
   );
 }
 

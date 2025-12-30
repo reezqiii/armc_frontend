@@ -4,7 +4,7 @@ import requestorList from '@/data/sidebar/RequestorList';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import { Button, Paper, Badge, Group } from '@mantine/core';
-import { IconEdit, IconInfoCircle, IconRefresh, IconX, IconSend } from '@tabler/icons-react';
+import { IconEdit, IconInfoCircle, IconRefresh, IconX, IconSend, IconUser, IconFileSpreadsheet } from '@tabler/icons-react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -114,6 +114,72 @@ function RequestUserList() {
         }
     };
 
+    const handleExportExcel = async () => {
+        const sort_by = sorting[0]?.id || "id_request";
+        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
+
+        const filterObj = Object.fromEntries(
+            columnFilters.map(f => [f.id, f.value])
+        );
+
+        const searchPayload = {
+            ...filterObj,
+        };
+
+        if (typeof status === "number") {
+            searchPayload.request_status = status;
+        }
+
+        try {
+            Swal.fire({
+                title: 'Preparing your file...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading(),
+            });
+
+            const response = await axios.get(`${API_URL}/excel/export-list`, {
+                params: {
+                    search: JSON.stringify(searchPayload),
+                    sort_by,
+                    sort_order,
+                },
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                },
+                responseType: 'blob',
+            });
+
+            const blob = new Blob([response.data]);
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+
+            // 🧠 Nama file otomatis
+            const filename =
+                typeof status === "number"
+                    ? `request_status_${status}.xlsx`
+                    : "request_all.xlsx";
+
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            Swal.close();
+
+        } catch (err) {
+            console.error("Export Error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Export Failed',
+                text: 'Something went wrong while generating the Excel file.',
+            });
+        }
+    };
+
+
     const columns = useMemo(() => [
         {
             id: 'no',
@@ -213,6 +279,8 @@ function RequestUserList() {
         {
             id: 'request_status',
             header: 'Status',
+            enableColumnFilter: false,
+            enableSorting: true,
             accessorFn: row => row.request_status.name,
             cell: ({ row }) => {
                 const statusCode = row.original.request_status;
@@ -335,7 +403,7 @@ function RequestUserList() {
                                     size="xs"
                                     onClick={() => handleSubmitToHOD(request.id_request)}
                                 >
-                                    Submit to HOD
+                                    Submit to HOD Request
                                 </Button>
                             )}
 
@@ -434,16 +502,48 @@ function RequestUserList() {
         <AuthLayout sidebarList={requestorList}>
             <div className="py-6">
                 <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-                    <Paper radius="sm" mt="md" withBorder shadow="xs" className="p-4">
-                        <div className="flex items-center justify-between border-b pb-2 mb-3">
-                            <h1 className="text-xl font-bold text-blue-500">Request User List</h1>
+                    <Paper
+                        radius="md"
+                        shadow="sm"
+                        withBorder
+                        className="p-5 bg-white"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between border-b pb-4 mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                    <IconUser size={22} />
+                                </div>
+
+                                <div>
+                                    <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                                        Request User List
+                                    </h1>
+                                    <p className="text-xs text-gray-500">
+                                        Manage and monitor user request submissions
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Tombol Export Excel di Header */}
+                            <Button
+                                color="green"
+                                size="sm"
+                                leftSection={<IconFileSpreadsheet size={16} />}
+                                onClick={handleExportExcel}
+                            >
+                                Export Excel
+                            </Button>
                         </div>
+
+                        {/* Table */}
                         <div className="overflow-x-auto">
                             <Datatables table={table} totalPages={totalPages} />
                         </div>
                     </Paper>
                 </div>
             </div>
+
             <RejectTimelineModal
                 opened={modalOpen}
                 onClose={() => setModalOpen(false)}

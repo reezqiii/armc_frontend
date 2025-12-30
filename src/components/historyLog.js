@@ -137,7 +137,7 @@ const HistoryLog = ({ logData, idRequest }) => {
     );
 
     const search = JSON.stringify({
-           index: idRequest,
+      index: idRequest,
       ...filterObj
     });
 
@@ -156,18 +156,23 @@ const HistoryLog = ({ logData, idRequest }) => {
   }, [API_URL, pagination, sorting, columnFilters, user.token, idRequest]);
 
   useEffect(() => {
-  if (!idRequest) return;
-  getLogData();
-}, [getLogData, idRequest]);
+    if (!idRequest) return;
+    getLogData();
+  }, [getLogData, idRequest]);
 
   return (
-    <Paper radius="sm" withBorder shadow="xs" className="p-4 mt-4">
-      <label className="font-medium mb-1 text-gray-800 text-xl">
-        History Log
-      </label>
+    <Paper radius="md" withBorder shadow="xs" className="p-0 mt-4 overflow-hidden border-gray-200">
+      <div className="bg-blue-600 shadow-sm">
+        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+          History Log
+        </div>
+      </div>
 
-      <div className="overflow-x-auto mt-3">
-        <Datatables table={table} totalPages={totalPages} />
+      {/* Konten Table */}
+      <div className="p-4">
+        <div className="overflow-x-auto">
+          <Datatables table={table} totalPages={totalPages} />
+        </div>
       </div>
     </Paper>
   );
