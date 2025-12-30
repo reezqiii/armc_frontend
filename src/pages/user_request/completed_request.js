@@ -13,6 +13,7 @@ import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import useEncrypt from '@/hooks/useEncrypt';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function CompletedRequest() {
     const router = useRouter();
@@ -266,10 +267,11 @@ function CompletedRequest() {
             enableColumnFilter: false,
             enableSorting: true,
             cell: ({ row }) => {
-                const status = row.original.request_status?.name || "Unknown";
+                const status = getRequestStatus(row.original.request_status);
+
                 return (
-                    <Badge color="green" variant="light">
-                        {status}
+                    <Badge color={status.color} variant="light">
+                        {status.label}
                     </Badge>
                 );
             }

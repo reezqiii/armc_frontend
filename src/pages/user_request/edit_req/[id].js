@@ -215,7 +215,7 @@ function EditRequest() {
             cancelButtonColor: "#d33",
         });
 
-        if (!result.isConfirmed) return; 
+        if (!result.isConfirmed) return;
 
         setLoadingSubmit(true);
 
@@ -283,252 +283,265 @@ function EditRequest() {
 
     return (
         <AuthLayout sidebarList={requestorList}>
-            <div className="bg-gray-100 min-h-screen py-10 px-6 md:px-10 w-full">
+            <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
                 <Paper
                     radius="md"
-                    shadow="xl"
-                    className="bg-white py-8 px-10 w-full space-y-6 text-sm leading-relaxed"
+                    shadow="md"
+                    className="bg-white p-0 w-full overflow-hidden border border-gray-200"
                 >
-
                     {/* Header */}
-                    <div className=" border-b py-4 text-center">
-                        <h1 className="text-xl font-bold text-blue-500">
-                            PCMS ACCESS LOGIN REQUEST
+                    <div className="border-b py-6 text-center bg-white">
+                        <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-tight">
+                            PCMS Access Login Request
                         </h1>
                     </div>
 
                     <form onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-1 gap-3">
-                            <div>
-                                <label className="font-medium mb-1 text-gray-800 text-sm">
-                                    Request Date <span className="text-red-500">*</span>
-                                </label>
-                                <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-between text-sm">
-                                    <span>
-                                        {formData.created_date
-                                            ? formatDateTime(formData.created_date)
-                                            : formatDateTime(new Date())}
-                                    </span>
-                                    <IconCalendar size={16} className="text-gray-500" />
+                        <div className="p-6 md:p-10 space-y-10">
+
+                            {/* 1. INFORMASI DASAR (Date & Requestor) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <label className="block font-semibold text-gray-700 text-sm">
+                                        Request Date <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
+                                        <span>
+                                            {formData.created_date
+                                                ? formatDateTime(formData.created_date, false)
+                                                : formatDateTime(new Date(), false)}
+                                        </span>
+                                        <IconCalendar size={18} className="text-gray-400" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="block font-semibold text-gray-700 text-sm">
+                                        Requestor <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
+                                        {formData?.created_by_name || '-'}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="font-medium mb-1 text-gray-800 text-sm">
-                                    Requestor <span className="text-red-500">*</span>
-                                </label>
-                                <div className="h-[40px] px-3 bg-gray-100 border border-gray-300 rounded-md text-sm flex items-center">
-                                    {formData?.created_by_name || '-'}
+                            {/* 2. DESCRIPTION SECTION */}
+                            <div className="space-y-6">
+                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Employee Description
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Description Section */}
-                        <div className="space-y-2 mt-6">
-                            <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
-                                    Description
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <Autocomplete
+                                        required
+                                        label="Badge ID"
+                                        placeholder="Input Badge Number"
+                                        value={formData.badge_no || ''}
+                                        onChange={(value) => {
+                                            handleChange('badge_no', value);
+                                            setSearch(value);
+                                        }}
+                                        data={badgeOptions.map(b => ({ value: b.value, label: b.label }))}
+                                        onOptionSubmit={(item) => handleSelectBadge(item)}
+                                        filter={null}
+                                        rightSection={badgeLoading ? <div className="animate-spin h-4 w-4 border-2 border-gray-400 rounded-full" /> : null}
+                                        nothingFound="No employees found"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Full Name"
+                                        placeholder="Full Name"
+                                        value={formData.full_name || ''}
+                                        readOnly
+                                        variant="filled"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Department"
+                                        placeholder="Department"
+                                        value={formData.department_name || ''}
+                                        readOnly
+                                        variant="filled"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Position"
+                                        placeholder="Position"
+                                        value={formData.position_name || ''}
+                                        readOnly
+                                        variant="filled"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Project"
+                                        placeholder="Project"
+                                        value={formData.project_name || ''}
+                                        readOnly
+                                        variant="filled"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Company"
+                                        placeholder="Company"
+                                        value={formData.company_name || formData.company?.company_name || ''}
+                                        readOnly
+                                        variant="filled"
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Access Yard Company"
+                                        placeholder="Select Yard"
+                                        data={accessYardOptions}
+                                        value={formData.access_yard_company}
+                                        onChange={(val) => handleChange('access_yard_company', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Application Access"
+                                        placeholder="Select Access"
+                                        data={navMenuOptions}
+                                        value={formData.access_nav_menu}
+                                        onChange={(val) => handleChange('access_nav_menu', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        type="email"
+                                        label="Email Address"
+                                        placeholder="example@company.com"
+                                        value={formData.email}
+                                        onChange={(e) => handleChange('email', e.target.value)}
+                                        error={errors.email}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3">
-                                <Autocomplete
-                                    required
-                                    label="Badge ID"
-                                    placeholder="Input Badge Number"
-                                    value={formData.badge_no || ''}
-                                    onChange={(value) => {
-                                        handleChange('badge_no', value);
-                                        setSearch(value);
-                                    }}
-                                    data={badgeOptions.map(b => ({ value: b.value, label: b.label }))}
-                                    onOptionSubmit={(item) => handleSelectBadge(item)}
-                                    filter={null}
-                                    rightSection={badgeLoading ? <div className="animate-spin h-4 w-4 border-2 border-gray-400 rounded-full" /> : null}
-                                    nothingFound="No employees found"
-                                />
-
-                                <TextInput
-                                    required
-                                    label="Full Name"
-                                    value={formData.full_name || ''}
-                                    readOnly
-                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
-                                />
-
-                                <TextInput
-                                    required
-                                    label="Department"
-                                    value={formData.department_name || ''}
-                                    readOnly
-                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
-                                />
-
-                                <TextInput
-                                    required
-                                    label="Position"
-                                    value={formData.position_name || ''}
-                                    readOnly
-                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
-                                />
-
-                                <TextInput
-                                    required
-                                    label="Project"
-                                    value={formData.project_name || ''}
-                                    readOnly
-                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
-                                />
-
-                                <TextInput
-                                    required
-                                    label="Company"
-                                    value={
-                                        formData.company_name ||
-                                        formData.company?.company_name ||
-                                        ''
-                                    }
-                                    readOnly
-                                    classNames={{ input: "bg-gray-100 border-gray-300 text-sm" }}
-                                />
-
-                                <MultiSelect
-                                    required
-                                    label="Access Yard Company"
-                                    placeholder="Select Access Yard"
-                                    data={accessYardOptions}
-                                    value={formData.access_yard_company}
-                                    onChange={(val) => handleChange('access_yard_company', val)}
-                                    searchable
-                                    clearable
-                                    classNames={{
-                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
-                                        label: "font-medium mb-1 text-gray-800 text-sm",
-                                    }}
-                                />
-
-                                <MultiSelect
-                                    required
-                                    label="Application Access"
-                                    placeholder="Select Application Access"
-                                    data={navMenuOptions}
-                                    value={formData.access_nav_menu}
-                                    onChange={(val) => handleChange('access_nav_menu', val)}
-                                    searchable
-                                    clearable
-                                    classNames={{
-                                        input: "bg-gray-100 border-gray-300 text-sm rounded-md min-h-[42px]",
-                                        label: "font-medium mb-1 text-gray-800 text-sm",
-                                    }}
-                                />
-
-                                <TextInput
-                                    required
-                                    type="email"
-                                    label={<span className="font-medium mb-1 text-gray-800 text-sm">Email</span>}
-                                    placeholder="example@company.com"
-                                    value={formData.email}
-                                    onChange={(e) => handleChange('email', e.target.value)}
-                                    error={errors.email}
-                                />
 
                                 <Textarea
                                     required
-                                    label={<span className="font-medium text-sm">Purpose</span>}
+                                    label="Purpose of Request"
                                     placeholder="Input Request Purpose"
                                     value={formData.request_reason}
                                     onChange={(e) => handleChange('request_reason', e.target.value)}
                                     minRows={3}
                                     error={errors.request_reason}
+                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                                 />
                             </div>
-                        </div>
 
-                        {/* Remarks Section */}
-                        <div className="space-y-2 mt-6">
-                            <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-3 mb-4 text-base font-semibold text-white">
-                                    Remarks
+                            {/* 3. REMARKS SECTION */}
+                            <div className="space-y-4">
+                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Remarks
+                                    </div>
                                 </div>
+                                <Textarea
+                                    label="Additional Remarks (Optional)"
+                                    placeholder="Input Remarks (Optional)"
+                                    minRows={2}
+                                    value={formData.remarks}
+                                    onChange={(e) => handleChange('remarks', e.target.value)}
+                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                />
                             </div>
 
-                            <Textarea
-                                label={<span className="font-medium text-sm">Remarks (Optional)</span>}
-                                placeholder="Input Remarks (Optional)"
-                                minRows={3}
-                                value={formData.remarks}
-                                onChange={(e) => handleChange('remarks', e.target.value)}
-                            />
-                        </div>
-
-                        {/* Signature Section */}
-                        <div className="space-y-2 mt-6">
-                            <div className="-mx-10 bg-black shadow-sm">
-                                <div className="px-10 py-3 text-base font-semibold text-white grid grid-cols-4 text-center">
-                                    <div>Requestor</div>
-                                    <div>HOD Requestor</div>
-                                    <div>Lead IT</div>
-                                    <div>Asst. IT Manager/IT Manager</div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-b-md text-black grid grid-cols-1 md:grid-cols-4 text-sm">
-                                {/* Requestor Department */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">Requested By</label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {formData?.created_by_name || '-'}
+                            {/* 4. APPROVAL WORKFLOW SECTION */}
+                            <div className="space-y-4">
+                                <div className="-mx-6 md:-mx-10 bg-black shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Approval Workflow
                                     </div>
                                 </div>
 
-                                {/* Head of Department */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <Select
-                                        label="Acknowledge By"
-                                        placeholder="Select HOD..."
-                                        searchable
-                                        value={String(formData.approval_hod_by || '')}
-                                        onChange={(val) => handleChange('approval_hod_by', val)}
-                                        data={hodOptions.map(u => ({
-                                            value: String(u.value),
-                                            label: u.label
-                                        }))}
-                                        disabled={isReturned}
-                                        classNames={{
-                                            input: "h-[36px] bg-gray-100 border-gray-300 text-sm",
-                                            label: "font-medium mb-1 text-gray-800 text-sm",
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Lead IT */}
-                                <div className="p-3 border-b md:border-b-0 md:border-r border-gray-300">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Checked By
-                                    </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {formData.approval_lead_it_by_name || '-'}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+                                    {/* Col 1 */}
+                                    <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Requested By</span>
+                                        <div className="text-sm font-bold text-gray-800 py-2 border-b border-gray-100">
+                                            {formData?.created_by_name || '-'}
+                                        </div>
+                                        <span className="text-[10px] text-gray-400 italic mt-1">Requestor</span>
                                     </div>
-                                </div>
 
-                                {/* Asst. IT Manager / IT Manager */}
-                                <div className="p-3">
-                                    <label className="font-medium mb-1 text-gray-800 text-sm">
-                                        Approved By
-                                    </label>
-                                    <div className="h-[36px] px-3 bg-gray-100 border border-gray-300 rounded-md flex items-center">
-                                        {formData.approval_it_hod_by_name || '-'}
+                                    {/* Col 2 */}
+                                    <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Acknowledge By</span>
+                                        <Select
+                                            placeholder="Select HOD"
+                                            searchable
+                                            value={String(formData.approval_hod_by || '')}
+                                            onChange={(val) => handleChange('approval_hod_by', val)}
+                                            data={hodOptions.map(u => ({
+                                                value: String(u.value),
+                                                label: u.label
+                                            }))}
+                                            disabled={isReturned}
+                                            variant="unstyled"
+                                            className="border-b border-gray-200"
+                                            classNames={{ input: "text-sm font-bold text-blue-600 h-auto p-0" }}
+                                        />
+                                        <span className="text-[10px] text-gray-400 italic mt-1">HOD Requestor</span>
+                                    </div>
+
+                                    {/* Col 3 */}
+                                    <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Checked By</span>
+                                        <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
+                                            {formData.approval_lead_it_by_name || '-'}
+                                        </div>
+                                        <span className="text-[10px] text-gray-400 italic mt-1">Lead IT</span>
+                                    </div>
+
+                                    {/* Col 4 */}
+                                    <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
+                                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Approved By</span>
+                                        <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
+                                            {formData.approval_it_hod_by_name || '-'}
+                                        </div>
+                                        <span className="text-[10px] text-gray-400 italic mt-1">IT Manager</span>
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Action Buttons */}
                             <div className="flex justify-between pt-6">
-                                <Button leftSection={<IconArrowLeft size={18} />} color="gray" size="sm" onClick={() => router.back()}>
+                                <Button
+                                    leftSection={<IconArrowLeft size={18} />}
+                                    color="gray"
+                                    size="sm"
+                                    onClick={() => router.back()}
+                                >
                                     Back
                                 </Button>
-                                <Button type="submit" leftSection={<IconDeviceFloppy size={18} />}
-                                    color="blue" radius="sm" size="sm" loading={loadingSubmit}>
-                                    {id ? 'Update' : 'Submit'}
+                                <Button
+                                    type="submit"
+                                    leftSection={<IconDeviceFloppy size={18} />}
+                                    color="blue"
+                                    radius="sm"
+                                    size="sm"
+                                    loading={loadingSubmit}
+                                    disabled={loadingSubmit}
+                                >
+                                    Update
                                 </Button>
                             </div>
                         </div>

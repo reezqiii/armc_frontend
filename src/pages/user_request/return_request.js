@@ -12,6 +12,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import { formatDateTime } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function ReturnList() {
   const router = useRouter();
@@ -212,16 +213,31 @@ function ReturnList() {
       header: 'Status',
       enableColumnFilter: false,
       enableSorting: true,
+
       cell: ({ row }) => {
+        const requestStatus = row.original.request_status;
+
         let statusId = null;
 
-        if (row.original.request_status?.name?.toLowerCase() === "returned" && row.original.previous_status != null) {
-          statusId = Number(row.original.previous_status);
-        } else if (row.original.request_status?.id != null) {
-          statusId = row.original.request_status.id;
+        if (typeof requestStatus === "object" && requestStatus !== null) {
+          if (
+            requestStatus.name?.toLowerCase() === "returned" &&
+            row.original.previous_status != null
+          ) {
+            statusId = Number(row.original.previous_status);
+          } else {
+            statusId = requestStatus.id;
+          }
         }
 
-        const status = StatusMap[statusId] || { label: "Draft", color: "gray" };
+        if (typeof requestStatus === "number") {
+          statusId = requestStatus;
+        }
+
+        const status = StatusMap[statusId] ?? {
+          label: "Draft",
+          color: "gray",
+        };
 
         return (
           <Badge color={status.color} variant="light">

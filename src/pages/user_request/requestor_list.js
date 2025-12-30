@@ -15,6 +15,7 @@ import { hasPermission } from "@/lib/permissionHelper";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function RequestUserList() {
     const router = useRouter();
@@ -214,49 +215,38 @@ function RequestUserList() {
             header: 'Status',
             accessorFn: row => row.request_status.name,
             cell: ({ row }) => {
-
-                const rawStatus = row.original.request_status?.name || "";
-                const key = rawStatus.toLowerCase();
-
-                const statusMap = {
-                    "draft": { label: "Draft", color: "gray" },
-                    "pending by hod req": { label: "Pending by HOD", color: "yellow" },
-                    "rejected by hod req": { label: "Rejected by HOD", color: "red" },
-                    "pending by lead it": { label: "Pending by Lead IT", color: "yellow" },
-                    "rejected by lead it": { label: "Rejected by Lead IT", color: "red" },
-                    "pending by it manager": { label: "Pending by IT Manager", color: "yellow" },
-                    "rejected by it manager": { label: "Rejected by IT Manager", color: "red" },
-                    "completed": { label: "Completed", color: "green" },
-                    "returned": { label: "Returned", color: "gray" },
-                };
-
-                const status = statusMap[key] || {
-                    label: rawStatus || "Unknown",
-                    color: "gray",
-                };
+                const statusCode = row.original.request_status;
+                const status = getRequestStatus(statusCode);
 
                 let rejectField = null;
 
-                if (status === "Rejected by HOD Req") {
-                    rejectField = {
-                        by: row.original.approval_hod_by?.full_name,
-                        at: row.original.approval_hod_date_at,
-                        reason: row.original.rejected_hod_remarks,
-                    };
-                }
-                else if (status === "Rejected by Lead IT") {
-                    rejectField = {
-                        by: row.original.approval_lead_it_by?.full_name,
-                        at: row.original.approval_lead_date_at,
-                        reason: row.original.rejected_lead_remarks,
-                    };
-                }
-                else if (status === "Rejected by IT Manager") {
-                    rejectField = {
-                        by: row.original.approval_it_hod_by?.full_name,
-                        at: row.original.approval_it_date_at,
-                        reason: row.original.rejected_it_remarks,
-                    };
+                switch (statusCode) {
+                    case 2: // Rejected by HOD
+                        rejectField = {
+                            by: row.original.approval_hod_by?.full_name,
+                            at: row.original.approval_hod_date_at,
+                            reason: row.original.rejected_hod_remarks,
+                        };
+                        break;
+
+                    case 4: // Rejected by Lead IT
+                        rejectField = {
+                            by: row.original.approval_lead_it_by?.full_name,
+                            at: row.original.approval_lead_date_at,
+                            reason: row.original.rejected_lead_remarks,
+                        };
+                        break;
+
+                    case 6: // Rejected by IT Manager
+                        rejectField = {
+                            by: row.original.approval_it_hod_by?.full_name,
+                            at: row.original.approval_it_date_at,
+                            reason: row.original.rejected_it_remarks,
+                        };
+                        break;
+
+                    default:
+                        rejectField = null;
                 }
 
                 if (rejectField) {
@@ -274,7 +264,7 @@ function RequestUserList() {
                                     setSelectedRejectData({
                                         status,
                                         rejected_by_name: rejectField.by,
-                                        rejected_at: formatDate(rejectField.at),
+                                        rejected_at: formatDateTime(rejectField.at),
                                         rejected_reason: rejectField.reason,
                                     });
                                     setModalOpen(true);

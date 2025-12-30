@@ -12,6 +12,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import { formatDateTime } from "@/lib/dateFormat";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function PendingHODList() {
   const router = useRouter();
@@ -298,10 +299,11 @@ function PendingHODList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const status = row.original.request_status?.name || "Unknown";
+        const status = getRequestStatus(row.original.request_status);
+
         return (
-          <Badge color="yellow" variant="light">
-            {status}
+          <Badge color={status.color} variant="light">
+            {status.label}
           </Badge>
         );
       }

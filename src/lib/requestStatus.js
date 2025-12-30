@@ -4,10 +4,10 @@ export const REQUEST_STATUS = {
   DRAFT: "Draft",
 
   // 3
-  PENDING_LEAD_IT: "Pending by Lead IT",
+  PENDING_LEAD_IT: "Awaiting Lead IT Approval",
 
   // 5
-  PENDING_IT_MANAGER: "Pending by IT Manager",
+  PENDING_IT_MANAGER: "Awaiting IT Manager Approval",
 
   // 7
   COMPLETED: "Completed",

@@ -13,6 +13,7 @@ import Swal from "sweetalert2";
 import { formatDateTime } from "@/lib/dateFormat";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function DraftRequestList() {
   const router = useRouter();
@@ -267,10 +268,11 @@ function DraftRequestList() {
       enableColumnFilter: false,
       enableSorting: true,
       cell: ({ row }) => {
-        const status = row.original.request_status?.name || "Unknown";
+        const status = getRequestStatus(row.original.request_status);
+
         return (
-          <Badge color="gray" variant="light">
-            {status}
+          <Badge color={status.color} variant="light">
+            {status.label}
           </Badge>
         );
       }
