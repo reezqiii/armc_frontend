@@ -1,49 +1,29 @@
-// helpers/requestStatus.helper.js
-
 export const REQUEST_STATUS = {
-  DRAFT: "Draft",
-
-  // 3
-  PENDING_LEAD_IT: "Awaiting Lead IT Approval",
-
-  // 5
-  PENDING_IT_MANAGER: "Awaiting IT Manager Approval",
-
-  // 7
-  COMPLETED: "Completed",
-
-  RETURNED: "Returned",
+  DRAFT: 0,
+  PENDING_HOD: 1,
+  PENDING_LEAD_IT: 3,
+  PENDING_IT_MANAGER: 5,
+  COMPLETED: 7,
 };
 
-export const RETURNABLE_STATUSES = [
-  REQUEST_STATUS.PENDING_LEAD_IT,     // 3
-  REQUEST_STATUS.PENDING_IT_MANAGER,  // 5
-  REQUEST_STATUS.COMPLETED,           // 7
-];
+export const getRequestActionPermission = (status, hasPermission) => {
+  // IT USER → semua tombol
+  if (hasPermission) {
+    return {
+      canEditCancel: true,
+      canReturn: true,
+      showOnlyDetail: false,
+    };
+  }
 
-/**
- * Check apakah status adalah Draft (0)
- * @param {string} statusName
- */
-export const isDraftStatus = (statusName) => {
-  return statusName === REQUEST_STATUS.DRAFT;
-};
+  // NON-IT USER
+  const canEditCancel =
+    status === REQUEST_STATUS.DRAFT ||
+    status === REQUEST_STATUS.PENDING_HOD;
 
-/**
- * Check apakah request bisa di-return
- * @param {string} statusName
- */
-export const isReturnableStatus = (statusName) => {
-  return RETURNABLE_STATUSES.includes(statusName);
-};
-
-/**
- * Helper gabungan untuk Action permission
- * (opsional tapi recommended)
- */
-export const getRequestActionPermission = (statusName, hasPermission) => {
   return {
-    canSubmitToHOD: isDraftStatus(statusName),
-    canReturn: hasPermission && isReturnableStatus(statusName),
+    canEditCancel,
+    canReturn: false,
+    showOnlyDetail: !canEditCancel,
   };
 };

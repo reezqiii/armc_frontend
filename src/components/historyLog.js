@@ -31,8 +31,7 @@ const HistoryLog = ({ logData, idRequest }) => {
     {
       id: 'no',
       header: 'No',
-      cell: ({ row }) =>
-        row.index + 1 + pagination.pageIndex * pagination.pageSize,
+      cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
       size: 40,
     },
     {
@@ -40,12 +39,10 @@ const HistoryLog = ({ logData, idRequest }) => {
         const val = row.before;
         if (!val) return "-";
 
-        // Jika langsung object → langsung stringify
         if (typeof val === "object") {
           return JSON.stringify(val, null, 2);
         }
 
-        // Jika string lama (TEXT)
         try {
           const trimmed = String(val).trim();
 
@@ -101,9 +98,8 @@ const HistoryLog = ({ logData, idRequest }) => {
       header: "Date",
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDate(row.original.created_date),
-    },
-
+      cell: ({ row }) => formatDate(row.original.date, { showTime: true }),
+    }
   ], []);
 
   const table = useReactTable({

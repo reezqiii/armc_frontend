@@ -13,6 +13,7 @@ import { hasPermission } from "@/lib/permissionHelper";
 import HistoryLog from "@/components/historyLog";
 import Swal from 'sweetalert2'
 import { formatDate } from '@/lib/dateFormat';
+import { getRequestStatus } from '@/lib/requestStatusList';
 
 function RequestDetail() {
 
@@ -32,6 +33,11 @@ function RequestDetail() {
   const [logs, setLogs] = useState([]);
   const [loadingLog, setLoadingLog] = useState(false);
   const [leadItName, setLeadItName] = useState('');
+  const CATEGORY_ACCOUNT_MAP = {
+    0: "Create New Account",
+    1: "Request Permission",
+    2: "Request Outside Access",
+  };
   const canApproveLeadIt = hasPermission(0);
   const canApproveItHod = hasPermission(1);
 
@@ -126,30 +132,6 @@ function RequestDetail() {
       </AuthLayout>
     )
   }
-
-  const statusMap = {
-    0: 'Draft',
-    1: 'Pending by HOD Req',
-    2: 'Rejected by HOD Req',
-    3: 'Pending by Lead IT',
-    4: 'Rejected by Lead IT',
-    5: 'Pending by IT Manager',
-    6: 'Rejected by IT Manager',
-    7: 'Completed',
-    8: 'Returned',
-  };
-
-  const statusColorMap = {
-    0: 'text-gray-500',
-    1: 'text-yellow-500',
-    2: 'text-red-500',
-    3: 'text-yellow-500',
-    4: 'text-red-500',
-    5: 'text-yellow-500',
-    6: 'text-red-500',
-    7: 'text-green-500',
-    8: 'text-gray-500',
-  };
 
   const handleSubmitToHOD = async () => {
     const confirm = await Swal.fire({
@@ -408,7 +390,7 @@ function RequestDetail() {
                         Request Date <span className="text-red-500">*</span>
                       </label>
                       <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
-                         {formatDate(data.created_date, { showTime: true })}
+                        {formatDate(data.created_date)}
                         <IconCalendar size={18} className="text-gray-400" />
                       </div>
                     </div>
@@ -432,6 +414,11 @@ function RequestDetail() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">Category Account <span className="text-red-500">*</span></label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{CATEGORY_ACCOUNT_MAP[data.category_account] || "-"}</div>
+                      </div>
+
                       <div className="space-y-1">
                         <label className="font-semibold text-gray-700 text-sm">Badge ID <span className="text-red-500">*</span></label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.badge_no || "-"}</div>
@@ -482,13 +469,6 @@ function RequestDetail() {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="font-semibold text-gray-700 text-sm">Purpose of Request <span className="text-red-500">*</span></label>
-                      <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
-                        {data.request_reason || "-"}
-                      </div>
-                    </div>
-                  </div>
 
                   {/* 3. REMARKS SECTION */}
                   <div className="space-y-4">
@@ -497,6 +477,14 @@ function RequestDetail() {
                         Remarks
                       </div>
                     </div>
+                    <div className="space-y-1">
+                      <label className="font-semibold text-gray-700 text-sm">Purpose of Request <span className="text-red-500">*</span></label>
+                      <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
+                        {data.request_reason || "-"}
+                      </div>
+                    </div>
+                  </div>
+                  
                     <div className="space-y-1">
                       <label className="font-semibold text-gray-700 text-sm">
                         Additional Remarks (Optional)
@@ -605,9 +593,12 @@ function RequestDetail() {
                           const status = data.request_status;
                           const prev = data.previous_status;
                           const finalStatus = status === 8 ? prev : status;
+
+                          const { label, color } = getRequestStatus(finalStatus);
+
                           return (
-                            <span className={`text-sm font-bold ${statusColorMap[finalStatus] || "text-gray-600"}`}>
-                              {statusMap[finalStatus]}
+                            <span className={`text-sm font-bold text-${color}-500`}>
+                              {label}
                             </span>
                           );
                         })()}
@@ -641,7 +632,7 @@ function RequestDetail() {
               <Tabs.Panel value="log">
                 <HistoryLog
                   logs={logs}
-                  statusMap={statusMap}
+                  getStatus={getRequestStatus}
                   idRequest={data?.id_request}
                 />
               </Tabs.Panel>

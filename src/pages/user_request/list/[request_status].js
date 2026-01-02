@@ -11,7 +11,8 @@ import {
     IconFileText, IconClock, IconUserExclamation, IconUserCog,
     IconCircleCheck, IconRefresh, IconX, IconFileSpreadsheet,
     IconInfoCircle, IconEdit, IconSend, IconTrash, IconCheck, IconUser,
-    IconListDetails, IconListLetters, IconUserPlus, IconUserCheck
+    IconListDetails, IconListLetters, IconUserPlus, IconUserCheck,
+    IconFile
 } from "@tabler/icons-react";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -24,6 +25,7 @@ import { hasPermission } from '@/lib/permissionHelper';
 import AdminStatusCell from '@/data/status/AdminStatusCell';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 import { formatDate } from '@/lib/dateFormat';
+import { getRequestActionPermission } from '@/lib/requestStatus';
 
 
 // Tambahkan import Modal jika belum ada
@@ -144,6 +146,10 @@ export default function RequestListDynamic({ request_status }) {
         return false;
     }, [config?.id, data, user?.id]);
 
+    const canExport = useMemo(() => {
+        return hasPermission(3);
+    }, [user?.permissions]);
+
     const getData = useCallback(async () => {
         if (!config || !user?.token) return;
         const sort_by = sorting[0]?.id || "id_request";
@@ -194,39 +200,90 @@ export default function RequestListDynamic({ request_status }) {
         const selectedRows = table.getSelectedRowModel().rows;
         const ids = selectedRows.map(r => r.original.id_request);
 
-        if (ids.length === 0) return;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            Swal.fire('Error', 'No request selected', 'error');
+            return;
+        }
+
+        // Tentukan judul Swal sesuai action
+        let title = '';
+        if (action === 'approve') title = `Approve ${ids.length} request(s)?`;
+        else if (action === 'reject') title = `Reject ${ids.length} request(s)?`;
+        else if (action === 'submit') title = `Submit ${ids.length} request(s) to HOD?`;
+        else title = `${action} ${ids.length} request(s)?`;
 
         const confirm = await Swal.fire({
-            title: `${action === 'approve' ? 'Approve' : 'Reject'} ${ids.length} requests?`,
-            icon: 'question', showCancelButton: true
+            title,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText:
+                action === 'submit' ? 'Yes, Submit' :
+                    action === 'approve' ? 'Yes, Approve' :
+                        action === 'reject' ? 'Yes, Reject' : 'Yes',
+            cancelButtonText: 'No, cancel'
         });
 
         if (!confirm.isConfirmed) return;
 
-        let remarks = "";
+        let remarks = '';
         if (action === 'reject') {
-            const { value } = await Swal.fire({ title: 'Rejection Reason', input: 'textarea', required: true });
+            const { value } = await Swal.fire({
+                title: 'Rejection Reason',
+                input: 'textarea',
+                inputValidator: value => !value && 'Rejection reason is required',
+                showCancelButton: true
+            });
             if (!value) return;
             remarks = value;
         }
 
+        // Encrypt semua IDs
+        let encryptedIds;
         try {
-            let endpoint = config.id === 1 ? "/requests/hod-approval/bulk" :
+            encryptedIds = ids.map(id => encrypt(String(id)));
+        } catch (err) {
+            Swal.fire('Error', 'Failed to encrypt IDs', 'error');
+            return;
+        }
+
+        // Tentukan endpoint
+        let endpoint = '';
+        if (action === 'submit') endpoint = "/requests/submit-to-hod/bulk";
+        else if (action === 'approve' || action === 'reject')
+            endpoint = config.id === 1 ? "/requests/hod-approval/bulk" :
                 config.id === 3 ? "/requests/lead-it-approval/bulk" :
                     "/requests/it-approval/bulk";
 
-            await axios.put(`${API_URL}${endpoint}`, { ids, action, remarks }, {
+        try {
+            await axios.put(`${API_URL}${endpoint}`, {
+                encryptedIds,
+                action,
+                remarks
+            }, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             Swal.fire('Success', 'Requests processed', 'success');
             setRowSelection({});
             getData();
-        } catch (err) { Swal.fire('Error', 'Failed to process bulk action', 'error'); }
+        } catch (err) {
+            Swal.fire('Error', 'Failed to process bulk action', 'error');
+            console.error(err);
+        }
     };
 
     const handleExportExcel = async () => {
+        if (!canExport) {
+            Swal.fire("Access Denied", "You are not authorized to export this data", "error");
+            return;
+        }
+
         try {
-            Swal.fire({ title: 'Preparing File...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({
+                title: 'Preparing File...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
             const response = await axios.get(`${API_URL}/excel/export-list`, {
                 params: {
                     search: JSON.stringify({ request_status: config.id }),
@@ -235,14 +292,20 @@ export default function RequestListDynamic({ request_status }) {
                 headers: { Authorization: `Bearer ${user.token}` },
                 responseType: 'blob'
             });
+
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `${config.label.replace(/\s+/g, '_')}_Requests.xlsx`);
+            link.setAttribute(
+                'download',
+                `${config.label.replace(/\s+/g, '_')}_Requests.xlsx`
+            );
             document.body.appendChild(link);
             link.click();
             Swal.close();
-        } catch (err) { Swal.fire('Error', 'Export failed', 'error'); }
+        } catch (err) {
+            Swal.fire('Error', 'Export failed', 'error');
+        }
     };
 
     const handleReturn = async (id) => {
@@ -277,7 +340,6 @@ export default function RequestListDynamic({ request_status }) {
 
     const columns = useMemo(() => {
         const cols = [];
-        // Checkbox hanya muncul jika status bukan "Completed" atau "Rejected"
         if (config?.actions.some(a => a.includes('bulk'))) {
             cols.push({
                 id: "select",
@@ -402,14 +464,34 @@ export default function RequestListDynamic({ request_status }) {
                 cell: ({ row }) => (row.original.type === 1 ? 'External' : 'Internal'),
             },
             {
+                accessorFn: row => row.category_account,
+                id: 'category_account',
+                header: 'Category Account',
+                enableColumnFilter: true,
+                enableSorting: true,
+                cell: ({ row }) => {
+                    const CATEGORY_LABELS = {
+                        0: 'Create New Account',
+                        1: 'Request Permission',
+                        2: 'Request Outside Access'
+                    };
+                    return CATEGORY_LABELS[row.original.category_account] || '-';
+                }
+            },
+            {
+                accessorFn: row => row.request_status,
                 id: 'request_status',
                 header: 'Status',
                 enableColumnFilter: false,
                 enableSorting: true,
                 cell: ({ row }) => {
-                    const statusCode = row.original.request_status;
+                    const rawStatus = row.original.request_status;
 
-                    // 2. Mapping Status berdasarkan ID (Gunakan ini agar dinamis di page 'ALL')
+                    const displayStatus =
+                        rawStatus === 8 && row.original.previous_status !== null
+                            ? row.original.previous_status
+                            : rawStatus;
+
                     const statusMap = {
                         0: { label: "Draft", color: "gray" },
                         1: { label: "Awaiting HOD Approval", color: "yellow" },
@@ -422,11 +504,14 @@ export default function RequestListDynamic({ request_status }) {
                         8: { label: "Returned", color: "orange" },
                     };
 
-                    const currentStatus = statusMap[statusCode] || { label: "Unknown", color: "gray" };
+                    const currentStatus = statusMap[displayStatus] || {
+                        label: "Unknown",
+                        color: "gray",
+                    };
 
                     let rejectField = null;
 
-                    if (statusCode === 2) {
+                    if (displayStatus === 2) {
                         rejectField = {
                             by: row.original.approval_hod_by?.full_name,
                             at: row.original.approval_hod_date_at,
@@ -434,7 +519,7 @@ export default function RequestListDynamic({ request_status }) {
                         };
                     }
 
-                    if (statusCode === 4) {
+                    if (displayStatus === 4) {
                         rejectField = {
                             by: row.original.approval_lead_it_by?.full_name,
                             at: row.original.approval_lead_date_at,
@@ -442,7 +527,7 @@ export default function RequestListDynamic({ request_status }) {
                         };
                     }
 
-                    if (statusCode === 6) {
+                    if (displayStatus === 6) {
                         rejectField = {
                             by: row.original.approval_it_hod_by?.full_name,
                             at: row.original.approval_it_date_at,
@@ -452,7 +537,6 @@ export default function RequestListDynamic({ request_status }) {
 
                     return (
                         <div className="flex flex-col items-center justify-center gap-1 w-full">
-                            {/* PAKAI currentStatus.color dan label */}
                             <Badge color={currentStatus.color} variant="light" fullWidth={false}>
                                 {currentStatus.label}
                             </Badge>
@@ -498,65 +582,83 @@ export default function RequestListDynamic({ request_status }) {
         }
 
         cols.push({
-            id: 'actions', header: 'Action',
+            id: 'action',
+            header: 'Action',
             enableColumnFilter: false,
-            enableSorting: false,
+            enableSorting: true,
             cell: ({ row }) => {
-                const encryptedId = encrypt(String(row.original.id_request));
-                const statusCode = row.original.request_status;
+                const request = row.original;
+                const encryptedId = encrypt(String(request.id_request));
 
-                const isEditableStatus = [3, 5, 7]; // status yang dibatasi tombolnya
-                const hasPermissionToEdit = hasPermission(2);
+                const status = request.request_status;
+                const hasItPermission = hasPermission(2);
 
-                const showAllButtons = !isEditableStatus.includes(statusCode) || hasPermissionToEdit;
+                const {
+                    canEditCancel,
+                    canReturn,
+                    showOnlyDetail,
+                } = getRequestActionPermission(status, hasItPermission);
 
                 return (
                     <Group justify="center">
                         <Button.Group>
+
+                            {/* DETAIL (always visible) */}
                             <Button
-                                size="xs"
+                                leftSection={<IconInfoCircle size={16} />}
                                 color="blue"
-                                leftSection={<IconInfoCircle size={14} />}
-                                onClick={() => router.push(`/user_request/detail_req/${encryptedId}`)}
+                                size="xs"
+                                onClick={() =>
+                                    router.push(`/user_request/detail_req/${encryptedId}`)
+                                }
                             >
                                 Details
                             </Button>
 
-                            {config.actions.includes('update') && (
+                            {/* UPDATE */}
+                            {canEditCancel && (
                                 <Button
-                                    size="xs"
+                                    leftSection={<IconEdit size={16} />}
                                     color="yellow"
-                                    leftSection={<IconEdit size={14} />}
-                                    onClick={() => router.push(`/user_request/edit_req/${encryptedId}`)}
+                                    size="xs"
+                                    onClick={() =>
+                                        router.push(`/user_request/edit_req/${encryptedId}`)
+                                    }
                                 >
                                     Update
                                 </Button>
                             )}
 
-                            {config.actions.includes('cancel') && (
+                            {/* CANCEL */}
+                            {canEditCancel && (
                                 <Button
-                                    size="xs"
+                                    leftSection={<IconX size={16} />}
                                     color="red"
-                                    leftSection={<IconX size={14} />}
-                                    onClick={() => handleCancel(row.original.id_request)}
+                                    size="xs"
+                                    onClick={() => handleCancel(request.id_request)}
                                 >
                                     Cancel
                                 </Button>
                             )}
 
-                            <Button
-                                leftSection={<IconRefresh size={16} />}
-                                color="orange"
-                                size="xs"
-                                onClick={() => handleReturn(request.id_request)}
-                            >
-                                Return
-                            </Button>
+                            {/* RETURN */}
+                            {canReturn && (
+                                <Button
+                                    leftSection={<IconRefresh size={16} />}
+                                    color="orange"
+                                    size="xs"
+                                    onClick={() => handleReturn(request.id_request)}
+                                >
+                                    Return
+                                </Button>
+                            )}
+
                         </Button.Group>
                     </Group>
                 );
             }
         });
+
         return cols;
     }, [config, pagination, API_URL, user.token, encrypt, router, rowSelection]);
 
@@ -598,6 +700,17 @@ export default function RequestListDynamic({ request_status }) {
                                 <p className="text-xs text-gray-500">ITF14 - {config?.label}</p>
                             </div>
                         </div>
+
+                        {canExport && (
+                            <Button
+                                color="green"
+                                size="xs"
+                                leftSection={<IconFileSpreadsheet size={16} />}
+                                onClick={handleExportExcel}
+                            >
+                                Export Excel
+                            </Button>
+                        )}
                     </div>
 
                     <Datatables table={table} totalPages={totalPages} />
@@ -647,8 +760,8 @@ export default function RequestListDynamic({ request_status }) {
                         </div>
                     )}
                 </Paper>
-            </div>
-        </AuthLayout>
+            </div >
+        </AuthLayout >
     );
 }
 

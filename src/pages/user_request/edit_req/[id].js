@@ -12,6 +12,7 @@ import useDecrypt from '@/hooks/useDecrypt';
 import useEncrypt from '@/hooks/useEncrypt';
 import Swal from "sweetalert2";
 import { useDebouncedValue } from '@mantine/hooks';
+import { formatDate } from '@/lib/dateFormat';
 
 function EditRequest() {
     const router = useRouter()
@@ -22,7 +23,6 @@ function EditRequest() {
     const { user } = useUser()
     const { encrypt } = useEncrypt();
     const { decrypt } = useDecrypt();
-
     const [formData, setFormData] = useState({
         created_by_name: user?.full_name || user?.name || '-',
         full_name: '',
@@ -38,7 +38,11 @@ function EditRequest() {
         company: '',
         company_name: '',
     })
-
+    const CATEGORY_ACCOUNT_OPTIONS = [
+        { value: '0', label: 'Create New Account' },
+        { value: '1', label: 'Request Permission Access' },
+        { value: '2', label: 'Request Outside Access' },
+    ];
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
     const [loadingSubmit, setLoadingSubmit] = useState(false)
@@ -129,9 +133,14 @@ function EditRequest() {
                         email: data.email || '',
                         request_reason: data.request_reason || '',
                         remarks: data.remarks || '',
-                        approval_hod_by: data.approval_hod_by?.id_user ? String(data.approval_hod_by.id_user) : '',
+                        approval_hod_by: data.approval_hod_by?.id_user
+                            ? String(data.approval_hod_by.id_user)
+                            : '',
+                        approval_hod_date_at: data.approval_hod_date_at || null,
                         approval_lead_it_by_name: data.approval_lead_it_by?.full_name || '-',
+                        approval_lead_date_at: data.approval_lead_date_at || null,
                         approval_it_hod_by_name: data.approval_it_hod_by?.full_name || '-',
+                        approval_it_date_at: data.approval_it_date_at || null,
                         company: data.company?.id_company ? String(data.company.id_company) : '',
                         department: data.dept_id ? String(data.dept_id) : '',
                         project: data.project_id ? String(data.project_id) : '',
@@ -141,7 +150,7 @@ function EditRequest() {
                         position_name: data.position_name ?? data.position ?? '',
                         request_status: data.request_status,
                         company_name: data.company?.company_name || '',
-
+                        category_account: String(data.category_account ?? ''),
                         approval_hod_by: data.approval_hod_by?.id
                             ? String(data.approval_hod_by.id)
                             : '',
@@ -204,6 +213,29 @@ function EditRequest() {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
+        const newErrors = {};
+
+        if (!formData.access_yard_company || formData.access_yard_company.length === 0) {
+            newErrors.access_yard_company = 'Access Yard Company is required';
+        }
+
+        if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
+            newErrors.access_nav_menu = 'Application Access is required';
+        }
+
+        if (!formData.approval_hod_by) {
+            newErrors.approval_hod_by = 'HOD must be selected';
+        }
+
+        if (!formData.category_account) {
+            newErrors.category_account = 'Category account is required';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
         const result = await Swal.fire({
             title: id ? "Are you sure you want to update this data?" : "Are you sure you want to create a new request?",
             icon: "question",
@@ -230,6 +262,7 @@ function EditRequest() {
             dept_id: Number(formData.department),
             design_id: Number(formData.position),
             id_company: Number(formData.company),
+            category_account: formData.category_account !== '' ? Number(formData.category_account) : null,
             access_yard_company: Array.isArray(formData.access_yard_company)
                 ? formData.access_yard_company.join(',')
                 : formData.access_yard_company || '',
@@ -306,9 +339,9 @@ function EditRequest() {
                                     </label>
                                     <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
                                         <span>
-                                            {formData.created_date
-                                                ? formatDateTime(formData.created_date, false)
-                                                : formatDateTime(new Date(), false)}
+                                            {formData.updated_at
+                                                ? formatDate(formData.updated_at)
+                                                : formatDate(new Date())}
                                         </span>
                                         <IconCalendar size={18} className="text-gray-400" />
                                     </div>
@@ -333,6 +366,27 @@ function EditRequest() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                                    {/* CATEGORY ACCOUNT */}
+                                    <Select
+                                        required
+                                        label="Category Account"
+                                        placeholder="Select Category"
+                                        data={CATEGORY_ACCOUNT_OPTIONS}
+                                        value={formData.category_account}
+                                        onChange={(value) => {
+                                            handleChange('category_account', value);
+                                            if (value) {
+                                                setErrors(prev => ({ ...prev, category_account: null }));
+                                            }
+                                        }}
+                                        error={errors.category_account}
+                                        classNames={{
+                                            label: "font-semibold mb-1 text-gray-700",
+                                            input: "h-[40px]"
+                                        }}
+                                    />
+
                                     <Autocomplete
                                         required
                                         label="Badge ID"
@@ -356,7 +410,6 @@ function EditRequest() {
                                         placeholder="Full Name"
                                         value={formData.full_name || ''}
                                         readOnly
-                                        variant="filled"
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
@@ -366,7 +419,6 @@ function EditRequest() {
                                         placeholder="Department"
                                         value={formData.department_name || ''}
                                         readOnly
-                                        variant="filled"
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
@@ -376,7 +428,6 @@ function EditRequest() {
                                         placeholder="Position"
                                         value={formData.position_name || ''}
                                         readOnly
-                                        variant="filled"
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
@@ -386,7 +437,6 @@ function EditRequest() {
                                         placeholder="Project"
                                         value={formData.project_name || ''}
                                         readOnly
-                                        variant="filled"
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
@@ -396,7 +446,6 @@ function EditRequest() {
                                         placeholder="Company"
                                         value={formData.company_name || formData.company?.company_name || ''}
                                         readOnly
-                                        variant="filled"
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
                                     />
 
@@ -408,6 +457,7 @@ function EditRequest() {
                                         value={formData.access_yard_company}
                                         onChange={(val) => handleChange('access_yard_company', val)}
                                         searchable
+                                        error={errors.access_yard_company}
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
                                     />
 
@@ -419,6 +469,7 @@ function EditRequest() {
                                         value={formData.access_nav_menu}
                                         onChange={(val) => handleChange('access_nav_menu', val)}
                                         searchable
+                                        error={errors.access_nav_menu}
                                         classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
                                     />
 
@@ -434,28 +485,29 @@ function EditRequest() {
                                     />
                                 </div>
 
-                                <Textarea
-                                    required
-                                    label="Purpose of Request"
-                                    placeholder="Input Request Purpose"
-                                    value={formData.request_reason}
-                                    onChange={(e) => handleChange('request_reason', e.target.value)}
-                                    minRows={3}
-                                    error={errors.request_reason}
-                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                />
-                            </div>
 
-                            {/* 3. REMARKS SECTION */}
-                            <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                                        Remarks
+                                {/* 3. REMARKS SECTION */}
+                                <div className="space-y-4">
+                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                            Purpose & Remarks
+                                        </div>
                                     </div>
+                                    <Textarea
+                                        required
+                                        label="Purpose of Request"
+                                        placeholder="Explain why you need access..."
+                                        value={formData.request_reason}
+                                        onChange={(e) => handleChange('request_reason', e.target.value)}
+                                        minRows={3}
+                                        error={errors.request_reason}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                    />
                                 </div>
+
                                 <Textarea
                                     label="Additional Remarks (Optional)"
-                                    placeholder="Input Remarks (Optional)"
+                                    placeholder="Input any other information..."
                                     minRows={2}
                                     value={formData.remarks}
                                     onChange={(e) => handleChange('remarks', e.target.value)}
@@ -494,6 +546,7 @@ function EditRequest() {
                                                 label: u.label
                                             }))}
                                             disabled={isReturned}
+                                            error={errors.approval_hod_by}
                                             variant="unstyled"
                                             className="border-b border-gray-200"
                                             classNames={{ input: "text-sm font-bold text-blue-600 h-auto p-0" }}
@@ -507,6 +560,12 @@ function EditRequest() {
                                         <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
                                             {formData.approval_lead_it_by_name || '-'}
                                         </div>
+                                        <div className="text-[10px] text-gray-500 mt-1">
+                                            {console.log('Lead IT date:', formData.approval_lead_date_at)}
+                                            {formData.approval_lead_date_at
+                                                ? formatDate(formData.approval_lead_date_at, { showTime: true })
+                                                : "Pending..."}
+                                        </div>
                                         <span className="text-[10px] text-gray-400 italic mt-1">Lead IT</span>
                                     </div>
 
@@ -515,6 +574,11 @@ function EditRequest() {
                                         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">Approved By</span>
                                         <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
                                             {formData.approval_it_hod_by_name || '-'}
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 mt-1">
+                                            {formData.approval_it_date_at
+                                                ? formatDate(formData.approval_it_date_at, { showTime: true })
+                                                : "Pending..."}
                                         </div>
                                         <span className="text-[10px] text-gray-400 italic mt-1">IT Manager</span>
                                     </div>

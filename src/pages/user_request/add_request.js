@@ -13,13 +13,11 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { formatDate } from '@/lib/dateFormat';
 
 function CreateRequest() {
-
     const router = useRouter()
     const { showAlert } = useSwal()
     const API = useApi();
     const API_URL = API.API_URL;
     const { user } = useUser()
-
     const [formData, setFormData] = React.useState({
         created_by_name: user?.full_name || user?.name || '-',
         full_name: '',
@@ -37,10 +35,10 @@ function CreateRequest() {
         remarks: '',
         company: '',
         company_name: '',
+        category_account: '',
         access_yard_company: [],
         access_nav_menu: [],
     });
-
     const [errors, setErrors] = React.useState({
         full_name: null,
         badge_no: null,
@@ -48,8 +46,8 @@ function CreateRequest() {
         project: null,
         department: null,
         request_reason: null,
+        category_account: null,
     });
-
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
     const [hodOptions, setHodOptions] = useState([]);
@@ -61,7 +59,11 @@ function CreateRequest() {
     const [accessYardOptions, setAccessYardOptions] = useState([]);
     const [navMenuOptions, setNavMenuOptions] = useState([]);
     const [debouncedSearch] = useDebouncedValue(search, 300);
-
+    const CATEGORY_ACCOUNT_OPTIONS = [
+        { value: '0', label: 'Create New Account' },
+        { value: '1', label: 'Request Permission' },
+        { value: '2', label: 'Request Outside Access' },
+    ];
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field]) {
@@ -182,10 +184,27 @@ function CreateRequest() {
             newErrors.approval_hod_by = 'HOD must be selected';
         }
 
+        if (!formData.category_account) {
+            newErrors.category_account = 'Category account is required';
+        }
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
         }
+
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Are you sure?',
+            text: 'Do you want to submit this request?',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit it!',
+            cancelButtonText: 'No, cancel',
+        });
+
+        if (!result.isConfirmed) return;
+
+        setLoadingSubmit(true);
 
         const payload = {
             full_name: formData.full_name,
@@ -205,6 +224,7 @@ function CreateRequest() {
             approval_it_hod_by: formData.approval_it_hod_by,
             access_yard_company: formData.access_yard_company,
             access_nav_menu: formData.access_nav_menu,
+            category_account: Number(formData.category_account),
         };
 
         try {
@@ -215,13 +235,6 @@ function CreateRequest() {
             if (response.status === 200 || response.status === 201) {
                 const newRequest = response.data;
 
-                setFormData(prev => ({
-                    ...prev,
-                    created_by: newRequest.created_by,
-                    created_by_name: newRequest.created_by_name,
-                    created_date: newRequest.created_date,
-                }));
-
                 await Swal.fire({
                     icon: "success",
                     title: "Success!",
@@ -231,7 +244,9 @@ function CreateRequest() {
                 });
 
                 setFormData({
-                    created_by_name: user?.full_name || user?.name || '-',
+                    created_by_name: newRequest.created_by_name || user?.full_name || user?.name || '-',
+                    created_date: newRequest.created_date || new Date(),
+                    created_by: newRequest.created_by || user?.id || '',
                     full_name: '',
                     badge_no: '',
                     email: '',
@@ -247,6 +262,7 @@ function CreateRequest() {
                     remarks: '',
                     company: '',
                     company_name: '',
+                    category_account: null,
                     access_yard_company: [],
                     access_nav_menu: [],
                 });
@@ -312,6 +328,27 @@ function CreateRequest() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                                    {/* CATEGORY ACCOUNT */}
+                                    <Select
+                                        required
+                                        label="Category Account"
+                                        placeholder="Select Category"
+                                        data={CATEGORY_ACCOUNT_OPTIONS}
+                                        value={formData.category_account}
+                                        onChange={(value) => {
+                                            handleChange('category_account', value);
+                                            if (value) {
+                                                setErrors(prev => ({ ...prev, category_account: null }));
+                                            }
+                                        }}
+                                        error={errors.category_account}
+                                        classNames={{
+                                            label: "font-semibold mb-1 text-gray-700",
+                                            input: "h-[40px]"
+                                        }}
+                                    />
+
                                     <Autocomplete
                                         required
                                         label="Badge ID"
@@ -421,33 +458,34 @@ function CreateRequest() {
                                     />
                                 </div>
 
-                                <Textarea
-                                    required
-                                    label="Purpose of Request"
-                                    placeholder="Explain why you need access..."
-                                    value={formData.request_reason}
-                                    onChange={(e) => handleChange('request_reason', e.target.value)}
-                                    minRows={3}
-                                    error={errors.request_reason}
-                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                />
-                            </div>
 
-                            {/* 3. REMARKS SECTION */}
-                            <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                                        Remarks
+                                {/* 3. REMARKS SECTION */}
+                                <div className="space-y-4">
+                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                            Purpose & Remarks
+                                        </div>
                                     </div>
+                                    <Textarea
+                                        required
+                                        label="Purpose of Request"
+                                        placeholder="Explain why you need access..."
+                                        value={formData.request_reason}
+                                        onChange={(e) => handleChange('request_reason', e.target.value)}
+                                        minRows={3}
+                                        error={errors.request_reason}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                    />
+
+                                    <Textarea
+                                        label="Additional Remarks (Optional)"
+                                        placeholder="Input any other information..."
+                                        minRows={2}
+                                        value={formData.remarks}
+                                        onChange={(e) => handleChange('remarks', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                    />
                                 </div>
-                                <Textarea
-                                    label="Additional Remarks (Optional)"
-                                    placeholder="Input any other information..."
-                                    minRows={2}
-                                    value={formData.remarks}
-                                    onChange={(e) => handleChange('remarks', e.target.value)}
-                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                />
                             </div>
 
                             {/* 4. APPROVAL WORKFLOW SECTION */}
