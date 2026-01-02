@@ -8,29 +8,29 @@
 //   });
 // };
 
-export const formatDateTime = (dateString, showTime = true) => {
-  if (!dateString) return "-";
+export function formatDate(
+  value,
+  {
+    showTime = false,
+    locale = "en-GB",
+  } = {}
+) {
+  if (!value) return "-";
 
-  const date = new Date(dateString);
+  const date = new Date(value);
   if (isNaN(date.getTime())) return "-";
 
-  const dateOptions = {
+  const options = {
     day: "2-digit",
     month: "long",
     year: "numeric",
   };
 
-  const timeOptions = {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  };
+  if (showTime) {
+    options.hour = "2-digit";
+    options.minute = "2-digit";
+    options.second = "2-digit";
+  }
 
-  const formattedDate = date.toLocaleDateString("en-GB", dateOptions);
-
-  if (!showTime) return formattedDate;
-
-  const formattedTime = date.toLocaleTimeString("en-GB", timeOptions);
-  return `${formattedDate} at ${formattedTime}`;
-};
-
+  return new Intl.DateTimeFormat(locale, options).format(date);
+}

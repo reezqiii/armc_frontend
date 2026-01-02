@@ -9,8 +9,8 @@ import useUser from '@/store/useUser';
 import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
-import { formatDateTime } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
+import { formatDate } from '@/lib/dateFormat';
 
 function CreateRequest() {
 
@@ -288,7 +288,7 @@ function CreateRequest() {
                                         Request Date <span className="text-red-500">*</span>
                                     </label>
                                     <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
-                                        {formatDateTime(formData.created_date || new Date(), false)}
+                                        {formatDate(formData.created_date || new Date())}
                                         <IconCalendar size={18} className="text-gray-400" />
                                     </div>
                                 </div>

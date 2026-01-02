@@ -9,10 +9,10 @@ import useUser from '@/store/useUser'
 import useDecrypt from '@/hooks/useDecrypt';
 import useApi from '@/hooks/useApi'
 import useEncrypt from '@/hooks/useEncrypt';
-import { formatDateTime } from "@/lib/dateFormat";
 import { hasPermission } from "@/lib/permissionHelper";
 import HistoryLog from "@/components/historyLog";
 import Swal from 'sweetalert2'
+import { formatDate } from '@/lib/dateFormat';
 
 function RequestDetail() {
 
@@ -408,7 +408,7 @@ function RequestDetail() {
                         Request Date <span className="text-red-500">*</span>
                       </label>
                       <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
-                        {formatDateTime(data.created_date || new Date(), false)}
+                         {formatDate(data.created_date, { showTime: true })}
                         <IconCalendar size={18} className="text-gray-400" />
                       </div>
                     </div>
@@ -523,7 +523,7 @@ function RequestDetail() {
                           {data?.created_by_name || '-'}
                         </div>
                         <div className="text-[10px] text-gray-500 mt-1">
-                          {formatDateTime(data?.created_date)}
+                          {formatDate(data?.created_date, { showTime: true })}
                         </div>
                         <span className="text-[10px] text-blue-600 font-semibold italic mt-2 uppercase tracking-tighter">Requestor</span>
                       </div>
@@ -535,7 +535,7 @@ function RequestDetail() {
                           {data.approval_hod_by?.full_name || "-"}
                         </div>
                         <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_hod_date_at ? formatDateTime(data?.approval_hod_date_at) : 'Pending...'}
+                          {data?.approval_hod_date_at ? formatDate(data?.approval_hod_date_at, { showTime: true }) : 'Pending...'}
                         </div>
                         {data.request_status === 1 && (
                           <div className="mt-3 flex gap-1">
@@ -553,7 +553,7 @@ function RequestDetail() {
                           {data.approval_lead_it_by?.full_name || "-"}
                         </div>
                         <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_lead_date_at ? formatDateTime(data?.approval_lead_date_at) : 'Pending...'}
+                          {data?.approval_lead_date_at ? formatDate(data?.approval_lead_date_at, { showTime: true }) : 'Pending...'}
                         </div>
                         {canApproveLeadIt && data.request_status === 3 && (
                           <div className="mt-3 flex gap-1">
@@ -571,7 +571,7 @@ function RequestDetail() {
                           {data.approval_it_hod_by?.full_name || "-"}
                         </div>
                         <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_it_date_at ? formatDateTime(data?.approval_it_date_at) : 'Pending...'}
+                          {data?.approval_it_date_at ? formatDate(data?.approval_it_date_at, { showTime: true }) : 'Pending...'}
                         </div>
                         {canApproveItHod && data.request_status === 5 && (
                           <div className="mt-3 flex gap-1">

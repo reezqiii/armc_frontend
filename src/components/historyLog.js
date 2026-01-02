@@ -1,7 +1,7 @@
 import Datatables from '@/components/custom/Datatables';
 import { Button, Paper, Badge } from '@mantine/core';
 import { useRouter } from 'next/router';
-import { formatDateTime } from "@/lib/dateFormat";
+import { formatDate } from '@/lib/dateFormat';
 import useApi from '@/hooks/useApi';
 import useUser from '@/store/useUser';
 import useEncrypt from '@/hooks/useEncrypt';
@@ -101,7 +101,7 @@ const HistoryLog = ({ logData, idRequest }) => {
       header: "Date",
       enableColumnFilter: true,
       enableSorting: true,
-      cell: ({ row }) => formatDateTime(row.original.date, false),
+      cell: ({ row }) => formatDate(row.original.created_date),
     },
 
   ], []);

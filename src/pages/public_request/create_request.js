@@ -9,8 +9,8 @@ import useUser from '@/store/useUser';
 import useSwal from '@/hooks/useSwal';
 import useApi from '@/hooks/useApi';
 import Swal from "sweetalert2";
-import { formatDateTime } from "@/lib/dateFormat";
 import { useDebouncedValue } from '@mantine/hooks';
+import { formatDate } from '@/lib/dateFormat';
 
 function CreateRequest() {
 
@@ -120,310 +120,310 @@ function CreateRequest() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-            // 1. Validasi Input
-            const newErrors = {};
+        // 1. Validasi Input
+        const newErrors = {};
 
-            if (!formData.access_yard_company || formData.access_yard_company.length === 0) {
-                newErrors.access_yard_company = 'Access Yard Company is required';
-            }
+        if (!formData.access_yard_company || formData.access_yard_company.length === 0) {
+            newErrors.access_yard_company = 'Access Yard Company is required';
+        }
 
-            if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
-                newErrors.access_nav_menu = 'Application Access is required';
-            }
+        if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
+            newErrors.access_nav_menu = 'Application Access is required';
+        }
 
-            if (Object.keys(newErrors).length > 0) {
-                setErrors(newErrors);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
 
-            setErrors({});
-            setLoadingSubmit(true);
+        setErrors({});
+        setLoadingSubmit(true);
 
-            const result = await Swal.fire({
-                title: "Ready to Submit?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, Submit!",
-                cancelButtonText: "Cancel",
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-            });
+        const result = await Swal.fire({
+            title: "Ready to Submit?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Submit!",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+        });
 
-            if (!result.isConfirmed) {
-                setLoadingSubmit(false);
-                return;
-            }
+        if (!result.isConfirmed) {
+            setLoadingSubmit(false);
+            return;
+        }
 
-            const payload = {
-                full_name: formData.full_name,
-                badge_no: formData.badge_no ? Number(formData.badge_no) : null,
-                email: formData.email,
-                request_type: 1,
-                request_reason: formData.request_reason,
-                request_status: 3,
-                remarks: formData.remarks,
-                status_active: 1,
-                project_id: Number(formData.project_id),
-                dept_id: Number(formData.dept_id),
-                design_id: Number(formData.design_id),
-                id_company: Number(formData.company_id),
-                access_yard_company: formData.access_yard_company,
-                access_nav_menu: formData.access_nav_menu,
-            };
+        const payload = {
+            full_name: formData.full_name,
+            badge_no: formData.badge_no ? Number(formData.badge_no) : null,
+            email: formData.email,
+            request_type: 1,
+            request_reason: formData.request_reason,
+            request_status: 3,
+            remarks: formData.remarks,
+            status_active: 1,
+            project_id: Number(formData.project_id),
+            dept_id: Number(formData.dept_id),
+            design_id: Number(formData.design_id),
+            id_company: Number(formData.company_id),
+            access_yard_company: formData.access_yard_company,
+            access_nav_menu: formData.access_nav_menu,
+        };
 
-            try {
-                const response = await axios.post(`${API_URL}/requests/public/create`, payload);
+        try {
+            const response = await axios.post(`${API_URL}/requests/public/create`, payload);
 
-                if (response.status === 200 || response.status === 201) {
-                    const newRequest = response.data;
+            if (response.status === 200 || response.status === 201) {
+                const newRequest = response.data;
 
-                    setFormData(prev => ({
-                        ...prev,
-                        created_date: newRequest.created_date,
-                    }));
+                setFormData(prev => ({
+                    ...prev,
+                    created_date: newRequest.created_date,
+                }));
 
-                    const requestNo = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
+                const requestNo = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
 
-                    const result = await Swal.fire({
-                        icon: "success",
-                        title: "Request Submitted",
-                        html: `
+                const result = await Swal.fire({
+                    icon: "success",
+                    title: "Request Submitted",
+                    html: `
     <p>Your Request Number:</p>
     <b style="font-size:18px">${requestNo}</b>
     <p style="margin-top:8px;font-size:12px">
       Please save this number to track your request status.
     </p>
   `,
-                        confirmButtonText: "Track Request",
-                    });
-
-                    if (result.isConfirmed) {
-                        router.push(`/public_request/track_request?no=${requestNo}`);
-                    }
-                    setFormData({
-                        created_by_name: user?.full_name || user?.name || '-',
-                        full_name: '',
-                        badge_no: '',
-                        email: '',
-                        project_id: null,
-                        dept_id: null,
-                        design_id: null,
-                        company_id: null,
-                        request_reason: '',
-                        remarks: '',
-                        access_yard_company: [],
-                        access_nav_menu: [],
-                    });
-                }
-            } catch (error) {
-                console.error(error.response?.data || error.message);
-                Swal.fire({
-                    icon: "error",
-                    title: "Failed!",
-                    text: "Something went wrong when submitting your request.",
+                    confirmButtonText: "Track Request",
                 });
-            } finally {
-                setLoadingSubmit(false);
+
+                if (result.isConfirmed) {
+                    router.push(`/public_request/track_request?no=${requestNo}`);
+                }
+                setFormData({
+                    created_by_name: user?.full_name || user?.name || '-',
+                    full_name: '',
+                    badge_no: '',
+                    email: '',
+                    project_id: null,
+                    dept_id: null,
+                    design_id: null,
+                    company_id: null,
+                    request_reason: '',
+                    remarks: '',
+                    access_yard_company: [],
+                    access_nav_menu: [],
+                });
             }
-        };
+        } catch (error) {
+            console.error(error.response?.data || error.message);
+            Swal.fire({
+                icon: "error",
+                title: "Failed!",
+                text: "Something went wrong when submitting your request.",
+            });
+        } finally {
+            setLoadingSubmit(false);
+        }
+    };
 
-        return (
-            <div
-                className="min-h-screen py-10 px-4 md:px-10 w-full"
-                style={{
-                    backgroundImage: "url('/images/seatrium_1.jpg')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                }}
-            >
-                <div className="max-w-6xl mx-auto w-full">
-                    <Paper
-                        radius="md"
-                        shadow="xl"
-                        className="bg-white p-0 w-full overflow-hidden border border-gray-200"
-                    >
-                        {/* Header Utama */}
-                        <div className="border-b py-6 text-center bg-white">
-                            <h1 className="text-xl md:text-2xl font-bold text-blue-600 uppercase tracking-tight">
-                                PCMS Access Login Request
-                            </h1>
-                        </div>
+    return (
+        <div
+            className="min-h-screen py-10 px-4 md:px-10 w-full"
+            style={{
+                backgroundImage: "url('/images/seatrium_1.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+            }}
+        >
+            <div className="max-w-6xl mx-auto w-full">
+                <Paper
+                    radius="md"
+                    shadow="xl"
+                    className="bg-white p-0 w-full overflow-hidden border border-gray-200"
+                >
+                    {/* Header Utama */}
+                    <div className="border-b py-6 text-center bg-white">
+                        <h1 className="text-xl md:text-2xl font-bold text-blue-600 uppercase tracking-tight">
+                            PCMS Access Login Request
+                        </h1>
+                    </div>
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="p-6 md:p-10 space-y-10">
+                    <form onSubmit={handleSubmit}>
+                        <div className="p-6 md:p-10 space-y-10">
 
-                                {/* 1. INFORMASI DASAR (Date Only) */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-1">
-                                        <label className="block font-semibold text-gray-700 text-sm">
-                                            Request Date <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
-                                            {formatDateTime(formData.created_date || new Date(), false)}
-                                            <IconCalendar size={18} className="text-gray-400" />
-                                        </div>
+                            {/* 1. INFORMASI DASAR (Date Only) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <label className="block font-semibold text-gray-700 text-sm">
+                                        Request Date <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
+                                        {formatDate(formData.created_date || new Date())}
+                                        <IconCalendar size={18} className="text-gray-400" />
                                     </div>
-                                </div>
-
-                                {/* 2. DESCRIPTION SECTION */}
-                                <div className="space-y-6">
-                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                                            Employee Description
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <TextInput
-                                            required
-                                            label="Badge ID"
-                                            placeholder="Input Badge Number"
-                                            value={formData.badge_no || ''}
-                                            onChange={(e) => handleChange('badge_no', e.target.value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <TextInput
-                                            required
-                                            label="Full Name"
-                                            placeholder="Input Full Name"
-                                            value={formData.full_name || ''}
-                                            onChange={(e) => handleChange('full_name', e.target.value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <Select
-                                            required
-                                            searchable
-                                            label="Department"
-                                            placeholder="Select Department"
-                                            data={deptOptions}
-                                            value={formData.dept_id ?? null}
-                                            onChange={(value) => handleChange("dept_id", value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <Select
-                                            required
-                                            searchable
-                                            label="Position"
-                                            placeholder="Select Position"
-                                            data={positionOptions}
-                                            value={formData.design_id ?? null}
-                                            onChange={(value) => handleChange("design_id", value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <Select
-                                            required
-                                            searchable
-                                            label="Project"
-                                            placeholder="Select Project"
-                                            data={projectOptions}
-                                            value={formData.project_id ?? null}
-                                            onChange={(value) => handleChange("project_id", value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <Select
-                                            required
-                                            searchable
-                                            label="Company"
-                                            placeholder="Select Company"
-                                            data={companyOptions}
-                                            value={formData.company_id ?? null}
-                                            onChange={(value) => handleChange("company_id", value)}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-
-                                        <MultiSelect
-                                            required
-                                            label="Access Yard Company"
-                                            placeholder="Select Yard"
-                                            data={accessYardOptions}
-                                            value={formData.access_yard_company}
-                                            error={errors.access_yard_company}
-                                            onChange={(val) => handleChange('access_yard_company', val)}
-                                            searchable
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
-                                        />
-
-                                        <MultiSelect
-                                            required
-                                            label="Application Access"
-                                            placeholder="Select Access"
-                                            data={navMenuOptions}
-                                            value={formData.access_nav_menu}
-                                            error={errors.access_nav_menu}
-                                            onChange={(val) => handleChange('access_nav_menu', val)}
-                                            searchable
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
-                                        />
-
-                                        <TextInput
-                                            required
-                                            type="email"
-                                            label="Email Address"
-                                            placeholder="example@company.com"
-                                            value={formData.email}
-                                            onChange={(e) => handleChange('email', e.target.value)}
-                                            error={errors.email}
-                                            classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
-                                        />
-                                    </div>
-
-                                    <Textarea
-                                        required
-                                        label="Purpose of Request"
-                                        placeholder="Explain why you need access..."
-                                        value={formData.request_reason}
-                                        onChange={(e) => handleChange('request_reason', e.target.value)}
-                                        minRows={3}
-                                        error={errors.request_reason}
-                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                    />
-                                </div>
-
-                                {/* 3. REMARKS SECTION */}
-                                <div className="space-y-4">
-                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                                            Remarks
-                                        </div>
-                                    </div>
-                                    <Textarea
-                                        label="Additional Remarks (Optional)"
-                                        placeholder="Input any other information..."
-                                        minRows={2}
-                                        value={formData.remarks}
-                                        onChange={(e) => handleChange('remarks', e.target.value)}
-                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                    />
-                                </div>
-
-                                {/* SUBMIT BUTTON */}
-                                <div className="pt-6 border-t border-gray-100">
-                                    <Button
-                                        type="submit"
-                                        color="blue"
-                                        size="sm"
-                                        leftSection={<IconDeviceFloppy size={20} />}
-                                        loading={loadingSubmit}
-                                        disabled={loadingSubmit}
-                                        className="w-full shadow-lg shadow-blue-100"
-                                    >
-                                        Submit Request
-                                    </Button>
                                 </div>
                             </div>
-                        </form>
-                    </Paper>
-                </div>
-            </div>
-        );
-    }
 
-    CreateRequest.title = "IT Request";
-    export default CreateRequest;
+                            {/* 2. DESCRIPTION SECTION */}
+                            <div className="space-y-6">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Employee Description
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <TextInput
+                                        required
+                                        label="Badge ID"
+                                        placeholder="Input Badge Number"
+                                        value={formData.badge_no || ''}
+                                        onChange={(e) => handleChange('badge_no', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Full Name"
+                                        placeholder="Input Full Name"
+                                        value={formData.full_name || ''}
+                                        onChange={(e) => handleChange('full_name', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Department"
+                                        placeholder="Select Department"
+                                        data={deptOptions}
+                                        value={formData.dept_id ?? null}
+                                        onChange={(value) => handleChange("dept_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Position"
+                                        placeholder="Select Position"
+                                        data={positionOptions}
+                                        value={formData.design_id ?? null}
+                                        onChange={(value) => handleChange("design_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Project"
+                                        placeholder="Select Project"
+                                        data={projectOptions}
+                                        value={formData.project_id ?? null}
+                                        onChange={(value) => handleChange("project_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Company"
+                                        placeholder="Select Company"
+                                        data={companyOptions}
+                                        value={formData.company_id ?? null}
+                                        onChange={(value) => handleChange("company_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Access Yard Company"
+                                        placeholder="Select Yard"
+                                        data={accessYardOptions}
+                                        value={formData.access_yard_company}
+                                        error={errors.access_yard_company}
+                                        onChange={(val) => handleChange('access_yard_company', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Application Access"
+                                        placeholder="Select Access"
+                                        data={navMenuOptions}
+                                        value={formData.access_nav_menu}
+                                        error={errors.access_nav_menu}
+                                        onChange={(val) => handleChange('access_nav_menu', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        type="email"
+                                        label="Email Address"
+                                        placeholder="example@company.com"
+                                        value={formData.email}
+                                        onChange={(e) => handleChange('email', e.target.value)}
+                                        error={errors.email}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+                                </div>
+
+                                <Textarea
+                                    required
+                                    label="Purpose of Request"
+                                    placeholder="Explain why you need access..."
+                                    value={formData.request_reason}
+                                    onChange={(e) => handleChange('request_reason', e.target.value)}
+                                    minRows={3}
+                                    error={errors.request_reason}
+                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                />
+                            </div>
+
+                            {/* 3. REMARKS SECTION */}
+                            <div className="space-y-4">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Remarks
+                                    </div>
+                                </div>
+                                <Textarea
+                                    label="Additional Remarks (Optional)"
+                                    placeholder="Input any other information..."
+                                    minRows={2}
+                                    value={formData.remarks}
+                                    onChange={(e) => handleChange('remarks', e.target.value)}
+                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                />
+                            </div>
+
+                            {/* SUBMIT BUTTON */}
+                            <div className="pt-6 border-t border-gray-100">
+                                <Button
+                                    type="submit"
+                                    color="blue"
+                                    size="sm"
+                                    leftSection={<IconDeviceFloppy size={20} />}
+                                    loading={loadingSubmit}
+                                    disabled={loadingSubmit}
+                                    className="w-full shadow-lg shadow-blue-100"
+                                >
+                                    Submit Request
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Paper>
+            </div>
+        </div>
+    );
+}
+
+CreateRequest.title = "IT Request";
+export default CreateRequest;

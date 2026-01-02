@@ -1,6 +1,8 @@
 import { Modal, Timeline, Text, Badge, Group } from "@mantine/core";
 
 export default function RejectTimelineModal({ opened, onClose, data }) {
+    if (!data) return null; 
+
 
     const rejectTitle = data.status || "Rejected";
 

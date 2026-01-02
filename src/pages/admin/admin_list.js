@@ -8,7 +8,7 @@ import { IconInfoCircle, IconEdit, IconX, IconFileSpreadsheet, IconClipboardList
 import axios from 'axios';
 import Swal from "sweetalert2";
 import { useRouter } from 'next/router';
-import { formatDateTime } from "@/lib/dateFormat";
+import { formatDate } from '@/lib/dateFormat';
 import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
@@ -185,7 +185,7 @@ export default function AdminList() {
             header: 'Request Date',
             enableColumnFilter: true,
             enableSorting: true,
-            cell: ({ row }) => formatDateTime(row.original.created_date),
+            cell: ({ row }) => formatDate(row.original.created_date),
         },
         {
             accessorFn: row => row.requestor_name,

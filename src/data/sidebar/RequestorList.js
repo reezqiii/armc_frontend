@@ -26,7 +26,7 @@ const requestorList = [
     child: [
       {
         title: "User Request List",
-        href: "/user_request/requestor_list",
+        href: "/user_request/list/all",
         active: "User Request List",
         icon: <IconListLetters size={18} />,
       },
@@ -38,37 +38,37 @@ const requestorList = [
       },
       {
         title: "Return Request",
-        href: "/user_request/return_request",
+        href: "/user_request/list/returned",  
         active: "Return Request",
         icon: <IconRefresh size={18} />,
       },
       {
         title: "Draft",
-        href: "/user_request/draft_request",
+        href: "/user_request/list/draft", 
         active: "Draft",
         icon: <IconFileText size={18} />,
       },
       {
         title: "Pending HOD Request",
-        href: "/user_request/hod_pending",
+        href: "/user_request/list/awaiting-hod-approval", 
         active: "Pending HOD Request",
         icon: <IconUserCheck size={18} />,
       },
       {
         title: "Pending Lead IT Request",
-        href: "/user_request/lead_it_pending",
+        href: "/user_request/list/awaiting-lead-it-approval", 
         active: "Pending Lead IT Request",
         icon: <IconUserExclamation size={18} />,
       },
       {
         title: "Pending IT Manager",
-        href: "/user_request/it_hod_pending",
+        href: "/user_request/list/awaiting-it-manager-approval", 
         active: "Pending IT Manager",
         icon: <IconUserCog size={18} />,
       },
       {
         title: "Completed",
-        href: "/user_request/completed_request",
+        href: "/user_request/list/completed",  
         active: "Completed",
         icon: <IconCircleCheck size={18} />,
       },

@@ -10,7 +10,6 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import useEncrypt from "@/hooks/useEncrypt";
 import { useRouter } from 'next/router';
-import { formatDateTime } from "@/lib/dateFormat";
 import { hasPermission } from "@/lib/permissionHelper";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -178,7 +177,6 @@ function RequestUserList() {
             });
         }
     };
-
 
     const columns = useMemo(() => [
         {

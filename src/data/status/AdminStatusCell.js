@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/permissionHelper";
 import { Badge, Select, Center } from "@mantine/core";
 import axios from "axios";
 import { useState } from "react";
@@ -14,17 +15,17 @@ export default function AdminStatusCell({
   API_URL,
   token,
   setData,
-  permissions,
 }) {
   const [value, setValue] = useState(initialValue ?? 0);
   const [loading, setLoading] = useState(false);
+
+  // PERMISSION IT ACTION (index 3)
+  const canEdit = hasPermission(2);
 
   const status = STATUS_MAP[value] || {
     label: "Unknown",
     color: "dark",
   };
-
-  const canEdit = permissions?.itAction?.length > 0;
 
   const handleChange = async (newValue) => {
     setValue(newValue);
@@ -52,6 +53,7 @@ export default function AdminStatusCell({
     }
   };
 
+  // TIDAK PUNYA PERMISSION → TEXT SAJA
   if (!canEdit) {
     return (
       <Center>
@@ -62,6 +64,7 @@ export default function AdminStatusCell({
     );
   }
 
+  // PUNYA PERMISSION → DROPDOWN
   return (
     <Select
       size="xs"

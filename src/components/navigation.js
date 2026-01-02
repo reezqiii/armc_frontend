@@ -34,7 +34,7 @@ const navigation = [
 
   {
     name: "User Request",
-    url: "/user_request/requestor_list",
+    url: "/user_request/list/all",
     icon: <IconUser size={20} />,
     permission: 1,
   },
