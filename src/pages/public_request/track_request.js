@@ -12,6 +12,7 @@ import {
 import { IconSearch, IconCheck, IconX } from "@tabler/icons-react";
 import axios from "axios";
 import useApi from "@/hooks/useApi";
+import { getRequestStatus } from "@/lib/requestStatusList";
 
 export default function TrackRequest() {
     const router = useRouter();
@@ -22,6 +23,11 @@ export default function TrackRequest() {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
     const [error, setError] = useState("");
+    const CATEGORY_ACCOUNT_OPTIONS = [
+        { value: '0', label: 'Create New Account' },
+        { value: '1', label: 'Request Permission' },
+        { value: '2', label: 'Request Outside Access' },
+    ];
 
     useEffect(() => {
         if (router.query.no) {
@@ -81,7 +87,7 @@ export default function TrackRequest() {
 
                     <div className="flex gap-2">
                         <TextInput
-                            placeholder="ITF14-000324"
+                            placeholder="Request Number (e.g., ITF14-0001)"
                             value={requestNo}
                             onChange={(e) => setRequestNo(e.target.value)}
                             className="flex-1"
@@ -118,17 +124,27 @@ export default function TrackRequest() {
 
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
-                                    <span className="text-gray-500">Request No</span>
-                                    <p className="font-medium">{requestNo}</p>
+                                    <span className="text-gray-500">Status</span>
+                                    <div>
+                                        {(() => {
+                                            const status = getRequestStatus(data.request_status);
+                                            return <Badge color={status.color}>{status.label}</Badge>;
+                                        })()}
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <span className="text-gray-500">Status</span>
-                                    <div>
-                                        <Badge color="yellow">
-                                            {data.request_status?.name}
-                                        </Badge>
-                                    </div>
+                                    <span className="text-gray-500">Category Account</span>
+                                    <p className="font-medium">
+                                        {data.category_account !== null
+                                            ? CATEGORY_ACCOUNT_OPTIONS.find(opt => String(opt.value) === String(data.category_account))?.label
+                                            : '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <span className="text-gray-500">Request No</span>
+                                    <p>{requestNo}</p>
                                 </div>
 
                                 <div>
@@ -172,7 +188,7 @@ export default function TrackRequest() {
                     </>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 

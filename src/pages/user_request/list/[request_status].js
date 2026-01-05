@@ -10,26 +10,17 @@ import { Paper, Badge, Button, Group, Text, Checkbox } from "@mantine/core";
 import {
     IconFileText, IconClock, IconUserExclamation, IconUserCog,
     IconCircleCheck, IconRefresh, IconX, IconFileSpreadsheet,
-    IconInfoCircle, IconEdit, IconSend, IconTrash, IconCheck, IconUser,
-    IconListDetails, IconListLetters, IconUserPlus, IconUserCheck,
-    IconFile
-} from "@tabler/icons-react";
+    IconInfoCircle, IconEdit, IconSend, IconCheck,
+    IconListLetters } from "@tabler/icons-react";
 import axios from "axios";
 import Swal from "sweetalert2";
-import {
-    useReactTable,
-    getCoreRowModel,
-    getFilteredRowModel
-} from "@tanstack/react-table"; // Impor helper Anda
+import { useReactTable, getCoreRowModel, getFilteredRowModel } from "@tanstack/react-table";
 import { hasPermission } from '@/lib/permissionHelper';
 import AdminStatusCell from '@/data/status/AdminStatusCell';
 import RejectTimelineModal from '@/components/request/RejectTimelineModal';
 import { formatDate } from '@/lib/dateFormat';
 import { getRequestActionPermission } from '@/lib/requestStatus';
 
-
-// Tambahkan import Modal jika belum ada
-// import RejectTimelineModal from '@/components/custom/RejectTimelineModal';
 
 // --- CONFIGURATION ---
 const STATUS_CONFIG = {
@@ -149,32 +140,6 @@ export default function RequestListDynamic({ request_status }) {
     const canExport = useMemo(() => {
         return hasPermission(3);
     }, [user?.permissions]);
-
-    const getData = useCallback(async () => {
-        if (!config || !user?.token) return;
-        const sort_by = sorting[0]?.id || "id_request";
-        const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
-
-        const filterObj = Object.fromEntries(columnFilters.map(f => [f.id, f.value]));
-        const searchPayload = {
-            ...(config.id !== null && { request_status: config.id }),
-            status_active: 1,
-            // Jika bukan Admin/IT (index 2), filter hanya data milik sendiri
-            ...(config.id === 0 && { requestor_id: user.id }),
-            ...filterObj
-        };
-
-        try {
-            const res = await axios.post(
-                `${API_URL}/requests/serverside_list?search=${encodeURIComponent(JSON.stringify(searchPayload))}&sort_by=${sort_by}&sort_order=${sort_order}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
-                {}, { headers: { Authorization: `Bearer ${user.token}` } }
-            );
-            setData(res.data.data);
-            setTotalPages(res.data.total_pages);
-        } catch (err) { console.error("API Error:", err); }
-    }, [config, pagination, sorting, columnFilters, user, API_URL, canApprove]);
-
-    useEffect(() => { getData(); }, [getData, request_status]);
 
     const handleCancel = async (id) => {
         const result = await Swal.fire({
@@ -670,13 +635,10 @@ export default function RequestListDynamic({ request_status }) {
             columnFilters,
             sorting,
             pagination,
-            rowSelection,
         },
         onColumnFiltersChange: setColumnFilters,
         onSortingChange: setSorting,
         onPaginationChange: setPagination,
-        onRowSelectionChange: setRowSelection,
-        enableRowSelection: true,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         manualSorting: true,
@@ -684,20 +646,79 @@ export default function RequestListDynamic({ request_status }) {
         manualPagination: true,
     });
 
-    if (!config) return <div className="p-10 text-center">Status Not Found</div>;
+    const getData = useCallback(async () => {
+        if (!config || !user?.token) return;
+
+        const searchQuery = {
+            status_active: 1,
+            ...(config.id !== null && { request_status: config.id }),
+            ...(config.id === 0 && { requestor_id: user.id }),
+        };
+
+        columnFilters.forEach(filter => {
+            if (filter.value !== null && filter.value !== "") {
+                searchQuery[filter.id] = filter.value;
+            }
+        });
+
+        const filterParams =
+            Object.keys(searchQuery).length > 0
+                ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+                : "";
+
+        const sort =
+            sorting.length > 0
+                ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+                : "";
+
+        try {
+            const { data } = await axios.post(
+                `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+                {},
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+
+            setData(data.data);
+            setTotalPages(data.total_pages);
+        } catch (err) {
+            console.error("Error fetching data:", err);
+        }
+    }, [API_URL, columnFilters, pagination.pageIndex, pagination.pageSize, sorting, user.token, canApprove]);
+
+    useEffect(() => {
+        getData();
+    }, [getData, request_status]);
+
+    if (!config) {
+        return (
+            <AuthLayout sidebarList={requestorList}>
+                <div className="p-10 text-center text-red-500 font-semibold">
+                    Status Not Found
+                </div>
+            </AuthLayout>
+        );
+    }
+
+    const hasSelectedRows = Object.keys(rowSelection).length > 0;
 
     return (
         <AuthLayout sidebarList={requestorList}>
             <div className="py-6 px-4">
                 <Paper radius="md" p="md" withBorder shadow="sm">
+
+                    {/* HEADER */}
                     <div className="flex items-center justify-between border-b pb-4 mb-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                                {config && <config.icon size={22} />}
+                                <config.icon size={22} />
                             </div>
                             <div>
-                                <h1 className="text-md font-extrabold text-blue-600 uppercase">{config?.label} List</h1>
-                                <p className="text-xs text-gray-500">ITF14 - {config?.label}</p>
+                                <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                                    {config.label} List
+                                </h1>
+                                <p className="text-xs text-gray-500">
+                                    ITF14 - {config.label}
+                                </p>
                             </div>
                         </div>
 
@@ -713,24 +734,31 @@ export default function RequestListDynamic({ request_status }) {
                         )}
                     </div>
 
+                    {/* TABLE */}
                     <Datatables table={table} totalPages={totalPages} />
 
+                    {/* MODAL */}
                     <RejectTimelineModal
                         opened={modalOpen}
                         onClose={() => setModalOpen(false)}
                         data={selectedRejectData}
                     />
 
-                    {Object.keys(rowSelection).length > 0 && (
+                    {/* BULK ACTION */}
+                    {hasSelectedRows && (
                         <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
-                            <Text size="sm" fw={600}>Selected {Object.keys(rowSelection).length} items</Text>
+                            <Text size="sm" fw={600}>
+                                Selected {Object.keys(rowSelection).length} items
+                            </Text>
+
                             <Group>
-                                {/* Tombol Submit Bulk (Hanya untuk Page Draft ID 0) */}
                                 {config.id === 0 && (
-                                    <Button color="green"
+                                    <Button
+                                        color="green"
                                         size="xs"
                                         leftSection={<IconSend size={16} />}
-                                        onClick={() => handleBulkProcess('submit')}>
+                                        onClick={() => handleBulkProcess('submit')}
+                                    >
                                         Submit to HOD Request
                                     </Button>
                                 )}
@@ -760,8 +788,8 @@ export default function RequestListDynamic({ request_status }) {
                         </div>
                     )}
                 </Paper>
-            </div >
-        </AuthLayout >
+            </div>
+        </AuthLayout>
     );
 }
 

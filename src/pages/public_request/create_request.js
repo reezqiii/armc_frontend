@@ -19,7 +19,6 @@ function CreateRequest() {
     const API = useApi();
     const API_URL = API.API_URL;
     const { user } = useUser()
-
     const [formData, setFormData] = React.useState({
         full_name: '',
         badge_no: '',
@@ -30,10 +29,10 @@ function CreateRequest() {
         company_id: '',
         request_reason: '',
         remarks: '',
+        category_account: '',
         access_yard_company: [],
         access_nav_menu: [],
     });
-
     const [errors, setErrors] = React.useState({
         full_name: null,
         badge_no: null,
@@ -41,8 +40,8 @@ function CreateRequest() {
         project: null,
         department: null,
         request_reason: null,
+        category_account: null,
     });
-
     const [loading, setLoading] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
     const [search, setSearch] = useState('');
@@ -53,7 +52,11 @@ function CreateRequest() {
     const [positionOptions, setPositionOptions] = useState([]);
     const [projectOptions, setProjectOptions] = useState([]);
     const [companyOptions, setCompanyOptions] = useState([]);
-
+    const CATEGORY_ACCOUNT_OPTIONS = [
+        { value: '0', label: 'Create New Account' },
+        { value: '1', label: 'Request Permission' },
+        { value: '2', label: 'Request Outside Access' },
+    ];
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field]) {
@@ -131,6 +134,10 @@ function CreateRequest() {
             newErrors.access_nav_menu = 'Application Access is required';
         }
 
+        if (!formData.category_account) {
+            newErrors.category_account = 'Category account is required';
+        }
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -170,6 +177,7 @@ function CreateRequest() {
             id_company: Number(formData.company_id),
             access_yard_company: formData.access_yard_company,
             access_nav_menu: formData.access_nav_menu,
+            category_account: formData.category_account,
         };
 
         try {
@@ -210,6 +218,7 @@ function CreateRequest() {
                     dept_id: null,
                     design_id: null,
                     company_id: null,
+                    category_account: null,
                     request_reason: '',
                     remarks: '',
                     access_yard_company: [],
@@ -276,6 +285,17 @@ function CreateRequest() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <Select
+                                        required
+                                        label="Category Account"
+                                        placeholder="Select Category Account"
+                                        value={formData.category_account || ''}
+                                        error={errors.category_account}
+                                        data={CATEGORY_ACCOUNT_OPTIONS}
+                                         onChange={(value) => handleChange('category_account', value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
                                     <TextInput
                                         required
                                         label="Badge ID"
@@ -374,33 +394,35 @@ function CreateRequest() {
                                     />
                                 </div>
 
-                                <Textarea
-                                    required
-                                    label="Purpose of Request"
-                                    placeholder="Explain why you need access..."
-                                    value={formData.request_reason}
-                                    onChange={(e) => handleChange('request_reason', e.target.value)}
-                                    minRows={3}
-                                    error={errors.request_reason}
-                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                />
-                            </div>
 
-                            {/* 3. REMARKS SECTION */}
-                            <div className="space-y-4">
-                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                                        Remarks
+                                {/* 3. REMARKS SECTION */}
+                                <div className="space-y-4">
+                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                            Remarks
+                                        </div>
                                     </div>
+                                    <div className="space-y-1">
+                                        <Textarea
+                                            required
+                                            label="Purpose of Request"
+                                            placeholder="Explain why you need access..."
+                                            value={formData.request_reason}
+                                            onChange={(e) => handleChange('request_reason', e.target.value)}
+                                            minRows={3}
+                                            error={errors.request_reason}
+                                            classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                        />
+                                    </div>
+                                    <Textarea
+                                        label="Additional Remarks (Optional)"
+                                        placeholder="Input any other information..."
+                                        minRows={2}
+                                        value={formData.remarks}
+                                        onChange={(e) => handleChange('remarks', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                    />
                                 </div>
-                                <Textarea
-                                    label="Additional Remarks (Optional)"
-                                    placeholder="Input any other information..."
-                                    minRows={2}
-                                    value={formData.remarks}
-                                    onChange={(e) => handleChange('remarks', e.target.value)}
-                                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                                />
                             </div>
 
                             {/* SUBMIT BUTTON */}
@@ -425,5 +447,5 @@ function CreateRequest() {
     );
 }
 
-CreateRequest.title = "IT Request";
+CreateRequest.title = "IT Form Request";
 export default CreateRequest;
