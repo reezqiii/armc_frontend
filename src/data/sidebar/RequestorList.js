@@ -61,7 +61,7 @@ const requestorList = [
         icon: <IconUserExclamation size={18} />,
       },
       {
-        title: "Pending IT Manager",
+        title: "Pending IT Mgr / Asst. IT Mgr",
         href: "/user_request/list/awaiting-it-manager-approval", 
         active: "Pending IT Manager",
         icon: <IconUserCog size={18} />,

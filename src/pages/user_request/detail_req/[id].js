@@ -1,38 +1,44 @@
-import AuthLayout from '@/components/layout/authLayout'
-import requestorList from '@/data/sidebar/RequestorList';
-import { Button, Paper, Textarea, Loader, Tabs, Table } from '@mantine/core'
-import { IconArrowLeft, IconCalendar, IconSend, IconArrowUpRight } from '@tabler/icons-react'
-import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
-import useUser from '@/store/useUser'
-import useDecrypt from '@/hooks/useDecrypt';
-import useApi from '@/hooks/useApi'
-import useEncrypt from '@/hooks/useEncrypt';
+import AuthLayout from "@/components/layout/authLayout";
+import requestorList from "@/data/sidebar/RequestorList";
+import { Button, Paper, Textarea, Loader, Tabs, Table } from "@mantine/core";
+import {
+  IconArrowLeft,
+  IconCalendar,
+  IconSend,
+  IconArrowUpRight,
+  IconX,
+  IconCheck,
+} from "@tabler/icons-react";
+import { useRouter } from "next/router";
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import useUser from "@/store/useUser";
+import useDecrypt from "@/hooks/useDecrypt";
+import useApi from "@/hooks/useApi";
+import useEncrypt from "@/hooks/useEncrypt";
 import { hasPermission } from "@/lib/permissionHelper";
 import HistoryLog from "@/components/historyLog";
-import Swal from 'sweetalert2'
-import { formatDate } from '@/lib/dateFormat';
-import { getRequestStatus } from '@/lib/requestStatusList';
+import Swal from "sweetalert2";
+import { formatDate } from "@/lib/dateFormat";
+import { getRequestStatus } from "@/lib/requestStatusList";
 
 function RequestDetail() {
-
-  const router = useRouter()
-  const { id } = router.query
-  const API = useApi()
-  const API_URL = API.API_URL
-  const { user } = useUser()
+  const router = useRouter();
+  const { id } = router.query;
+  const API = useApi();
+  const API_URL = API.API_URL;
+  const { user } = useUser();
   const { encrypt } = useEncrypt();
   const { decrypt } = useDecrypt();
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [hodName, setHodName] = useState('');
-  const [itManagerName, setItManagerName] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hodName, setHodName] = useState("");
+  const [itManagerName, setItManagerName] = useState("");
   const [isHod, setIsHod] = useState(false);
   const [logs, setLogs] = useState([]);
   const [loadingLog, setLoadingLog] = useState(false);
-  const [leadItName, setLeadItName] = useState('');
+  const [leadItName, setLeadItName] = useState("");
   const CATEGORY_ACCOUNT_MAP = {
     0: "Create New Account",
     1: "Request Permission",
@@ -52,7 +58,9 @@ function RequestDetail() {
 
     const userId = String(user.id ?? "");
     // const hodId = String(data.approval_hod_by ?? "");
-    setHodName(data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-");
+    setHodName(
+      data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-"
+    );
     setLeadItName(data.approval_lead_it_by_name ?? "-");
     setItManagerName(data.approval_it_hod_by_name ?? "-");
   }, [data, user]);
@@ -61,7 +69,7 @@ function RequestDetail() {
     if (data?.id_request && user?.token) {
       fetchLogs();
     }
-  }, [data?.id_request, user?.token])
+  }, [data?.id_request, user?.token]);
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -73,13 +81,12 @@ function RequestDetail() {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
-      setData(prev => {
+      setData((prev) => {
         if (JSON.stringify(prev) === JSON.stringify(res.data)) {
           return prev;
         }
         return res.data;
       });
-
     } catch (err) {
       console.error("Failed to fetch detail:", err);
     } finally {
@@ -101,13 +108,14 @@ function RequestDetail() {
       const size = 50;
 
       const res = await axios.post(
-        `${API_URL}/log_portal/serverside_list?search=${encodeURIComponent(JSON.stringify(searchObj))}&sort_by=${sort_by}&sort_order=${sort_order}&page=${page}&size=${size}`,
+        `${API_URL}/log_portal/serverside_list?search=${encodeURIComponent(
+          JSON.stringify(searchObj)
+        )}&sort_by=${sort_by}&sort_order=${sort_order}&page=${page}&size=${size}`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       setLogs(res.data?.data ?? res.data ?? []);
-
     } catch (err) {
       console.error("Failed to fetch log:", err);
     } finally {
@@ -122,7 +130,7 @@ function RequestDetail() {
           <Loader />
         </div>
       </AuthLayout>
-    )
+    );
   }
 
   if (!data) {
@@ -130,16 +138,16 @@ function RequestDetail() {
       <AuthLayout sidebarList={requestorList}>
         <div className="text-center py-10">No data found</div>
       </AuthLayout>
-    )
+    );
   }
 
   const handleSubmitToHOD = async () => {
     const confirm = await Swal.fire({
       title: `Submit this request to HOD?`,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
-      confirmButtonText: 'Yes, submit',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Yes, submit",
+      cancelButtonText: "Cancel",
     });
 
     if (!confirm.isConfirmed) return;
@@ -152,8 +160,8 @@ function RequestDetail() {
       );
 
       Swal.fire({
-        icon: 'success',
-        title: 'Success',
+        icon: "success",
+        title: "Success",
         text: `Request submitted to HOD.`,
         timer: 1500,
         showConfirmButton: false,
@@ -162,9 +170,9 @@ function RequestDetail() {
       fetchData();
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to submit request.',
+        icon: "error",
+        title: "Error",
+        text: "Failed to submit request.",
       });
     }
   };
@@ -172,25 +180,29 @@ function RequestDetail() {
   const handleHodAction = async (action) => {
     const confirm = await Swal.fire({
       title: `Are you sure you want to approve this request?`,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
       confirmButtonText: `Yes, ${action}`,
-    })
-    if (!confirm.isConfirmed) return
+    });
+    if (!confirm.isConfirmed) return;
 
-    let remarks = ''
-    if (action === 'reject') {
+    let remarks = "";
+    if (action === "reject") {
       const { value: inputRemarks } = await Swal.fire({
-        title: 'Reason for Rejection',
-        input: 'textarea',
-        inputPlaceholder: 'Enter your reason...',
+        title: "Reason for Rejection",
+        input: "textarea",
+        inputPlaceholder: "Enter your reason...",
         showCancelButton: true,
-      })
+      });
       if (!inputRemarks) {
-        Swal.fire('Cancelled', 'You must provide a reason for rejection.', 'info')
-        return
+        Swal.fire(
+          "Cancelled",
+          "You must provide a reason for rejection.",
+          "info"
+        );
+        return;
       }
-      remarks = inputRemarks
+      remarks = inputRemarks;
     }
 
     try {
@@ -203,8 +215,8 @@ function RequestDetail() {
       );
 
       Swal.fire({
-        icon: 'success',
-        title: 'Success!',
+        icon: "success",
+        title: "Success!",
         text: `Request has been ${action}ed.`,
         timer: 1500,
         showConfirmButton: false,
@@ -212,8 +224,12 @@ function RequestDetail() {
 
       fetchData();
     } catch (err) {
-      console.error('Error updating status:', err);
-      Swal.fire('Error', 'Failed to update request. Please try again.', 'error');
+      console.error("Error updating status:", err);
+      Swal.fire(
+        "Error",
+        "Failed to update request. Please try again.",
+        "error"
+      );
     }
   };
 
@@ -237,7 +253,11 @@ function RequestDetail() {
       });
 
       if (!inputRemarks) {
-        Swal.fire("Cancelled", "You must provide a reason for rejection.", "info");
+        Swal.fire(
+          "Cancelled",
+          "You must provide a reason for rejection.",
+          "info"
+        );
         return;
       }
       remarks = inputRemarks;
@@ -263,7 +283,11 @@ function RequestDetail() {
       fetchData();
     } catch (err) {
       console.error("Error updating status:", err);
-      Swal.fire("Error", "Failed to update request. Please try again.", "error");
+      Swal.fire(
+        "Error",
+        "Failed to update request. Please try again.",
+        "error"
+      );
     }
   };
 
@@ -287,7 +311,11 @@ function RequestDetail() {
       });
 
       if (!inputRemarks) {
-        Swal.fire("Cancelled", "You must provide a reason for rejection.", "info");
+        Swal.fire(
+          "Cancelled",
+          "You must provide a reason for rejection.",
+          "info"
+        );
         return;
       }
       remarks = inputRemarks;
@@ -313,17 +341,21 @@ function RequestDetail() {
       fetchData();
     } catch (err) {
       console.error("Error updating status:", err);
-      Swal.fire("Error", "Failed to update request. Please try again.", "error");
+      Swal.fire(
+        "Error",
+        "Failed to update request. Please try again.",
+        "error"
+      );
     }
   };
 
   const handleSubmitReturn = async () => {
     const confirm = await Swal.fire({
       title: `Submit this returned request back to previous step?`,
-      icon: 'question',
+      icon: "question",
       showCancelButton: true,
-      confirmButtonText: 'Yes, submit',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Yes, submit",
+      cancelButtonText: "Cancel",
     });
 
     if (!confirm.isConfirmed) return;
@@ -336,9 +368,9 @@ function RequestDetail() {
       );
 
       Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: 'Request has been submitted back to its previous step.',
+        icon: "success",
+        title: "Success",
+        text: "Request has been submitted back to its previous step.",
         timer: 1500,
         showConfirmButton: false,
       });
@@ -346,9 +378,9 @@ function RequestDetail() {
       fetchData();
     } catch (err) {
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to submit returned request.',
+        icon: "error",
+        title: "Error",
+        text: "Failed to submit returned request.",
       });
     }
   };
@@ -364,12 +396,18 @@ function RequestDetail() {
           {/* Header Utama */}
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-tight">
-              PCMS Access Login Request
+              PCMS Access Login Request Form
+              {data?.id_request &&
+                ` ITF14-${String(data.id_request).padStart(6, "0")}`}
             </h1>
           </div>
 
           <div className="p-6 md:p-10">
-            <Tabs defaultValue="detail" variant="outline" classNames={{ panel: "pt-8" }}>
+            <Tabs
+              defaultValue="detail"
+              variant="outline"
+              classNames={{ panel: "pt-8" }}
+            >
               <Tabs.List>
                 <Tabs.Tab value="detail" className="font-semibold text-sm">
                   DETAIL REQUEST
@@ -382,7 +420,6 @@ function RequestDetail() {
               {/* ================= TAB DETAIL ================= */}
               <Tabs.Panel value="detail">
                 <div className="space-y-10">
-
                   {/* 1. INFORMASI DASAR */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1">
@@ -400,7 +437,7 @@ function RequestDetail() {
                         Requestor <span className="text-red-500">*</span>
                       </label>
                       <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
-                        {data?.created_by_name || '-'}
+                        {data?.created_by_name || "-"}
                       </div>
                     </div>
                   </div>
@@ -415,76 +452,125 @@ function RequestDetail() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Category Account <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{CATEGORY_ACCOUNT_MAP[data.category_account] || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Badge ID <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.badge_no || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Full Name <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.full_name || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Department <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.department_name || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Position <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.position_name || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Project <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.project_name || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Company <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.company?.company_name || "-"}</div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Access Yard Company <span className="text-red-500">*</span></label>
-                        <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
-                          {data.access_yard_company?.length ? data.access_yard_company.map(c => c.company_name).join(', ') : '-'}
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Category Account{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {CATEGORY_ACCOUNT_MAP[data.category_account] || "-"}
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Application Access <span className="text-red-500">*</span></label>
-                        <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
-                          {data.access_nav_menu?.length ? data.access_nav_menu.map(n => n.application_name).join(', ') : '-'}
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Badge ID <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.badge_no || "-"}
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-semibold text-gray-700 text-sm">Email Address <span className="text-red-500">*</span></label>
-                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">{data.email || "-"}</div>
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.full_name || "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Department <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.department_name || "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Position <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.position_name || "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Project <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.project_name || "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.company?.company_name || "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Company Yard Accessy{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
+                          {data.access_yard_company?.length
+                            ? data.access_yard_company
+                                .map((c) => c.company_name)
+                                .join(", ")
+                            : "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Application Access{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
+                          {data.access_nav_menu?.length
+                            ? data.access_nav_menu
+                                .map((n) => n.application_name)
+                                .join(", ")
+                            : "-"}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                          {data.email || "-"}
+                        </div>
                       </div>
                     </div>
 
+                    {/* 3. REMARKS SECTION */}
+                    <div className="space-y-4">
+                      <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                          Remarks
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="font-semibold text-gray-700 text-sm">
+                          Purpose of Request{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
+                          {data.request_reason || "-"}
+                        </div>
+                      </div>
+                    </div>
 
-                  {/* 3. REMARKS SECTION */}
-                  <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                      <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                        Remarks
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="font-semibold text-gray-700 text-sm">Purpose of Request <span className="text-red-500">*</span></label>
-                      <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
-                        {data.request_reason || "-"}
-                      </div>
-                    </div>
-                  </div>
-                  
                     <div className="space-y-1">
                       <label className="font-semibold text-gray-700 text-sm">
                         Additional Remarks (Optional)
@@ -497,77 +583,203 @@ function RequestDetail() {
 
                   {/* 4. APPROVAL WORKFLOW SECTION */}
                   <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm mb-8">
                       <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                        Approval Workflow
+                        <div className="grid grid-cols-4 gap-4 text-center">
+                          <div>Requestor Department</div>
+                          <div>Requestor Head of Department</div>
+                          <div>Lead IT Department</div>
+                          <div>IT Manager / Asst. IT Manager</div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Col 1: Requestor */}
-                      <div className="p-4 bg-white flex flex-col min-h-[140px]">
-                        <span className="text-[11px] font-bold text-gray-400 uppercase mb-auto">Requested By</span>
-                        <div className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-1">
-                          {data?.created_by_name || '-'}
+                      <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-[140px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-4">
+                          Requested By :
+                        </h3>
+                        <div className="space-y-2 text-[12px]">
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Name</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="font-medium text-gray-800">
+                              {data?.created_by_name || "-"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Date</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="text-gray-800">
+                              {formatDate(data?.created_date, {
+                                showTime: true,
+                              })}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {formatDate(data?.created_date, { showTime: true })}
-                        </div>
-                        <span className="text-[10px] text-blue-600 font-semibold italic mt-2 uppercase tracking-tighter">Requestor</span>
                       </div>
 
                       {/* Col 2: HOD */}
-                      <div className="p-4 bg-white flex flex-col min-h-[140px]">
-                        <span className="text-[11px] font-bold text-gray-400 uppercase mb-auto">Acknowledge By</span>
-                        <div className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-1">
-                          {data.approval_hod_by?.full_name || "-"}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_hod_date_at ? formatDate(data?.approval_hod_date_at, { showTime: true }) : 'Pending...'}
+                      <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-sm flex flex-col min-h-[140px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-4">
+                          Acknowledged By :
+                        </h3>
+                        <div className="space-y-2 text-[12px]">
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Name</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="font-medium text-gray-800">
+                              {data.approval_hod_by?.full_name || "-"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Date</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="text-gray-800">
+                              {data?.approval_hod_date_at
+                                ? formatDate(data?.approval_hod_date_at, {
+                                    showTime: true,
+                                  })
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
                         {data.request_status === 1 && (
-                          <div className="mt-3 flex gap-1">
-                            <Button variant="light" color="green" size="compact-xs" onClick={() => handleHodAction('approve')}>Approve</Button>
-                            <Button variant="light" color="red" size="compact-xs" onClick={() => handleHodAction('reject')}>Reject</Button>
+                          <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                            <Button
+                              variant="outline"
+                              color="green"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconCheck size={14} />}
+                              onClick={() => handleHodAction("approve")}
+                            >
+                              Approve
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              color="red"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconX size={14} />}
+                              onClick={() => handleHodAction("reject")}
+                            >
+                              Rejected
+                            </Button>
                           </div>
                         )}
-                        <span className="text-[10px] text-blue-600 font-semibold italic mt-auto uppercase tracking-tighter">HOD Requestor</span>
                       </div>
 
                       {/* Col 3: Lead IT */}
-                      <div className="p-4 bg-white flex flex-col min-h-[140px]">
-                        <span className="text-[11px] font-bold text-gray-400 uppercase mb-auto">Checked By</span>
-                        <div className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-1">
-                          {data.approval_lead_it_by?.full_name || "-"}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_lead_date_at ? formatDate(data?.approval_lead_date_at, { showTime: true }) : 'Pending...'}
+                      <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-sm flex flex-col min-h-[140px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-4">
+                          Checked By :
+                        </h3>
+                        <div className="space-y-2 text-[12px]">
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Name</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="font-medium text-gray-800">
+                              {data.approval_lead_it_by?.full_name || "-"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Date</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="text-gray-800">
+                              {data?.approval_lead_it_date_at
+                                ? formatDate(data?.approval_lead_it_date_at, {
+                                    showTime: true,
+                                  })
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
                         {canApproveLeadIt && data.request_status === 3 && (
-                          <div className="mt-3 flex gap-1">
-                            <Button variant="light" color="green" size="compact-xs" onClick={() => handleLeadItAction("approve")}>Approve</Button>
-                            <Button variant="light" color="red" size="compact-xs" onClick={() => handleLeadItAction("reject")}>Reject</Button>
+                          <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                            <Button
+                              variant="outline"
+                              color="green"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconCheck size={14} />}
+                              onClick={() => handleLeadItAction("approve")}
+                            >
+                              Approve
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              color="red"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconX size={14} />}
+                              onClick={() => handleLeadItAction("reject")}
+                            >
+                              Rejected
+                            </Button>
                           </div>
                         )}
-                        <span className="text-[10px] text-blue-600 font-semibold italic mt-auto uppercase tracking-tighter">Lead IT</span>
                       </div>
 
                       {/* Col 4: IT Manager */}
-                      <div className="p-4 bg-white flex flex-col min-h-[140px]">
-                        <span className="text-[11px] font-bold text-gray-400 uppercase mb-auto">Approved By</span>
-                        <div className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-1">
-                          {data.approval_it_hod_by?.full_name || "-"}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {data?.approval_it_date_at ? formatDate(data?.approval_it_date_at, { showTime: true }) : 'Pending...'}
+                      <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-sm flex flex-col min-h-[140px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-4">
+                          Approved By :
+                        </h3>
+                        <div className="space-y-2 text-[12px]">
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Name</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="font-medium text-gray-800">
+                              {data.approval_it_hod_by?.full_name || "-"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-[50px_10px_1fr] items-start">
+                            <span className="text-gray-500">Date</span>
+                            <span className="text-gray-500">:</span>
+                            <span className="text-gray-800">
+                              {data?.approval_it_hod_date_at
+                                ? formatDate(data?.approval_it_hod_date_at, {
+                                    showTime: true,
+                                  })
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
                         {canApproveItHod && data.request_status === 5 && (
-                          <div className="mt-3 flex gap-1">
-                            <Button variant="light" color="green" size="compact-xs" onClick={() => handleItHodAction("approve")}>Approve</Button>
-                            <Button variant="light" color="red" size="compact-xs" onClick={() => handleItHodAction("reject")}>Reject</Button>
+                          <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                            <Button
+                              variant="outline"
+                              color="green"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconCheck size={14} />}
+                              onClick={() => handleItHodAction("approve")}
+                            >
+                              Approve
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              color="red"
+                              size="xs"
+                              fullWidth
+                              className="font-bold uppercase tracking-wider text-[10px]"
+                              leftSection={<IconX size={14} />}
+                              onClick={() => handleItHodAction("reject")}
+                            >
+                              Rejected
+                            </Button>
                           </div>
                         )}
-                        <span className="text-[10px] text-blue-600 font-semibold italic mt-auto uppercase tracking-tighter">IT Manager</span>
                       </div>
                     </div>
                   </div>
@@ -594,10 +806,11 @@ function RequestDetail() {
                           const prev = data.previous_status;
                           const finalStatus = status === 8 ? prev : status;
 
-                          const { label, color } = getRequestStatus(finalStatus);
+                          const { label, className } =
+                            getRequestStatus(finalStatus);
 
                           return (
-                            <span className={`text-sm font-bold text-${color}-500`}>
+                            <span className={`text-sm font-bold ${className}`}>
                               {label}
                             </span>
                           );
@@ -639,8 +852,8 @@ function RequestDetail() {
             </Tabs>
           </div>
         </Paper>
-      </div >
-    </AuthLayout >
+      </div>
+    </AuthLayout>
   );
 }
 

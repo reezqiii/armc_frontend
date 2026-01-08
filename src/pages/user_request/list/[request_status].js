@@ -22,7 +22,6 @@ import { formatDate } from '@/lib/dateFormat';
 import { getRequestActionPermission } from '@/lib/requestStatus';
 
 
-// --- CONFIGURATION ---
 const STATUS_CONFIG = {
     'all': {
         id: null,
