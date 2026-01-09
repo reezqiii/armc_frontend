@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001 --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "dev": "dotenv -e .env.development -- next dev --turbopack",
+    "build": "dotenv -e .env.production -- next start",
+    "start": "dotenv -e .env.production -- next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
+    "dotenv-cli": "^11.0.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "formik": "^2.4.6",
