@@ -36,7 +36,7 @@ function EditRequest() {
   const { encrypt } = useEncrypt();
   const { decrypt } = useDecrypt();
   const [formData, setFormData] = useState({
-    created_by_name: user?.full_name || user?.name || "-",
+    created_by_name: null,
     full_name: "",
     badge_no: "",
     email: "",
@@ -101,7 +101,7 @@ function EditRequest() {
     };
 
     fetchBadges();
-  }, [debouncedSearch]);
+  }, [API_URL, debouncedSearch, user.token]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -149,6 +149,7 @@ function EditRequest() {
 
           setFormData((prev) => ({
             ...prev,
+            created_by_name: data.created_by_name,
             full_name: data.full_name || "",
             badge_no: data.badge_no || "",
             email: data.email || "",
@@ -196,7 +197,7 @@ function EditRequest() {
     };
 
     fetchInitialData();
-  }, [id]);
+  }, [API_URL, id, user.token]);
 
   const handleSelectBadge = async (value) => {
     try {

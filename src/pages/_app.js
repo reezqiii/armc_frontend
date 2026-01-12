@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCookie } from "../hooks/useCookie";
 import { LoadingOverlay, MantineProvider, Paper } from "@mantine/core";
 import { useRouter } from "next/router";
-import AuthLayout from '@/components/layout/authLayout';
+import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import useDecrypt from "@/hooks/useDecrypt";
@@ -23,28 +23,26 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
   const { encrypt } = useEncrypt();
   const { decrypt } = useDecrypt();
-  const API = useApi()
-  const API_URL = API.API_URL
-  const PORTAL_API = API.LINK_PORTAL
+  const API = useApi();
+  const API_URL = API.API_URL;
+  const PORTAL_API = API.LINK_PORTAL;
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const validateUser = async (userId) => {
-    try {
-      const { data } = await axios.post(
-        `${API_URL}/api/auth/validate`,
-        {
+  const validateUser = useCallback(
+    async (userId) => {
+      try {
+        const { data } = await axios.post(`${API_URL}/api/auth/validate`, {
           id_user: userId,
-        }
-      );
+        });
 
-      if (data.success) {
-        return data;
+        if (data.success) return data;
+      } catch (error) {
+        console.error("Error validating user: ", error);
       }
-    } catch (error) {
-      console.error("Error validating user: ", error);
-    }
-  };
+    },
+    [API_URL]
+  );
 
   useEffect(() => {
     const initAuth = async () => {
@@ -129,7 +127,7 @@ export default function App({ Component, pageProps }) {
     };
 
     initAuth();
-  }, [cookieUser, router, setUser, API_URL]);
+  }, [cookieUser, router, setUser, API_URL, validateUser, PORTAL_API, decrypt]);
   // }, [cookieUser, setUser, decrypt, encrypt]);
 
   // if (!isAuthenticated) {
@@ -142,9 +140,7 @@ export default function App({ Component, pageProps }) {
         {!isAuthenticated}
         <>
           <Head>
-            <title>
-              {process.env.NEXT_PUBLIC_APP_NAME}
-            </title>
+            <title>{process.env.NEXT_PUBLIC_APP_NAME}</title>
           </Head>
           <LoadingOverlay visible={!isAuthenticated} />
         </>
@@ -152,7 +148,8 @@ export default function App({ Component, pageProps }) {
           <>
             <Head>
               <title>
-                {Component.title ? Component.title : 'Default Title'} - {process.env.NEXT_PUBLIC_APP_NAME}
+                {Component.title ? Component.title : "Default Title"} -{" "}
+                {process.env.NEXT_PUBLIC_APP_NAME}
               </title>
             </Head>
             <Component {...pageProps} />

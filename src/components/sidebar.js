@@ -20,7 +20,7 @@ export default function Sidebar({ className, sidebarList }) {
       if (!menu.requiredPermission) return true;
       return hasPermission(menu.requiredPermission);
     });
-  }, [sidebarList, user.permissions]);
+  }, [sidebarList]);
 
   const isChildActive = (child) => {
     if (child.restricted) { 

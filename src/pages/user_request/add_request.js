@@ -118,7 +118,7 @@ function CreateRequest() {
     };
 
     fetchBadges();
-  }, [debouncedSearch]);
+  }, [API_URL, debouncedSearch, user.token]);
 
   useEffect(() => {
     console.log("Fetch initial data running...");
@@ -162,7 +162,7 @@ function CreateRequest() {
     };
 
     fetchInitialData();
-  }, []);
+  }, [API_URL, user.token]);
 
   const handleSelectBadge = async (value) => {
     try {

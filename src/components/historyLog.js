@@ -100,7 +100,7 @@ const HistoryLog = ({ logData, idRequest }) => {
       enableSorting: true,
       cell: ({ row }) => formatDate(row.original.date, { showTime: true }),
     }
-  ], []);
+  ], [pagination.pageIndex, pagination.pageSize]);
 
   const table = useReactTable({
     data,

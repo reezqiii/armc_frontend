@@ -34,10 +34,10 @@ export default function TrackRequest() {
             setRequestNo(router.query.no);
             handleTrack(router.query.no);
         }
-    }, [router.query.no]);
+    }, [handleTrack, router.query.no]);
 
-    const handleTrack = async (no) => {
-        if (!no) return;
+   const handleTrack = useCallback(async (no) => {
+    if (!no) return;
 
         setLoading(true);
         setError("");
@@ -62,7 +62,7 @@ export default function TrackRequest() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [API_URL]);
 
     return (
         <div

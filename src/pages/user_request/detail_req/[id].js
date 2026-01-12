@@ -48,12 +48,6 @@ function RequestDetail() {
   const canApproveItHod = hasPermission(1);
 
   useEffect(() => {
-    if (id && user?.token) {
-      fetchData();
-    }
-  }, [id, user?.token]);
-
-  useEffect(() => {
     if (!data || !user) return;
 
     const userId = String(user.id ?? "");
@@ -64,12 +58,6 @@ function RequestDetail() {
     setLeadItName(data.approval_lead_it_by_name ?? "-");
     setItManagerName(data.approval_it_hod_by_name ?? "-");
   }, [data, user]);
-
-  useEffect(() => {
-    if (data?.id_request && user?.token) {
-      fetchLogs();
-    }
-  }, [data?.id_request, user?.token]);
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -122,6 +110,18 @@ function RequestDetail() {
       setLoadingLog(false);
     }
   }, [data?.id_request, user?.token, API_URL]);
+
+  useEffect(() => {
+    if (id && user?.token) {
+      fetchData();
+    }
+  }, [fetchData, id, user?.token]);
+
+  useEffect(() => {
+    if (data?.id_request && user?.token) {
+      fetchLogs();
+    }
+  }, [data?.id_request, fetchLogs, user?.token]);
 
   if (loading) {
     return (
@@ -604,14 +604,14 @@ function RequestDetail() {
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
-                            <span className="font-medium text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data?.created_by_name || "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
-                            <span className="text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {formatDate(data?.created_date, {
                                 showTime: true,
                               })}
@@ -629,14 +629,14 @@ function RequestDetail() {
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
-                            <span className="font-medium text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data.approval_hod_by?.full_name || "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
-                            <span className="text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data?.approval_hod_date_at
                                 ? formatDate(data?.approval_hod_date_at, {
                                     showTime: true,
@@ -683,14 +683,14 @@ function RequestDetail() {
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
-                            <span className="font-medium text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data.approval_lead_it_by?.full_name || "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
-                            <span className="text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data?.approval_lead_it_date_at
                                 ? formatDate(data?.approval_lead_it_date_at, {
                                     showTime: true,
@@ -737,14 +737,14 @@ function RequestDetail() {
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
-                            <span className="font-medium text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data.approval_it_hod_by?.full_name || "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
-                            <span className="text-gray-800">
+                            <span className="text-gray-800 text-sm">
                               {data?.approval_it_hod_date_at
                                 ? formatDate(data?.approval_it_hod_date_at, {
                                     showTime: true,
@@ -795,22 +795,27 @@ function RequestDetail() {
                       Back
                     </Button>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {/* Status */}
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100/70 rounded-md">
-                        <span className="text-[11px] font-medium text-gray-500 uppercase">
+                    {/* RIGHT: STATUS + ACTION */}
+                    <div className="flex flex-col items-end gap-2">
+                      {/* STATUS */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-500">
                           Status:
                         </span>
+
                         {(() => {
                           const status = data.request_status;
                           const prev = data.previous_status;
                           const finalStatus = status === 8 ? prev : status;
 
-                          const { label, className } =
+                          const { label, bg, text } =
                             getRequestStatus(finalStatus);
 
                           return (
-                            <span className={`text-sm font-bold ${className}`}>
+                            <span
+                              style={{ backgroundColor: bg, color: text }}
+                              className="px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap"
+                            >
                               {label}
                             </span>
                           );
