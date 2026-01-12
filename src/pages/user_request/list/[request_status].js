@@ -201,7 +201,7 @@ export default function RequestListDynamic({ request_status }) {
     pagination.pageIndex,
     pagination.pageSize,
   ]);
-  
+
   const handleCancel = useCallback(
     async (id) => {
       const result = await Swal.fire({
@@ -375,7 +375,7 @@ export default function RequestListDynamic({ request_status }) {
         const encryptedId = encrypt(String(id));
 
         const response = await axios.get(
-          `${API_URL}/requests/download-pdf/${encryptedId}`,
+          `${API_URL}/requests/${encryptedId}/generate-pdf`,
           {
             headers: { Authorization: `Bearer ${user.token}` },
             responseType: "blob",
@@ -751,6 +751,7 @@ export default function RequestListDynamic({ request_status }) {
             >
               PDF
             </Button>
+
             {/* RETURN */}
             {canReturn && (
               <Button
