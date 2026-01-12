@@ -127,7 +127,7 @@ export default function App({ Component, pageProps }) {
     };
 
     initAuth();
-  }, [cookieUser, router, setUser, API_URL, validateUser, PORTAL_API, decrypt]);
+  }, []);
   // }, [cookieUser, setUser, decrypt, encrypt]);
 
   // if (!isAuthenticated) {
