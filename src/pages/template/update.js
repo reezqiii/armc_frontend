@@ -1,5 +1,5 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { templateSidebarList } from "@/data/sidebar/exampleList";
+// import { templateSidebarList } from "@/data/sidebar/exampleList";
 import useApi from "@/hooks/useApi";
 import useDecrypt from "@/hooks/useDecrypt";
 import useEncrypt from "@/hooks/useEncrypt";

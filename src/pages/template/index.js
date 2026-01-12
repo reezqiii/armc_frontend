@@ -8,7 +8,7 @@ import {
   Select,
   Text,
 } from "@mantine/core";
-import { templateSidebarList } from "../../data/sidebar/exampleList";
+// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
 import Datatables from "@/components/custom/Datatables";

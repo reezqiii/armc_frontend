@@ -1,7 +1,7 @@
 import AuthLayout from "@/components/layout/authLayout";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, LoadingOverlay, Paper, Table, Text } from "@mantine/core";
-import { templateSidebarList } from "../../data/sidebar/exampleList";
+// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
 import { IconArrowLeft, IconCheck, IconFileSpreadsheet, IconUpload, IconX } from "@tabler/icons-react";

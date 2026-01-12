@@ -2,7 +2,7 @@ import AuthLayout from "@/components/layout/authLayout";
 import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Paper } from "@mantine/core";
-import { templateSidebarList } from "../../data/sidebar/exampleList";
+// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import ExampleTable from "@/components/tables/exampleTable";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
