@@ -2,17 +2,6 @@ import AuthLayout from "@/components/layout/authLayout";
 import Head from "next/head";
 import React, { useEffect, useState } from "react";
 import { Paper, Text, Grid } from "@mantine/core";
-import {
-  IconDeviceDesktopCheck,
-  IconArrowRight,
-  IconFolderOpen,
-  IconHourglass,
-  IconX,
-  IconMessageUser,
-  IconCheck,
-  IconListCheck,
-  IconMailCheck,
-} from "@tabler/icons-react";
 
 export default function Index() {
   return (
@@ -30,9 +19,6 @@ export default function Index() {
           </div>
         </div>
       </div>
-
-     
-      
     </AuthLayout>
   );
 }

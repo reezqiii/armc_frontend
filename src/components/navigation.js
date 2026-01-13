@@ -33,18 +33,18 @@ const navigation = [
   },
 
   {
-    name: "User Permission Request",
-    url: "/user_request/requestor_list",
+    name: "User Request",
+    url: "/user_request/list/all",
     icon: <IconUser size={20} />,
     permission: 1,
   },
 
-  {
-    name: "User Management",
-    url: "/user_management/requestor_list",
-    icon: <IconUserCog size={20} />,
-    permission: 1,
-  },
+  // {
+  //   name: "User Management",
+  //   url: "/user_management/requestor_list",
+  //   icon: <IconUserCog size={20} />,
+  //   permission: 1,
+  // },
 ];
 
 

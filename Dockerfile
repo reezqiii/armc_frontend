@@ -47,7 +47,7 @@ COPY --from=builder /app/.env.production ./
 ENV NODE_ENV=production
 
 # Expose the port Next.js runs on
-EXPOSE 3000
+EXPOSE 3001
 
 # # Health check (optional)
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

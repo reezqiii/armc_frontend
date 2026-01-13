@@ -45,4 +45,25 @@ body {
   *:hover > .resizer {
     opacity: 1;
   }
+
+  .mantine-multiselect-input {
+    @apply bg-gray-100 border border-gray-300 text-sm rounded-md px-3 py-2 min-h-[42px]
+    focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all;
+  }
+
+  .mantine-multiselect-label {
+    @apply font-medium mb-1 text-gray-800 text-sm;
+  }
+
+  .mantine-multiselect-pill {
+    @apply bg-gray-200 text-gray-800 text-sm rounded-md px-2 py-1 mr-1 mb-1;
+  }
+
+  .mantine-MultiSelect-dropdown {
+    @apply text-sm shadow-md border border-gray-200 rounded-md bg-white;
+  }
+
+  .mantine-MultiSelect-item {
+    @apply text-sm hover:bg-blue-50 cursor-pointer px-2 py-1 rounded;
+  }
 }

@@ -1,0 +1,451 @@
+import AuthLayout from '@/components/layout/authLayout';
+import requestorList from '@/data/sidebar/RequestorList';
+import { Button, Paper, TextInput, Textarea, Select, Autocomplete, MultiSelect } from '@mantine/core';
+import { IconArrowLeft, IconDeviceFloppy, IconCalendar, IconChevronDown } from '@tabler/icons-react';
+import { useRouter } from 'next/router';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import useUser from '@/store/useUser';
+import useSwal from '@/hooks/useSwal';
+import useApi from '@/hooks/useApi';
+import Swal from "sweetalert2";
+import { useDebouncedValue } from '@mantine/hooks';
+import { formatDate } from '@/lib/dateFormat';
+
+function CreateRequest() {
+
+    const router = useRouter()
+    const { showAlert } = useSwal()
+    const API = useApi();
+    const API_URL = API.API_URL;
+    const { user } = useUser()
+    const [formData, setFormData] = React.useState({
+        full_name: '',
+        badge_no: '',
+        email: '',
+        project_id: '',
+        dept_id: '',
+        design_id: '',
+        company_id: '',
+        request_reason: '',
+        remarks: '',
+        category_account: '',
+        access_yard_company: [],
+        access_nav_menu: [],
+    });
+    const [errors, setErrors] = React.useState({
+        full_name: null,
+        badge_no: null,
+        email: null,
+        project: null,
+        department: null,
+        request_reason: null,
+        category_account: null,
+    });
+    const [loading, setLoading] = useState(false);
+    const [loadingSubmit, setLoadingSubmit] = useState(false);
+    const [search, setSearch] = useState('');
+    const [accessYardOptions, setAccessYardOptions] = useState([]);
+    const [navMenuOptions, setNavMenuOptions] = useState([]);
+    const [debouncedSearch] = useDebouncedValue(search, 300);
+    const [deptOptions, setDeptOptions] = useState([]);
+    const [positionOptions, setPositionOptions] = useState([]);
+    const [projectOptions, setProjectOptions] = useState([]);
+    const [companyOptions, setCompanyOptions] = useState([]);
+    const CATEGORY_ACCOUNT_OPTIONS = [
+        { value: '0', label: 'Create New Account' },
+        { value: '1', label: 'Request Permission' },
+        { value: '2', label: 'Request Outside Access' },
+    ];
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: null }));
+        }
+    };
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            setLoading(true);
+            try {
+                const [
+                    deptRes,
+                    posRes,
+                    projectRes,
+                    companyRes,
+                    navMenuRes
+                ] = await Promise.all([
+                    axios.get(`${API_URL}/iss_dept`),
+                    axios.get(`${API_URL}/position`),
+                    axios.get(`${API_URL}/iss_project`),
+                    axios.get(`${API_URL}/portal_company/list`),
+                    axios.get(`${API_URL}/portal_nav_menu/list`)
+                ]);
+
+                const companyOptions = companyRes.data.map(c => ({
+                    value: String(c.id_company),
+                    label: c.company_name,
+                }));
+
+                setCompanyOptions(companyOptions);
+                setAccessYardOptions(companyOptions);
+
+                setDeptOptions(deptRes.data.map(d => ({
+                    value: String(d.dept_id),
+                    label: d.dept,
+                })));
+
+                setPositionOptions(posRes.data.map(p => ({
+                    value: String(p.design_id),
+                    label: p.design_desc,
+                })));
+
+                setProjectOptions(projectRes.data.map(p => ({
+                    value: String(p.project_id),
+                    label: p.project_desc,
+                })));
+
+                setNavMenuOptions(navMenuRes.data.map(n => ({
+                    value: String(n.id_application),
+                    label: n.application_name,
+                })));
+
+            } catch (err) {
+                console.error("Failed to load data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, [API_URL]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // 1. Validasi Input
+        const newErrors = {};
+
+        if (!formData.access_yard_company || formData.access_yard_company.length === 0) {
+            newErrors.access_yard_company = 'Access Yard Company is required';
+        }
+
+        if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
+            newErrors.access_nav_menu = 'Application Access is required';
+        }
+
+        if (!formData.category_account) {
+            newErrors.category_account = 'Category account is required';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setErrors({});
+        setLoadingSubmit(true);
+
+        const result = await Swal.fire({
+            title: "Ready to Submit?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Submit!",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+        });
+
+        if (!result.isConfirmed) {
+            setLoadingSubmit(false);
+            return;
+        }
+
+        const payload = {
+            full_name: formData.full_name,
+            badge_no: formData.badge_no ? Number(formData.badge_no) : null,
+            email: formData.email,
+            request_type: 1,
+            request_reason: formData.request_reason,
+            request_status: 3,
+            remarks: formData.remarks,
+            status_active: 1,
+            project_id: Number(formData.project_id),
+            dept_id: Number(formData.dept_id),
+            design_id: Number(formData.design_id),
+            id_company: Number(formData.company_id),
+            access_yard_company: formData.access_yard_company,
+            access_nav_menu: formData.access_nav_menu,
+            category_account: formData.category_account,
+        };
+
+        try {
+            const response = await axios.post(`${API_URL}/requests/public/create`, payload);
+
+            if (response.status === 200 || response.status === 201) {
+                const newRequest = response.data;
+
+                setFormData(prev => ({
+                    ...prev,
+                    created_date: newRequest.created_date,
+                }));
+
+                const requestNo = `ITF14-${String(newRequest.id_request).padStart(6, '0')}`;
+
+                const result = await Swal.fire({
+                    icon: "success",
+                    title: "Request Submitted",
+                    html: `
+    <p>Your Request Number:</p>
+    <b style="font-size:18px">${requestNo}</b>
+    <p style="margin-top:8px;font-size:12px">
+      Please save this number to track your request status.
+    </p>
+  `,
+                    confirmButtonText: "Track Request",
+                });
+
+                if (result.isConfirmed) {
+                    router.push(`/public_request/track_request?no=${requestNo}`);
+                }
+                setFormData({
+                    created_by_name: user?.full_name || user?.name || '-',
+                    full_name: '',
+                    badge_no: '',
+                    email: '',
+                    project_id: null,
+                    dept_id: null,
+                    design_id: null,
+                    company_id: null,
+                    category_account: null,
+                    request_reason: '',
+                    remarks: '',
+                    access_yard_company: [],
+                    access_nav_menu: [],
+                });
+            }
+        } catch (error) {
+            console.error(error.response?.data || error.message);
+            Swal.fire({
+                icon: "error",
+                title: "Failed!",
+                text: "Something went wrong when submitting your request.",
+            });
+        } finally {
+            setLoadingSubmit(false);
+        }
+    };
+
+    return (
+        <div
+            className="min-h-screen py-10 px-4 md:px-10 w-full"
+            style={{
+                backgroundImage: "url('/images/seatrium_1.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+            }}
+        >
+            <div className="max-w-6xl mx-auto w-full">
+                <Paper
+                    radius="md"
+                    shadow="xl"
+                    className="bg-white p-0 w-full overflow-hidden border border-gray-200"
+                >
+                    {/* Header Utama */}
+                    <div className="border-b py-6 text-center bg-white">
+                        <h1 className="text-xl md:text-2xl font-bold text-blue-600 uppercase tracking-tight">
+                            PCMS Access Login Request
+                        </h1>
+                    </div>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="p-6 md:p-10 space-y-10">
+
+                            {/* 1. INFORMASI DASAR (Date Only) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <label className="block font-semibold text-gray-700 text-sm">
+                                        Request Date <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
+                                        {formatDate(formData.created_date || new Date())}
+                                        <IconCalendar size={18} className="text-gray-400" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. DESCRIPTION SECTION */}
+                            <div className="space-y-6">
+                                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                        Employee Description
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <Select
+                                        required
+                                        label="Category Account"
+                                        placeholder="Select Category Account"
+                                        value={formData.category_account || ''}
+                                        error={errors.category_account}
+                                        data={CATEGORY_ACCOUNT_OPTIONS}
+                                         onChange={(value) => handleChange('category_account', value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Badge ID"
+                                        placeholder="Input Badge Number"
+                                        value={formData.badge_no || ''}
+                                        onChange={(e) => handleChange('badge_no', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        label="Full Name"
+                                        placeholder="Input Full Name"
+                                        value={formData.full_name || ''}
+                                        onChange={(e) => handleChange('full_name', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Department"
+                                        placeholder="Select Department"
+                                        data={deptOptions}
+                                        value={formData.dept_id ?? null}
+                                        onChange={(value) => handleChange("dept_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Position"
+                                        placeholder="Select Position"
+                                        data={positionOptions}
+                                        value={formData.design_id ?? null}
+                                        onChange={(value) => handleChange("design_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Project"
+                                        placeholder="Select Project"
+                                        data={projectOptions}
+                                        value={formData.project_id ?? null}
+                                        onChange={(value) => handleChange("project_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <Select
+                                        required
+                                        searchable
+                                        label="Company"
+                                        placeholder="Select Company"
+                                        data={companyOptions}
+                                        value={formData.company_id ?? null}
+                                        onChange={(value) => handleChange("company_id", value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Access Yard Company"
+                                        placeholder="Select Yard"
+                                        data={accessYardOptions}
+                                        value={formData.access_yard_company}
+                                        error={errors.access_yard_company}
+                                        onChange={(val) => handleChange('access_yard_company', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <MultiSelect
+                                        required
+                                        label="Application Access"
+                                        placeholder="Select Access"
+                                        data={navMenuOptions}
+                                        value={formData.access_nav_menu}
+                                        error={errors.access_nav_menu}
+                                        onChange={(val) => handleChange('access_nav_menu', val)}
+                                        searchable
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "min-h-[40px]" }}
+                                    />
+
+                                    <TextInput
+                                        required
+                                        type="email"
+                                        label="Email Address"
+                                        placeholder="example@company.com"
+                                        value={formData.email}
+                                        onChange={(e) => handleChange('email', e.target.value)}
+                                        error={errors.email}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700", input: "h-[40px]" }}
+                                    />
+                                </div>
+
+
+                                {/* 3. REMARKS SECTION */}
+                                <div className="space-y-4">
+                                    <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                                        <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                                            Remarks
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Textarea
+                                            required
+                                            label="Purpose of Request"
+                                            placeholder="Explain why you need access..."
+                                            value={formData.request_reason}
+                                            onChange={(e) => handleChange('request_reason', e.target.value)}
+                                            minRows={3}
+                                            error={errors.request_reason}
+                                            classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                        />
+                                    </div>
+                                    <Textarea
+                                        label="Additional Remarks (Optional)"
+                                        placeholder="Input any other information..."
+                                        minRows={2}
+                                        value={formData.remarks}
+                                        onChange={(e) => handleChange('remarks', e.target.value)}
+                                        classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SUBMIT BUTTON */}
+                            <div className="pt-6 border-t border-gray-100">
+                                <Button
+                                    type="submit"
+                                    color="blue"
+                                    size="sm"
+                                    leftSection={<IconDeviceFloppy size={20} />}
+                                    loading={loadingSubmit}
+                                    disabled={loadingSubmit}
+                                    className="w-full shadow-lg shadow-blue-100"
+                                >
+                                    Submit Request
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </Paper>
+            </div>
+        </div>
+    );
+}
+
+CreateRequest.title = "IT Form Request";
+export default CreateRequest;

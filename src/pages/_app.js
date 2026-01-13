@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCookie } from "../hooks/useCookie";
 import { LoadingOverlay, MantineProvider, Paper } from "@mantine/core";
 import { useRouter } from "next/router";
-import AuthLayout from '@/components/layout/authLayout';
-
-
+import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import useDecrypt from "@/hooks/useDecrypt";
@@ -20,37 +18,42 @@ import useApi from "@/hooks/useApi";
 const COOKIE_EXPIRE_TIME = 86400;
 
 export default function App({ Component, pageProps }) {
-  const cookieUser = useCookie("portal_user");
+  const cookieUser = useCookie("portal_user_js");
   const { user, setUser } = useUser();
   const router = useRouter();
   const { encrypt } = useEncrypt();
   const { decrypt } = useDecrypt();
-  const API         = useApi()
-  const API_URL     = API.API_URL
-  const PORTAL_API  = API.LINK_PORTAL
+  const API = useApi();
+  const API_URL = API.API_URL;
+  const PORTAL_API = API.LINK_PORTAL;
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const validateUser = async (userId) => {
-    try {
-      const { data } = await axios.post(
-        `${API_URL}/api/auth/validate`,
-        {
+  const validateUser = useCallback(
+    async (userId) => {
+      try {
+        const { data } = await axios.post(`${API_URL}/api/auth/validate`, {
           id_user: userId,
-        }
-      );
+        });
 
-      if (data.success) {
-        return data;
+        if (data.success) return data;
+      } catch (error) {
+        console.error("Error validating user: ", error);
       }
-    } catch (error) {
-      console.error("Error validating user: ", error);
-    }
-  };
+    },
+    [API_URL]
+  );
 
   useEffect(() => {
     const initAuth = async () => {
       if (!router.isReady) return;
+
+      const currentPath = window.location.pathname;
+
+      if (currentPath.startsWith("/public_request")) {
+        setIsAuthenticated(true);
+        return;
+      }
 
       const { id, auth_user } = router.query;
       let idUser = null;
@@ -67,27 +70,38 @@ export default function App({ Component, pageProps }) {
         const isValidUser = await validateUser(encryptUserId);
 
         if (isValidUser) {
-          Cookies.set("portal_user", encryptUserId, {
+          Cookies.set("portal_user_js", encryptUserId, {
             expires: COOKIE_EXPIRE_TIME / 86400,
           });
 
           setUser({
-            id: encryptUserId,
+            id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
+            permissions: isValidUser.user.permissions,
           });
 
           setIsAuthenticated(true);
-          router.push('/')
+          // router.push('/')
+
+          if (currentPath === "/login" || currentPath === "/") {
+            // Jika user akses login page atau root, baru redirect ke "/"
+            router.push("/");
+          } else {
+            // Otherwise: biarkan user tetap di halaman yang sedang dibuka
+            // Tidak perlu redirect
+            router.push(currentPath);
+          }
+
           return;
         } else {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         }
       } else {
-        const cookieValue = Cookies.get("portal_user");
+        const cookieValue = Cookies.get("portal_user_js");
 
         if (!cookieValue) {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         } else {
           idUser = cookieValue;
         }
@@ -99,19 +113,21 @@ export default function App({ Component, pageProps }) {
 
         if (isValidUser) {
           setUser({
-            id: idUser,
+            id: isValidUser.user.id,
             name: isValidUser.user.full_name,
             token: isValidUser.token,
+            permissions: isValidUser.user.permissions,
           });
+
           setIsAuthenticated(true);
         } else {
-           router.push(`${PORTAL_API}`);
+          router.push(`${PORTAL_API}`);
         }
       }
     };
 
     initAuth();
-  }, [cookieUser, router, setUser, API_URL]);
+  }, [router.isReady]);
   // }, [cookieUser, setUser, decrypt, encrypt]);
 
   // if (!isAuthenticated) {
@@ -124,9 +140,7 @@ export default function App({ Component, pageProps }) {
         {!isAuthenticated}
         <>
           <Head>
-            <title>
-              {process.env.NEXT_PUBLIC_APP_NAME}
-            </title>
+            <title>{process.env.NEXT_PUBLIC_APP_NAME}</title>
           </Head>
           <LoadingOverlay visible={!isAuthenticated} />
         </>
@@ -134,7 +148,8 @@ export default function App({ Component, pageProps }) {
           <>
             <Head>
               <title>
-                {Component.title ? Component.title : 'Default Title'} - {process.env.NEXT_PUBLIC_APP_NAME}
+                {Component.title ? Component.title : "Default Title"} -{" "}
+                {process.env.NEXT_PUBLIC_APP_NAME}
               </title>
             </Head>
             <Component {...pageProps} />
