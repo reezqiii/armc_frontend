@@ -56,14 +56,14 @@ deploy-job:
 
     # Jalankan container baru
     - echo "Running new container..."
-    - ssh root@10.5.255.18 "
-        docker run -d \
-        --name $CI_PROJECT_NAME \
-        -p $PORT:$PORT \
-        --env-file /tmp/env_file \
-        -v /root/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/files:/app/files \
-        $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest
-      "
+    - >
+      ssh root@10.5.255.18
+      "docker run -d
+      --name $CI_PROJECT_NAME
+      -p $PORT:$PORT
+      --env-file /tmp/env_file
+      -v /root/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/files:/app/files
+      $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest"
 
     - echo "Deployment completed."
   rules:
