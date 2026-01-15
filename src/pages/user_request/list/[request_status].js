@@ -44,6 +44,7 @@ import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import { getRequestStatus } from "@/lib/requestStatusList";
+import Head from "next/head";
 
 const STATUS_CONFIG = {
   all: {
@@ -819,91 +820,99 @@ export default function RequestListDynamic({ request_status }) {
   const hasSelectedRows = Object.keys(rowSelection).length > 0;
 
   return (
-    <AuthLayout sidebarList={requestorList}>
-      <div className="py-6 px-4">
-        <Paper radius="md" p="md" withBorder shadow="sm">
-          {/* HEADER */}
-          <div className="flex items-center justify-between border-b pb-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                <config.icon size={22} />
+    <>
+      <Head>
+        <title>{config.label} | ARMC</title>
+      </Head>
+
+      <AuthLayout sidebarList={requestorList}>
+        <div className="py-6 px-4">
+          <Paper radius="md" p="md" withBorder shadow="sm">
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                  <config.icon size={22} />
+                </div>
+                <div>
+                  <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                    {config.label} List
+                  </h1>
+                  <p className="text-xs text-gray-500">
+                    ITF14 - {config.label}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-md font-extrabold text-blue-600 uppercase">
-                  {config.label} List
-                </h1>
-                <p className="text-xs text-gray-500">ITF14 - {config.label}</p>
-              </div>
+
+              {canExport && (
+                <Button
+                  color="green"
+                  size="xs"
+                  leftSection={<IconFileSpreadsheet size={16} />}
+                  onClick={handleExportExcel}
+                >
+                  Export Excel
+                </Button>
+              )}
             </div>
 
-            {canExport && (
-              <Button
-                color="green"
-                size="xs"
-                leftSection={<IconFileSpreadsheet size={16} />}
-                onClick={handleExportExcel}
-              >
-                Export Excel
-              </Button>
-            )}
-          </div>
+            {/* TABLE */}
+            <Datatables table={table} totalPages={totalPages} />
 
-          {/* TABLE */}
-          <Datatables table={table} totalPages={totalPages} />
+            {/* MODAL */}
+            <RejectTimelineModal
+              opened={modalOpen}
+              onClose={() => setModalOpen(false)}
+              data={selectedRejectData}
+            />
 
-          {/* MODAL */}
-          <RejectTimelineModal
-            opened={modalOpen}
-            onClose={() => setModalOpen(false)}
-            data={selectedRejectData}
-          />
+            {/* BULK ACTION */}
+            {hasSelectedRows && (
+              <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
+                <Text size="sm" fw={600}>
+                  Selected {Object.keys(rowSelection).length} items
+                </Text>
 
-          {/* BULK ACTION */}
-          {hasSelectedRows && (
-            <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
-              <Text size="sm" fw={600}>
-                Selected {Object.keys(rowSelection).length} items
-              </Text>
-
-              <Group>
-                {config.id === 0 && (
-                  <Button
-                    color="green"
-                    size="xs"
-                    leftSection={<IconSend size={16} />}
-                    onClick={() => handleBulkProcess("submit")}
-                  >
-                    Submit to HOD Request
-                  </Button>
-                )}
-
-                {config.actions.includes("approve_bulk") && canApprove && (
-                  <>
+                <Group>
+                  {config.id === 0 && (
                     <Button
-                      size="xs"
                       color="green"
-                      leftSection={<IconCheck size={14} />}
-                      onClick={() => handleBulkProcess("approve")}
-                    >
-                      Approve
-                    </Button>
-
-                    <Button
                       size="xs"
-                      color="red"
-                      leftSection={<IconX size={14} />}
-                      onClick={() => handleBulkProcess("reject")}
+                      leftSection={<IconSend size={16} />}
+                      onClick={() => handleBulkProcess("submit")}
                     >
-                      Reject
+                      Submit to HOD Request
                     </Button>
-                  </>
-                )}
-              </Group>
-            </div>
-          )}
-        </Paper>
-      </div>
-    </AuthLayout>
+                  )}
+
+                  {config.actions.includes("approve_bulk") && canApprove && (
+                    <>
+                      <Button
+                        size="xs"
+                        color="green"
+                        leftSection={<IconCheck size={14} />}
+                        onClick={() => handleBulkProcess("approve")}
+                      >
+                        Approve
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        color="red"
+                        leftSection={<IconX size={14} />}
+                        onClick={() => handleBulkProcess("reject")}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </Group>
+              </div>
+            )}
+          </Paper>
+        </div>
+      </AuthLayout>
+    </>
   );
 }
 

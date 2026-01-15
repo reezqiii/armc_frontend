@@ -343,7 +343,17 @@ export default function AdminList() {
         },
       },
     ],
-    [ API_URL, encrypt, handleCancel, isDeleting, pagination.pageIndex, pagination.pageSize, permissions, router, user.token ]
+    [
+      API_URL,
+      encrypt,
+      handleCancel,
+      isDeleting,
+      pagination.pageIndex,
+      pagination.pageSize,
+      permissions,
+      router,
+      user.token,
+    ]
   );
 
   const table = useReactTable({
@@ -412,43 +422,41 @@ export default function AdminList() {
       </Head>
 
       <AuthLayout sidebarList={updatedSidebarList}>
-        <div className="py-6">
-          <div className="max-w-full mx-auto sm:px-6 lg:px-8 py-4">
-            <Paper radius="md" shadow="sm" withBorder className="p-5 bg-white">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b pb-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <IconClipboardList size={22} />
-                  </div>
-
-                  <div>
-                    <h1 className="text-md font-extrabold text-blue-600 uppercase">
-                      {titleMap[status] || "Request List"}
-                    </h1>
-                    <p className="text-xs text-gray-500">
-                      Manage and review request data
-                    </p>
-                  </div>
+        <div className="py-6 px-4">
+          <Paper radius="md" p="md" withBorder shadow="sm">
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                  <IconClipboardList size={22} />
                 </div>
 
-                {/* Optional Action */}
-                <Button
-                  color="green"
-                  size="sm"
-                  onClick={handleExportExcel}
-                  leftSection={<IconFileSpreadsheet size={16} />}
-                >
-                  Export Excel
-                </Button>
+                <div>
+                  <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                    {titleMap[status] || "Request List"}
+                  </h1>
+                  <p className="text-xs text-gray-500">
+                    Manage and review request data
+                  </p>
+                </div>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <Datatables table={table} totalPages={totalPages} />
-              </div>
-            </Paper>
-          </div>
+              {/* Optional Action */}
+              <Button
+                color="green"
+                size="sm"
+                onClick={handleExportExcel}
+                leftSection={<IconFileSpreadsheet size={16} />}
+              >
+                Export Excel
+              </Button>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <Datatables table={table} totalPages={totalPages} />
+            </div>
+          </Paper>
         </div>
       </AuthLayout>
     </>
