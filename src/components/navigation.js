@@ -6,16 +6,7 @@ import {
   IconUserCog,
   IconHome,
   IconMenu2,
-  IconListCheck,
-  IconLayoutGrid,
-  IconBriefcase,
-  IconBrandGithub,
-  IconDatabase,
-  IconNote,
   IconCaretRight,
-  IconDeviceImacSearch,
-  IconTag,
-  IconDatabaseX,
 } from "@tabler/icons-react";
 import { User } from "lucide-react";
 import Link from "next/link";
@@ -36,6 +27,13 @@ const navigation = [
     name: "User Request",
     url: "/user_request/list/all",
     icon: <IconUser size={20} />,
+    permission: 1,
+  },
+
+  {
+    name: "User Management",
+    url: "/user_management/user_list",
+    icon: <IconUserCog size={20} />,
     permission: 1,
   },
 
