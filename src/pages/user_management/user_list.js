@@ -5,7 +5,7 @@ import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import axios from "axios";
-import { Button, Paper, Group, Badge } from "@mantine/core";
+import { Button, Paper, Group, Badge, SimpleGrid } from "@mantine/core";
 import { IconEdit, IconX, IconInfoCircle, IconPlus } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -29,7 +29,6 @@ export default function UserList() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {
-    // NOTE: assumption: the backend exposes a serverside listing endpoint for users
     const sort =
       sorting.length > 0
         ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
@@ -45,7 +44,7 @@ export default function UserList() {
 
     try {
       const res = await axios.post(
-        `${API_URL}/users/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        `${API_URL}/api/user/serverside_list?page=${pagination.pageIndex}&size=${pagination.pageSize}&sort_by=id&sort_order=desc`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
@@ -71,24 +70,6 @@ export default function UserList() {
     if (!user?.token) return;
     fetchData();
   }, [fetchData, user?.token]);
-
-  const handleToggleActive = useCallback(
-    async (id) => {
-      try {
-        const encryptedId = encrypt(String(id));
-        await axios.put(
-          `${API_URL}/users/toggle-active/${encryptedId}`,
-          {},
-          { headers: { Authorization: `Bearer ${user.token}` } },
-        );
-        // optimistic update: refetch
-        fetchData();
-      } catch (err) {
-        console.error("Failed to toggle active:", err);
-      }
-    },
-    [API_URL, encrypt, user.token, fetchData],
-  );
 
   const columns = useMemo(() => {
     return [
@@ -122,14 +103,6 @@ export default function UserList() {
         enableColumnFilter: true,
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
-      },
-      {
-        accessorFn: (row) => row.password,
-        id: "password",
-        header: "Password",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: () => "********",
       },
       {
         accessorFn: (row) => row.badge_no,
@@ -172,35 +145,6 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.role_name,
-        id: "role_name",
-        header: "Role",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => info.getValue() ?? "-",
-      },
-      {
-        accessorFn: (row) => row.active,
-        id: "active",
-        header: "Account Status",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: ({ row }) => (
-          <Badge color={row.original.active ? "green" : "gray"} radius="sm">
-            {row.original.active ? "Active" : "Inactive"}
-          </Badge>
-        ),
-      },
-      {
-        accessorFn: (row) => row.outside_access,
-        id: "outside_access",
-        header: "Outside Access",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: ({ row }) =>
-          row.original.outside_access ? "Enabled" : "Disabled",
-      },
-      {
         id: "action",
         header: "Action",
         enableColumnFilter: true,
@@ -208,13 +152,15 @@ export default function UserList() {
         size: 240,
         cell: ({ row }) => {
           const userRow = row.original;
-          const encryptedId = encrypt(String(userRow.id));
+          const encryptedId = encrypt(String(userRow.id_user));
           return (
-            <Group position="center">
+            <SimpleGrid cols={2} spacing={6}>
+              {/* DETAILS */}
               <Button
+                fullWidth
                 size="xs"
                 color="blue"
-                leftIcon={<IconInfoCircle size={14} />}
+                leftSection={<IconInfoCircle size={14} />}
                 onClick={() =>
                   router.push(`/user_management/user_detail/${encryptedId}`)
                 }
@@ -222,37 +168,24 @@ export default function UserList() {
                 Details
               </Button>
 
+              {/* EDIT */}
               <Button
+                fullWidth
                 size="xs"
                 color="yellow"
-                leftIcon={<IconEdit size={14} />}
+                leftSection={<IconEdit size={14} />}
                 onClick={() =>
                   router.push(`/user_management/user_form/${encryptedId}`)
                 }
               >
                 Edit
               </Button>
-
-              <Button
-                size="xs"
-                color={userRow.active ? "red" : "green"}
-                leftIcon={<IconX size={14} />}
-                onClick={() => handleToggleActive(userRow.id)}
-              >
-                {userRow.active ? "Deactivate" : "Activate"}
-              </Button>
-            </Group>
+            </SimpleGrid>
           );
         },
       },
     ];
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    encrypt,
-    router,
-    handleToggleActive,
-  ]);
+  }, [pagination.pageIndex, pagination.pageSize, encrypt, router]);
 
   const table = useReactTable({
     data,
