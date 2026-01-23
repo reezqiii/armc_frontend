@@ -14,7 +14,6 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/router";
 import React from "react";
 
-
 const navigation = [
   {
     name: "Home",
@@ -32,7 +31,7 @@ const navigation = [
 
   {
     name: "User Management",
-    url: "/user_management/user_list",
+    url: "/user_management/user_list/active",
     icon: <IconUserCog size={20} />,
     permission: 1,
   },
@@ -44,7 +43,6 @@ const navigation = [
   //   permission: 1,
   // },
 ];
-
 
 export default function Navigation() {
   const router = useRouter();
@@ -66,11 +64,12 @@ export default function Navigation() {
             <div className="w-fit text-white">
               <Link
                 href={link.url}
-                className={`p-2 ${(link.url === "/" && router.asPath === "/") ||
-                    (link.url !== "/" && router.asPath.startsWith(link.url))
+                className={`p-2 ${
+                  (link.url === "/" && router.asPath === "/") ||
+                  (link.url !== "/" && router.asPath.startsWith(link.url))
                     ? "bg-white bg-opacity-25 text-white"
                     : ""
-                  } hover:bg-white hover:text-black rounded-md text-sm flex`}
+                } hover:bg-white hover:text-black rounded-md text-sm flex`}
                 data-active={true}
               >
                 <div className="mr-2">{link.icon}</div>
@@ -88,11 +87,12 @@ export default function Navigation() {
       <div key={index} className="w-fit text-white">
         <Link
           href={link.url}
-          className={`p-2 ${(link.url === "/" && router.asPath === "/") ||
-              (link.url !== "/" && router.asPath.startsWith(link.url))
+          className={`p-2 ${
+            (link.url === "/" && router.asPath === "/") ||
+            (link.url !== "/" && router.asPath.startsWith(link.url))
               ? "bg-white bg-opacity-25 text-white"
               : ""
-            } hover:bg-white hover:text-black rounded-md text-sm flex`}
+          } hover:bg-white hover:text-black rounded-md text-sm flex`}
           data-active={true}
         >
           <div className="mr-2">{link.icon}</div>

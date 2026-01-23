@@ -31,6 +31,7 @@ function CreateUser() {
     project_id: "",
     dept_id: "",
     company_id: "",
+    id_role: "",
     access_yard_company: [],
   });
   const [errors, setErrors] = React.useState({
@@ -41,6 +42,7 @@ function CreateUser() {
     dept_id: null,
     project_id: null,
     company_id: null,
+    id_role: null,
     access_yard_company: null,
   });
   const [loading, setLoading] = useState(false);
@@ -50,6 +52,7 @@ function CreateUser() {
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [companyOptions, setCompanyOptions] = useState([]);
+  const [roleOptions, setRoleOptions] = useState([]);
   const [debouncedSearch] = useDebouncedValue(search, 300);
 
   const handleChange = (field, value) => {
@@ -62,7 +65,7 @@ function CreateUser() {
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
-        const [companyRes, deptRes, projectRes] = await Promise.all([
+        const [companyRes, deptRes, projectRes, roleRes] = await Promise.all([
           axios.get(`${API_URL}/portal_company/list`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
@@ -70,6 +73,9 @@ function CreateUser() {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
           axios.get(`${API_URL}/portal-project`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/role`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
         ]);
@@ -80,7 +86,7 @@ function CreateUser() {
             label: c.company_name,
           })),
         );
-        
+
         setCompanyOptions(
           companyRes.data.map((c) => ({
             value: String(c.id_company),
@@ -99,6 +105,13 @@ function CreateUser() {
           projectRes.data.map((p) => ({
             value: String(p.id),
             label: p.project_name,
+          })),
+        );
+
+        setRoleOptions(
+          roleRes.data.map((r) => ({
+            value: String(r.id_role), 
+            label: r.role_name,
           })),
         );
       } catch (err) {
@@ -121,6 +134,7 @@ function CreateUser() {
     if (!formData.dept_id) newErrors.dept_id = "Department is required";
     if (!formData.project_id) newErrors.project_id = "Project is required";
     if (!formData.company_id) newErrors.company_id = "Company is required";
+    if (!formData.id_role) newErrors.id_role = "Role is required";
     if (formData.access_yard_company.length === 0)
       newErrors.access_yard_company = "Company Yard Access is required";
 
@@ -128,6 +142,20 @@ function CreateUser() {
       setErrors(newErrors);
       return;
     }
+
+    // 🔔 KONFIRMASI SEBELUM SUBMIT
+    const confirm = await Swal.fire({
+      title: "Create User?",
+      text: "Are you sure you want to create this user?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, create",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    });
+
+    // ❌ Jika cancel
+    if (!confirm.isConfirmed) return;
 
     const payload = {
       badge_no: Number(formData.badge_no),
@@ -137,6 +165,7 @@ function CreateUser() {
       dept_id: Number(formData.dept_id),
       project_id: Number(formData.project_id),
       company_id: Number(formData.company_id),
+      id_role: Number(formData.id_role),
       access_yard_company: formData.access_yard_company,
       created_by: user.id,
     };
@@ -144,7 +173,7 @@ function CreateUser() {
     try {
       setLoadingSubmit(true);
 
-      await axios.post(`${API_URL}/users`, payload, {
+      await axios.post(`${API_URL}/api/user/create`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
@@ -164,6 +193,7 @@ function CreateUser() {
         dept_id: null,
         project_id: null,
         company_id: null,
+        id_role: null,
         access_yard_company: [],
       });
     } catch (err) {
@@ -244,19 +274,6 @@ function CreateUser() {
                   <Select
                     required
                     searchable
-                    label="Project"
-                    placeholder="Select Project"
-                    data={projectOptions}
-                    value={formData.project_id ?? null}
-                    onChange={(value) => handleChange("project_id", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
-                  />
-                  <Select
-                    required
-                    searchable
                     label="Company"
                     placeholder="Select Company"
                     data={companyOptions}
@@ -282,12 +299,37 @@ function CreateUser() {
                       }`,
                     }}
                   />
+                  <Select
+                    required
+                    searchable
+                    label="Project"
+                    placeholder="Select Project"
+                    data={projectOptions}
+                    value={formData.project_id ?? null}
+                    onChange={(value) => handleChange("project_id", value)}
+                    classNames={{
+                      label: "font-semibold mb-1 text-gray-700",
+                      input: "h-[40px]",
+                    }}
+                  />
                   <TextInput
                     required
                     label="Email Address"
                     placeholder="example@company.com"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
+                    classNames={{
+                      label: "font-semibold mb-1 text-gray-700",
+                      input: "h-[40px]",
+                    }}
+                  />
+                  <Select
+                    required
+                    label="Role"
+                    placeholder="Select role"
+                    data={roleOptions}
+                    value={formData.id_role ?? null}
+                    onChange={(value) => handleChange("id_role", value)}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",

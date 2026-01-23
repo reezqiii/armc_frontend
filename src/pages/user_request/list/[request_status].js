@@ -184,7 +184,7 @@ export default function RequestListDynamic({ request_status }) {
       const { data } = await axios.post(
         `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       setData(data.data);
@@ -222,7 +222,7 @@ export default function RequestListDynamic({ request_status }) {
           {},
           {
             headers: { Authorization: `Bearer ${user.token}` },
-          }
+          },
         );
 
         // Hapus item dari data
@@ -233,7 +233,7 @@ export default function RequestListDynamic({ request_status }) {
         Swal.fire("Error", "Failed to cancel", "error");
       }
     },
-    [API_URL, encrypt, user.token]
+    [API_URL, encrypt, user.token],
   );
 
   const handleBulkProcess = async (action) => {
@@ -261,10 +261,10 @@ export default function RequestListDynamic({ request_status }) {
         action === "submit"
           ? "Yes, Submit"
           : action === "approve"
-          ? "Yes, Approve"
-          : action === "reject"
-          ? "Yes, Reject"
-          : "Yes",
+            ? "Yes, Approve"
+            : action === "reject"
+              ? "Yes, Reject"
+              : "Yes",
       cancelButtonText: "No, cancel",
     });
 
@@ -299,8 +299,8 @@ export default function RequestListDynamic({ request_status }) {
         config.id === 1
           ? "/requests/hod-approval/bulk"
           : config.id === 3
-          ? "/requests/lead-it-approval/bulk"
-          : "/requests/it-approval/bulk";
+            ? "/requests/lead-it-approval/bulk"
+            : "/requests/it-approval/bulk";
 
     try {
       await axios.put(
@@ -312,7 +312,7 @@ export default function RequestListDynamic({ request_status }) {
         },
         {
           headers: { Authorization: `Bearer ${user.token}` },
-        }
+        },
       );
       Swal.fire("Success", "Requests processed", "success");
       setRowSelection({});
@@ -328,7 +328,7 @@ export default function RequestListDynamic({ request_status }) {
       Swal.fire(
         "Access Denied",
         "You are not authorized to export this data",
-        "error"
+        "error",
       );
       return;
     }
@@ -354,7 +354,7 @@ export default function RequestListDynamic({ request_status }) {
       link.href = url;
       link.setAttribute(
         "download",
-        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`
+        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
       );
       document.body.appendChild(link);
       link.click();
@@ -380,7 +380,7 @@ export default function RequestListDynamic({ request_status }) {
           {
             headers: { Authorization: `Bearer ${user.token}` },
             responseType: "blob",
-          }
+          },
         );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -388,7 +388,7 @@ export default function RequestListDynamic({ request_status }) {
         link.href = url;
         link.setAttribute(
           "download",
-          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`
+          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`,
         );
         document.body.appendChild(link);
         link.click();
@@ -399,7 +399,7 @@ export default function RequestListDynamic({ request_status }) {
         Swal.fire("Error", "Failed to generate PDF", "error");
       }
     },
-    [API_URL, encrypt, user.token]
+    [API_URL, encrypt, user.token],
   );
 
   const handleReturn = useCallback(
@@ -419,13 +419,13 @@ export default function RequestListDynamic({ request_status }) {
           const res = await axios.post(
             `${API_URL}/requests/${encryptedId}/return`,
             {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
+            { headers: { Authorization: `Bearer ${user.token}` } },
           );
 
           Swal.fire(
             "Success",
             "The request has been returned for revision.",
-            "success"
+            "success",
           );
 
           getData();
@@ -434,12 +434,12 @@ export default function RequestListDynamic({ request_status }) {
           Swal.fire(
             "Error",
             err.response?.data?.message || "An error occurred.",
-            "error"
+            "error",
           );
         }
       });
     },
-    [API_URL, encrypt, user.token, getData]
+    [API_URL, encrypt, user.token, getData],
   );
 
   const columns = useMemo(() => {
@@ -666,7 +666,7 @@ export default function RequestListDynamic({ request_status }) {
             </div>
           );
         },
-      }
+      },
     );
 
     if (config?.actions.includes("admin_status")) {
@@ -789,10 +789,13 @@ export default function RequestListDynamic({ request_status }) {
     columns,
     filterFns: {},
     state: {
+      rowSelection, 
       columnFilters,
       sorting,
       pagination,
     },
+    enableRowSelection: true, 
+    onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
