@@ -9,7 +9,6 @@ import useDecrypt from "@/hooks/useDecrypt";
 import Cookies from "js-cookie";
 import axios from "axios";
 import Head from "next/head";
-
 import "@/styles/globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
@@ -50,7 +49,9 @@ export default function App({ Component, pageProps }) {
 
       const currentPath = window.location.pathname;
 
-      if (currentPath.startsWith("/public_request")) {
+      const PUBLIC_ROUTES = ["/public_request", "/armc/public_request"];
+
+      if (PUBLIC_ROUTES.some((path) => currentPath.includes(path))) {
         setIsAuthenticated(true);
         return;
       }
@@ -62,10 +63,7 @@ export default function App({ Component, pageProps }) {
         idUser = id;
       }
 
-      console.log(idUser);
-
       if (auth_user) {
-        // const encryptUserId = encrypt(id);
         const encryptUserId = auth_user;
         const isValidUser = await validateUser(encryptUserId);
 
@@ -82,26 +80,22 @@ export default function App({ Component, pageProps }) {
           });
 
           setIsAuthenticated(true);
-          // router.push('/')
 
           if (currentPath === "/login" || currentPath === "/") {
-            // Jika user akses login page atau root, baru redirect ke "/"
             router.push("/");
           } else {
-            // Otherwise: biarkan user tetap di halaman yang sedang dibuka
-            // Tidak perlu redirect
-            router.push(currentPath);
+            router.replace("/");
           }
-
           return;
         } else {
-          router.push(`${PORTAL_API}`);
+          router.push(PORTAL_API);
         }
       } else {
         const cookieValue = Cookies.get("portal_user_js");
 
         if (!cookieValue) {
-          router.push(`${PORTAL_API}`);
+          router.push(PORTAL_API);
+          return;
         } else {
           idUser = cookieValue;
         }
@@ -121,13 +115,14 @@ export default function App({ Component, pageProps }) {
 
           setIsAuthenticated(true);
         } else {
-          router.push(`${PORTAL_API}`);
+          router.push(PORTAL_API);
         }
       }
     };
 
     initAuth();
   }, [router.isReady]);
+
   // }, [cookieUser, setUser, decrypt, encrypt]);
 
   // if (!isAuthenticated) {

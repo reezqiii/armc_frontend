@@ -44,6 +44,7 @@ import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import { getRequestStatus } from "@/lib/requestStatusList";
+import Head from "next/head";
 
 const STATUS_CONFIG = {
   all: {
@@ -183,7 +184,7 @@ export default function RequestListDynamic({ request_status }) {
       const { data } = await axios.post(
         `${API_URL}/requests/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       setData(data.data);
@@ -221,7 +222,7 @@ export default function RequestListDynamic({ request_status }) {
           {},
           {
             headers: { Authorization: `Bearer ${user.token}` },
-          }
+          },
         );
 
         // Hapus item dari data
@@ -232,7 +233,7 @@ export default function RequestListDynamic({ request_status }) {
         Swal.fire("Error", "Failed to cancel", "error");
       }
     },
-    [API_URL, encrypt, user.token]
+    [API_URL, encrypt, user.token],
   );
 
   const handleBulkProcess = async (action) => {
@@ -260,10 +261,10 @@ export default function RequestListDynamic({ request_status }) {
         action === "submit"
           ? "Yes, Submit"
           : action === "approve"
-          ? "Yes, Approve"
-          : action === "reject"
-          ? "Yes, Reject"
-          : "Yes",
+            ? "Yes, Approve"
+            : action === "reject"
+              ? "Yes, Reject"
+              : "Yes",
       cancelButtonText: "No, cancel",
     });
 
@@ -298,8 +299,8 @@ export default function RequestListDynamic({ request_status }) {
         config.id === 1
           ? "/requests/hod-approval/bulk"
           : config.id === 3
-          ? "/requests/lead-it-approval/bulk"
-          : "/requests/it-approval/bulk";
+            ? "/requests/lead-it-approval/bulk"
+            : "/requests/it-approval/bulk";
 
     try {
       await axios.put(
@@ -311,7 +312,7 @@ export default function RequestListDynamic({ request_status }) {
         },
         {
           headers: { Authorization: `Bearer ${user.token}` },
-        }
+        },
       );
       Swal.fire("Success", "Requests processed", "success");
       setRowSelection({});
@@ -327,7 +328,7 @@ export default function RequestListDynamic({ request_status }) {
       Swal.fire(
         "Access Denied",
         "You are not authorized to export this data",
-        "error"
+        "error",
       );
       return;
     }
@@ -353,7 +354,7 @@ export default function RequestListDynamic({ request_status }) {
       link.href = url;
       link.setAttribute(
         "download",
-        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`
+        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
       );
       document.body.appendChild(link);
       link.click();
@@ -379,7 +380,7 @@ export default function RequestListDynamic({ request_status }) {
           {
             headers: { Authorization: `Bearer ${user.token}` },
             responseType: "blob",
-          }
+          },
         );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -387,7 +388,7 @@ export default function RequestListDynamic({ request_status }) {
         link.href = url;
         link.setAttribute(
           "download",
-          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`
+          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`,
         );
         document.body.appendChild(link);
         link.click();
@@ -398,7 +399,7 @@ export default function RequestListDynamic({ request_status }) {
         Swal.fire("Error", "Failed to generate PDF", "error");
       }
     },
-    [API_URL, encrypt, user.token]
+    [API_URL, encrypt, user.token],
   );
 
   const handleReturn = useCallback(
@@ -418,13 +419,13 @@ export default function RequestListDynamic({ request_status }) {
           const res = await axios.post(
             `${API_URL}/requests/${encryptedId}/return`,
             {},
-            { headers: { Authorization: `Bearer ${user.token}` } }
+            { headers: { Authorization: `Bearer ${user.token}` } },
           );
 
           Swal.fire(
             "Success",
             "The request has been returned for revision.",
-            "success"
+            "success",
           );
 
           getData();
@@ -433,12 +434,12 @@ export default function RequestListDynamic({ request_status }) {
           Swal.fire(
             "Error",
             err.response?.data?.message || "An error occurred.",
-            "error"
+            "error",
           );
         }
       });
     },
-    [API_URL, encrypt, user.token, getData]
+    [API_URL, encrypt, user.token, getData],
   );
 
   const columns = useMemo(() => {
@@ -665,7 +666,7 @@ export default function RequestListDynamic({ request_status }) {
             </div>
           );
         },
-      }
+      },
     );
 
     if (config?.actions.includes("admin_status")) {
@@ -788,10 +789,13 @@ export default function RequestListDynamic({ request_status }) {
     columns,
     filterFns: {},
     state: {
+      rowSelection, 
       columnFilters,
       sorting,
       pagination,
     },
+    enableRowSelection: true, 
+    onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
@@ -819,91 +823,99 @@ export default function RequestListDynamic({ request_status }) {
   const hasSelectedRows = Object.keys(rowSelection).length > 0;
 
   return (
-    <AuthLayout sidebarList={requestorList}>
-      <div className="py-6 px-4">
-        <Paper radius="md" p="md" withBorder shadow="sm">
-          {/* HEADER */}
-          <div className="flex items-center justify-between border-b pb-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                <config.icon size={22} />
+    <>
+      <Head>
+        <title>{config.label} | ARMC</title>
+      </Head>
+
+      <AuthLayout sidebarList={requestorList}>
+        <div className="py-6 px-4">
+          <Paper radius="md" p="md" withBorder shadow="sm">
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                  <config.icon size={22} />
+                </div>
+                <div>
+                  <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                    {config.label} List
+                  </h1>
+                  <p className="text-xs text-gray-500">
+                    ITF14 - {config.label}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-md font-extrabold text-blue-600 uppercase">
-                  {config.label} List
-                </h1>
-                <p className="text-xs text-gray-500">ITF14 - {config.label}</p>
-              </div>
+
+              {canExport && (
+                <Button
+                  color="green"
+                  size="xs"
+                  leftSection={<IconFileSpreadsheet size={16} />}
+                  onClick={handleExportExcel}
+                >
+                  Export Excel
+                </Button>
+              )}
             </div>
 
-            {canExport && (
-              <Button
-                color="green"
-                size="xs"
-                leftSection={<IconFileSpreadsheet size={16} />}
-                onClick={handleExportExcel}
-              >
-                Export Excel
-              </Button>
-            )}
-          </div>
+            {/* TABLE */}
+            <Datatables table={table} totalPages={totalPages} />
 
-          {/* TABLE */}
-          <Datatables table={table} totalPages={totalPages} />
+            {/* MODAL */}
+            <RejectTimelineModal
+              opened={modalOpen}
+              onClose={() => setModalOpen(false)}
+              data={selectedRejectData}
+            />
 
-          {/* MODAL */}
-          <RejectTimelineModal
-            opened={modalOpen}
-            onClose={() => setModalOpen(false)}
-            data={selectedRejectData}
-          />
+            {/* BULK ACTION */}
+            {hasSelectedRows && (
+              <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
+                <Text size="sm" fw={600}>
+                  Selected {Object.keys(rowSelection).length} items
+                </Text>
 
-          {/* BULK ACTION */}
-          {hasSelectedRows && (
-            <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
-              <Text size="sm" fw={600}>
-                Selected {Object.keys(rowSelection).length} items
-              </Text>
-
-              <Group>
-                {config.id === 0 && (
-                  <Button
-                    color="green"
-                    size="xs"
-                    leftSection={<IconSend size={16} />}
-                    onClick={() => handleBulkProcess("submit")}
-                  >
-                    Submit to HOD Request
-                  </Button>
-                )}
-
-                {config.actions.includes("approve_bulk") && canApprove && (
-                  <>
+                <Group>
+                  {config.id === 0 && (
                     <Button
-                      size="xs"
                       color="green"
-                      leftSection={<IconCheck size={14} />}
-                      onClick={() => handleBulkProcess("approve")}
-                    >
-                      Approve
-                    </Button>
-
-                    <Button
                       size="xs"
-                      color="red"
-                      leftSection={<IconX size={14} />}
-                      onClick={() => handleBulkProcess("reject")}
+                      leftSection={<IconSend size={16} />}
+                      onClick={() => handleBulkProcess("submit")}
                     >
-                      Reject
+                      Submit to HOD Request
                     </Button>
-                  </>
-                )}
-              </Group>
-            </div>
-          )}
-        </Paper>
-      </div>
-    </AuthLayout>
+                  )}
+
+                  {config.actions.includes("approve_bulk") && canApprove && (
+                    <>
+                      <Button
+                        size="xs"
+                        color="green"
+                        leftSection={<IconCheck size={14} />}
+                        onClick={() => handleBulkProcess("approve")}
+                      >
+                        Approve
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        color="red"
+                        leftSection={<IconX size={14} />}
+                        onClick={() => handleBulkProcess("reject")}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </Group>
+              </div>
+            )}
+          </Paper>
+        </div>
+      </AuthLayout>
+    </>
   );
 }
 
