@@ -1,13 +1,5 @@
 import AuthLayout from "@/components/layout/authLayout";
-import {
-  Button,
-  Paper,
-  TextInput,
-  Textarea,
-  Select,
-  Autocomplete,
-  MultiSelect,
-} from "@mantine/core";
+import { Button, Paper, TextInput, Select, MultiSelect } from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
@@ -15,43 +7,42 @@ import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
-import { useDebouncedValue } from "@mantine/hooks";
-import { formatDate } from "@/lib/dateFormat";
 
-function CreateUser() {
+function EditUser() {
   const router = useRouter();
+  const { id } = router.query;
   const API = useApi();
   const API_URL = API.API_URL;
   const { user } = useUser();
-  const [formData, setFormData] = React.useState({
+
+  const [formData, setFormData] = useState({
     full_name: "",
     badge_no: "",
     username: "",
     email: "",
-    outside_access: "1",
-    portal_type: "0",
-    status_user: "1",
     project_id: null,
     project_ids: [],
     dept_id: null,
+    dept_ids: [],
     company_id: null,
     id_role: null,
     access_yard_company: [],
   });
-  const [errors, setErrors] = React.useState({
+
+  const [errors, setErrors] = useState({
     access_yard_company: null,
     project_ids: null,
     email: null,
+    dept_ids: null,
   });
-  const [loading, setLoading] = useState(false);
+
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [search, setSearch] = useState("");
+  const [loadingData, setLoadingData] = useState(true);
   const [accessYardOptions, setAccessYardOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [companyOptions, setCompanyOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
-  const [debouncedSearch] = useDebouncedValue(search, 300);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -120,33 +111,78 @@ function CreateUser() {
     fetchMasterData();
   }, [API_URL, user.token]);
 
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchUserDetail = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/user/${id}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        const u = Array.isArray(res.data) ? res.data[0] : res.data;
+
+        if (!u) {
+          Swal.fire("Error", "User not found", "error");
+          return;
+        }
+
+        setFormData({
+          badge_no: u.badge_no ?? "",
+          full_name: u.full_name ?? "",
+          username: u.username ?? "",
+          email: u.email ?? "",
+
+          outside_access: String(u.outside_access ?? 1),
+          portal_type: String(u.portal_type ?? 0),
+          status_user: String(u.status_user ?? 1),
+
+          dept_id: u.dept_id ? String(u.dept_id) : null,
+          project_id: u.project_id ? String(u.project_id) : null,
+          company_id: u.company_id ? String(u.company_id) : null,
+          id_role: u.id_role ? String(u.id_role) : null,
+
+          project_ids: u.project_ids?.map(String) ?? [],
+          dept_ids: u.dept_ids?.map(String) ?? [],
+          access_yard_company: u.access_yard_company?.map(String) ?? [],
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Failed to fetch user data", "error");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchUserDetail();
+  }, [id, API_URL, user.token]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
-    if (!formData.project_ids || formData.project_ids.length === 0) {
+    if (!formData.project_ids.length)
       newErrors.project_ids = "Additional project is required";
-    }
-    if (formData.access_yard_company.length === 0)
+    if (!formData.access_yard_company.length)
       newErrors.access_yard_company = "Company Yard Access is required";
+    if (!formData.dept_ids.length)
+      newErrors.dept_ids = "Department is required";
 
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       return;
     }
 
-    // KONFIRMASI SEBELUM SUBMIT
     const confirm = await Swal.fire({
-      title: "Create User?",
-      text: "Are you sure you want to create this user?",
+      title: "Update User?",
+      text: "Are you sure you want to update this user?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, create",
+      confirmButtonText: "Yes, update",
       cancelButtonText: "Cancel",
       reverseButtons: true,
     });
 
-    // Jika cancel
     if (!confirm.isConfirmed) return;
 
     const payload = {
@@ -154,54 +190,41 @@ function CreateUser() {
       full_name: formData.full_name,
       username: formData.username,
       email: formData.email,
-
       dept_id: Number(formData.dept_id),
+      dept_ids: formData.dept_ids.map(Number),
       project_id: Number(formData.project_id),
-      project_ids: formData.project_ids?.map(Number) ?? [],
+      project_ids: formData.project_ids.map(Number),
       company_id: Number(formData.company_id),
       id_role: Number(formData.id_role),
-
-      outside_access: Number(formData.outside_access),
-      portal_type: Number(formData.portal_type),
-      status_user: Number(formData.status_user),
-
-      access_yard_company: formData.access_yard_company?.map(Number) ?? [],
-      created_by: user.id,
+      access_yard_company: formData.access_yard_company,
+      updated_by: user.id,
     };
 
     try {
       setLoadingSubmit(true);
 
-      await axios.post(`${API_URL}/api/user/create`, payload, {
+      await axios.put(`${API_URL}/api/user/${id}`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
       await Swal.fire({
         icon: "success",
         title: "Success",
-        text: "User successfully created",
+        text: "User successfully updated",
         timer: 1500,
         showConfirmButton: false,
       });
 
-      setFormData({
-        badge_no: "",
-        full_name: "",
-        username: "",
-        email: "",
-        dept_id: null,
-        project_id: null,
-        company_id: null,
-        id_role: null,
-        access_yard_company: [],
-      });
+      router.back();
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", "Failed to create user", "error");
+      Swal.fire("Error", "Failed to update user", "error");
     } finally {
       setLoadingSubmit(false);
     }
   };
+
+  if (loadingData) return null;
 
   return (
     <AuthLayout>
@@ -211,16 +234,14 @@ function CreateUser() {
           shadow="md"
           className="bg-white w-full overflow-hidden border border-gray-200 max-w-6xl mx-auto"
         >
-          {/* Header */}
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-tight">
-              Create New User Account
+              Edit User Account
             </h1>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="p-4 md:p-6 space-y-4">
-              {/* SECTION 1: Basic Info */}
               <div className="bg-gray-50 p-6 rounded-md shadow-sm space-y-4">
                 <div className="flex flex-col gap-4">
                   <TextInput
@@ -229,21 +250,14 @@ function CreateUser() {
                     placeholder="Input Badge ID"
                     value={formData.badge_no}
                     onChange={(e) => handleChange("badge_no", e.target.value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
                   <TextInput
                     required
                     label="Full Name"
                     placeholder="Input Full Name"
                     value={formData.full_name}
                     onChange={(e) => handleChange("full_name", e.target.value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
 
                   <TextInput
@@ -252,37 +266,39 @@ function CreateUser() {
                     placeholder="Input Username"
                     value={formData.username}
                     onChange={(e) => handleChange("username", e.target.value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
                   <Select
                     required
                     searchable
                     label="Department"
                     placeholder="Select Department"
                     data={deptOptions}
-                    value={formData.dept_id ?? null}
+                    value={formData.dept_id}
                     onChange={(value) => handleChange("dept_id", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
+                  <MultiSelect
+                    required
+                    searchable
+                    label="Department Alt"
+                    placeholder="Select Departments"
+                    data={deptOptions}
+                    value={formData.dept_ids}
+                    onChange={(value) => handleChange("dept_ids", value)}
+                    error={errors.dept_ids}
+                  />
+
                   <Select
                     required
                     searchable
                     label="Company"
                     placeholder="Select Company"
                     data={companyOptions}
-                    value={formData.company_id ?? null}
+                    value={formData.company_id}
                     onChange={(value) => handleChange("company_id", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
                   <MultiSelect
                     label="Company Yard Access"
                     searchable
@@ -291,13 +307,8 @@ function CreateUser() {
                     value={formData.access_yard_company}
                     onChange={(val) => handleChange("access_yard_company", val)}
                     error={errors.access_yard_company}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: `min-h-[40px] ${
-                        errors.access_yard_company ? "border-red-500" : ""
-                      }`,
-                    }}
                   />
+
                   <Select
                     label="Outside Access"
                     required
@@ -305,9 +316,10 @@ function CreateUser() {
                       { value: "1", label: "Enable" },
                       { value: "0", label: "Disabled" },
                     ]}
-                    value={formData.outside_access}
+                    value={String(formData.outside_access)}
                     onChange={(value) => handleChange("outside_access", value)}
                   />
+
                   <Select
                     label="Portal Type"
                     required
@@ -316,7 +328,7 @@ function CreateUser() {
                       { value: "1", label: "Portal External" },
                       { value: "2", label: "All" },
                     ]}
-                    value={formData.portal_type}
+                    value={String(formData.portal_type)}
                     onChange={(value) => handleChange("portal_type", value)}
                   />
 
@@ -326,13 +338,10 @@ function CreateUser() {
                     label="Project"
                     placeholder="Select Project"
                     data={projectOptions}
-                    value={formData.project_id ?? null}
+                    value={formData.project_id}
                     onChange={(value) => handleChange("project_id", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
                   <MultiSelect
                     searchable
                     clearable
@@ -340,13 +349,10 @@ function CreateUser() {
                     placeholder="Select Additional Projects"
                     data={projectOptions}
                     error={errors.project_ids}
-                    value={formData.project_ids ?? []}
+                    value={formData.project_ids}
                     onChange={(value) => handleChange("project_ids", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "min-h-[40px]",
-                    }}
                   />
+
                   <TextInput
                     required
                     type="email"
@@ -355,39 +361,33 @@ function CreateUser() {
                     value={formData.email}
                     error={errors.email}
                     onChange={(e) => handleChange("email", e.target.value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
+
                   <Select
                     label="User Status"
                     required
                     data={[
                       { value: "1", label: "Active" },
                       { value: "0", label: "Inactive" },
+                      { value: "2", label: "Locked" },
                     ]}
-                    value={formData.status_user}
+                    value={String(formData.status_user)}
                     onChange={(value) => handleChange("status_user", value)}
                   />
+
                   <Select
                     required
                     searchable
                     label="Role"
                     placeholder="Select role"
                     data={roleOptions}
-                    value={formData.id_role ?? null}
+                    value={formData.id_role}
                     onChange={(value) => handleChange("id_role", value)}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-between pt-2 gap-4 px-6 pb-6">
               <Button
                 leftSection={<IconArrowLeft size={18} />}
@@ -403,7 +403,7 @@ function CreateUser() {
                 loading={loadingSubmit}
                 disabled={loadingSubmit}
               >
-                Submit
+                Update
               </Button>
             </div>
           </form>
@@ -413,5 +413,5 @@ function CreateUser() {
   );
 }
 
-CreateUser.title = "Create User";
-export default CreateUser;
+EditUser.title = "Edit User";
+export default EditUser;

@@ -5,8 +5,13 @@ import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import axios from "axios";
-import { Button, Paper, SimpleGrid } from "@mantine/core";
-import { IconEdit, IconInfoCircle, IconPlus } from "@tabler/icons-react";
+import { Badge, Button, Paper, SimpleGrid } from "@mantine/core";
+import {
+  IconEdit,
+  IconInfoCircle,
+  IconKey,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
   useReactTable,
@@ -15,6 +20,7 @@ import {
 } from "@tanstack/react-table";
 import Head from "next/head";
 import userList from "@/data/sidebar/UserList";
+import { formatDate } from "@/lib/dateFormat";
 
 export default function UserList() {
   const router = useRouter();
@@ -26,17 +32,19 @@ export default function UserList() {
     inactive: 0,
     locked: 2,
   };
-
   const statusParam = router.query.status_user;
   const statusUser =
     statusMap[statusParam] !== undefined ? statusMap[statusParam] : null;
-
   const titleMap = {
     active: "Active Users",
     inactive: "Inactive Users",
     locked: "Locked Users",
   };
-
+  const statusNameMap = {
+    0: "Inactive",
+    1: "Active",
+    2: "Locked",
+  };
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
@@ -47,7 +55,7 @@ export default function UserList() {
     if (!user?.token || statusUser === null || statusUser === undefined) return;
     if (!router.isReady) return null;
     const searchQuery = {
-      status_user: statusUser, 
+      status_user: statusUser,
     };
 
     columnFilters.forEach((filter) => {
@@ -82,7 +90,16 @@ export default function UserList() {
       setData([]);
       setTotalPages(1);
     }
-  }, [user.token, statusUser, router.isReady, columnFilters, sorting, API_URL, pagination.pageIndex, pagination.pageSize]);
+  }, [
+    user.token,
+    statusUser,
+    router.isReady,
+    columnFilters,
+    sorting,
+    API_URL,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -103,15 +120,7 @@ export default function UserList() {
         header: "Created Date",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => {
-          const value = info.getValue();
-          if (!value) return "-";
-          return new Date(value).toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
-        },
+        cell: ({ row }) => formatDate(row.original.created_date),
       },
       {
         accessorFn: (row) => row.username,
@@ -170,29 +179,74 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        id: "action",
-        header: "Action",
+        accessorFn: (row) => row.status_user,
+        id: "status_user",
+        header: "Account Status",
         enableColumnFilter: true,
         enableSorting: true,
-        size: 240,
+        cell: (info) => statusNameMap[info.getValue()] ?? "-",
+      },
+      {
+        accessorFn: (row) => row.outside_access,
+        id: "outside_access",
+        header: "Outside Access",
+        enableColumnFilter: false,
+        enableSorting: false,
+        cell: (info) => {
+          const value = info.getValue();
+
+          if (value === 1)
+            return (
+              <Badge color="green" variant="filled" size="md">
+                Enable
+              </Badge>
+            );
+
+          if (value === 0)
+            return (
+              <Badge color="red" variant="filled" size="md">
+                Disabled
+              </Badge>
+            );
+
+          return "-";
+        },
+      },
+
+      {
+        id: "action",
+        header: "Action",
+        size: 220,
         cell: ({ row }) => {
           const userRow = row.original;
           const encryptedId = encrypt(String(userRow.id_user));
+
+          const handleResetPassword = async () => {
+            try {
+              await axios.post(
+                `${API_URL}/api/user/reset-password`,
+                { id_user: userRow.id_user },
+                {
+                  headers: { Authorization: `Bearer ${user.token}` },
+                },
+              );
+
+              notifications.show({
+                title: "Success",
+                message: "Password has been successfully reset",
+                color: "green",
+              });
+            } catch (error) {
+              notifications.show({
+                title: "Error",
+                message: "Failed to reset password",
+                color: "red",
+              });
+            }
+          };
+
           return (
             <SimpleGrid cols={2} spacing={6}>
-              {/* DETAILS */}
-              <Button
-                fullWidth
-                size="xs"
-                color="blue"
-                leftSection={<IconInfoCircle size={14} />}
-                onClick={() =>
-                  router.push(`/user_management/user_detail/${encryptedId}`)
-                }
-              >
-                Details
-              </Button>
-
               {/* EDIT */}
               <Button
                 fullWidth
@@ -200,10 +254,21 @@ export default function UserList() {
                 color="yellow"
                 leftSection={<IconEdit size={14} />}
                 onClick={() =>
-                  router.push(`/user_management/user_form/${encryptedId}`)
+                  router.push(`/user_management/edit/${encryptedId}`)
                 }
               >
-                Edit
+                Update
+              </Button>
+
+              {/* RESET PASSWORD */}
+              <Button
+                fullWidth
+                size="xs"
+                color="gray"
+                leftSection={<IconKey size={14} />}
+                onClick={handleResetPassword}
+              >
+                Reset Password
               </Button>
             </SimpleGrid>
           );
