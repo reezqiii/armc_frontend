@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/permissionHelper";
 import useCollapseStore from "@/store/useLayout";
 import { ActionIcon, Collapse, Menu, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -19,30 +20,21 @@ const navigation = [
     name: "Home",
     url: "/",
     icon: <IconHome size={20} />,
-    permission: 1,
   },
 
   {
     name: "User Request",
     url: "/user_request/list/all",
     icon: <IconUser size={20} />,
-    permission: 1,
   },
 
   {
     name: "User Management",
     url: "/user_management/user_list/active",
     icon: <IconUserCog size={20} />,
-    permission: 1,
+    permission: 2,
   },
-
-  // {
-  //   name: "User Management",
-  //   url: "/user_management/requestor_list",
-  //   icon: <IconUserCog size={20} />,
-  //   permission: 1,
-  // },
-];
+].filter((m) => !m.permission || hasPermission(m.permission));
 
 export default function Navigation() {
   const router = useRouter();

@@ -40,7 +40,7 @@ export default function App({ Component, pageProps }) {
         console.error("Error validating user: ", error);
       }
     },
-    [API_URL]
+    [API_URL],
   );
 
   useEffect(() => {
@@ -81,12 +81,13 @@ export default function App({ Component, pageProps }) {
 
           setIsAuthenticated(true);
 
+          const currentPath = window.location.pathname;
+
           if (currentPath === "/login" || currentPath === "/") {
             router.push("/");
           } else {
-            router.replace("/");
+              router.push(currentPath);
           }
-          return;
         } else {
           router.push(PORTAL_API);
         }
@@ -95,7 +96,7 @@ export default function App({ Component, pageProps }) {
 
         if (!cookieValue) {
           router.push(PORTAL_API);
-          return;
+          
         } else {
           idUser = cookieValue;
         }
