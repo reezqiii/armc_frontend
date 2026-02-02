@@ -159,9 +159,17 @@ export default function RequestListDynamic({ request_status }) {
     if (!config || !user?.token) return;
 
     const searchQuery = {
-      status_active: 1,
       ...(config.id !== null && { request_status: config.id }),
-      ...(config.id === 0 && { requestor_id: user.id }),
+
+      ...(config.id === 0
+        ? {
+            status_active: 1,
+            requestor_id: user.id,
+            type: 0, // INTERNAL
+          }
+        : {
+            type: 1, // PUBLIC
+          }),
     };
 
     columnFilters.forEach((filter) => {
@@ -789,12 +797,12 @@ export default function RequestListDynamic({ request_status }) {
     columns,
     filterFns: {},
     state: {
-      rowSelection, 
+      rowSelection,
       columnFilters,
       sorting,
       pagination,
     },
-    enableRowSelection: true, 
+    enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
