@@ -40,11 +40,14 @@ export default function UserList() {
     inactive: "Inactive Users",
     locked: "Locked Users",
   };
-  const statusNameMap = {
-    0: "Inactive",
-    1: "Active",
-    2: "Locked",
-  };
+  const statusNameMap = useMemo(
+    () => ({
+      0: "Inactive",
+      1: "Active",
+      2: "Locked",
+    }),
+    [],
+  );
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
@@ -275,7 +278,15 @@ export default function UserList() {
         },
       },
     ];
-  }, [pagination.pageIndex, pagination.pageSize, encrypt, router]);
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    statusNameMap,
+    encrypt,
+    API_URL,
+    user.token,
+    router,
+  ]);
 
   const table = useReactTable({
     data,
