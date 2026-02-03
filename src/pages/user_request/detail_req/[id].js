@@ -691,8 +691,8 @@ function RequestDetail() {
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
                             <span className="text-gray-800 text-sm">
-                              {data?.approval_lead_it_date_at
-                                ? formatDate(data?.approval_lead_it_date_at, {
+                              {data?.approval_lead_date_at
+                                ? formatDate(data?.approval_lead_date_at, {
                                     showTime: true,
                                   })
                                 : "-"}

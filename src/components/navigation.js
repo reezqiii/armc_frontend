@@ -36,42 +36,42 @@ export default function Navigation() {
     [encrypt],
   );
 
+  const IT_FORM = process.env.NEXT_PUBLIC_IT_FORM;
+
   const navigation = [
     {
       name: "Home",
-      target: "https://localhost/it-form/home/home",
+      target: `${IT_FORM}/home/home`,
       icon: <IconHome size={20} />,
       external: true,
     },
     {
       name: "Computer & Account",
-      target:
-        "https://localhost/it-form/computer_account/computer_account_list",
+      target: `${IT_FORM}/computer_account/computer_account_list`,
       icon: <IconDeviceDesktop size={20} />,
       external: true,
     },
     {
       name: "Cross Dept. Share Folder Access",
-      target:
-        "https://localhost/it-form/access_multi_share_folder/access_multi_share_folder",
+      target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
       icon: <IconFolderOpen size={20} />,
       external: true,
     },
     {
       name: "Wifi Access",
-      target: "https://localhost/it-form/Wifi_access/wifi_access",
+      target: `${IT_FORM}/Wifi_access/wifi_access`,
       icon: <IconWifi size={20} />,
       external: true,
     },
     {
       name: "Software Development",
-      target: "https://localhost/it-form/software_request/software_request",
+      target: `${IT_FORM}/software_request/software_request`,
       icon: <IconTerminal size={20} />,
       external: true,
     },
     {
       name: "UAT",
-      target: "https://localhost/it-form/uat_app/master_app",
+      target: `${IT_FORM}/uat_app/master_app`,
       icon: <IconDatabase size={20} />,
       external: true,
     },
