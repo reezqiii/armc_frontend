@@ -3,7 +3,14 @@ import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
-import { Button, Paper, Badge, ButtonGroup, Group } from "@mantine/core";
+import {
+  Button,
+  Paper,
+  Badge,
+  ButtonGroup,
+  Group,
+  SimpleGrid,
+} from "@mantine/core";
 import {
   IconInfoCircle,
   IconEdit,
@@ -26,6 +33,7 @@ import { usePathname } from "next/navigation";
 import useEncrypt from "@/hooks/useEncrypt";
 import Head from "next/head";
 import AdminStatusCell from "@/data/status/AdminStatusCell";
+import { getRequestStatus } from "@/lib/requestStatusList";
 
 export default function AdminList() {
   const router = useRouter();
@@ -106,11 +114,11 @@ export default function AdminList() {
         await axios.put(
           `${API_URL}/requests/cancel/${encryptedId}`,
           {},
-          { headers: { Authorization: `Bearer ${user.token}` } }
+          { headers: { Authorization: `Bearer ${user.token}` } },
         );
 
         setData((prev) =>
-          prev.filter((item) => item.id_request !== id_request)
+          prev.filter((item) => item.id_request !== id_request),
         );
 
         Swal.fire({
@@ -131,7 +139,7 @@ export default function AdminList() {
         setIsDeleting(false);
       }
     },
-    [API_URL, user.token, encrypt]
+    [API_URL, user.token, encrypt],
   );
 
   const handleExportExcel = async () => {
@@ -142,7 +150,7 @@ export default function AdminList() {
       const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
       const filterObj = Object.fromEntries(
-        columnFilters.map((f) => [f.id, f.value])
+        columnFilters.map((f) => [f.id, f.value]),
       );
 
       const search = JSON.stringify({
@@ -151,7 +159,7 @@ export default function AdminList() {
       });
 
       const url = `${API_URL}/excel/export-list?search=${encodeURIComponent(
-        search
+        search,
       )}&sort_by=${sort_by}&sort_order=${sort_order}`;
 
       const res = await fetch(url, {
@@ -275,12 +283,60 @@ export default function AdminList() {
         header: "Type",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => (row.original.type === 1 ? "Public" : "Login"),
+        cell: ({ row }) => (row.original.type === 1 ? "External" : "Internal"),
       },
+      {
+        accessorFn: (row) => row.category_account,
+        id: "category_account",
+        header: "Category Account",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: ({ row }) => {
+          const CATEGORY_LABELS = {
+            0: "Create New Account",
+            1: "Request Permission",
+            2: "Request Outside Access",
+          };
+
+          return CATEGORY_LABELS[row.original.category_account] || "-";
+        },
+      },
+      {
+        accessorFn: (row) => row.request_status,
+        id: "request_status",
+        header: "Status Approval",
+        enableColumnFilter: false,
+        enableSorting: true,
+        cell: ({ row }) => {
+          const statusCode = row.original.request_status;
+          const status = getRequestStatus(statusCode);
+
+          return (
+            <div className="flex justify-center w-full">
+              <Badge
+                radius="sm"
+                px="sm"
+                styles={{
+                  root: {
+                    backgroundColor: status.bg,
+                    color: status.text,
+                    fontWeight: 600,
+                    textAlign: "center",
+                    textTransform: "none",
+                  },
+                }}
+              >
+                {status.label}
+              </Badge>
+            </div>
+          );
+        },
+      },
+
       {
         accessorFn: (row) => row.request_admin,
         id: "request_admin",
-        header: "Admin Status",
+        header: "IT Action",
         enableColumnFilter: false,
         enableSorting: true,
         cell: ({ row }) => (
@@ -304,40 +360,41 @@ export default function AdminList() {
           const encryptedId = encrypt(String(row.original.id_request));
 
           return (
-            <Group justify="center">
-              <ButtonGroup>
-                <Button
-                  leftSection={<IconInfoCircle size={16} />}
-                  color="blue"
-                  size="xs"
-                  onClick={() =>
-                    router.push(`/user_request/detail_req/${encryptedId}`)
-                  }
-                >
-                  Details
-                </Button>
+           <Group gap={6} justify="center" wrap="nowrap">
+              <Button
+                fullWidth
+                leftSection={<IconInfoCircle size={16} />}
+                color="blue"
+                size="xs"
+                onClick={() =>
+                  router.push(`/user_request/detail_req/${encryptedId}`)
+                }
+              >
+                Details
+              </Button>
 
-                <Button
-                  leftSection={<IconEdit size={16} />}
-                  color="yellow"
-                  size="xs"
-                  onClick={() =>
-                    router.push(`/user_request/edit_req/${encryptedId}`)
-                  }
-                >
-                  Update
-                </Button>
+              <Button
+                fullWidth
+                leftSection={<IconEdit size={16} />}
+                color="yellow"
+                size="xs"
+                onClick={() =>
+                  router.push(`/user_request/edit_req/${encryptedId}`)
+                }
+              >
+                Update
+              </Button>
 
-                <Button
-                  leftSection={<IconX size={16} />}
-                  color="red"
-                  size="xs"
-                  onClick={() => handleCancel(row.original.id_request)}
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </Button>
-              </ButtonGroup>
+              <Button
+                fullWidth
+                leftSection={<IconX size={16} />}
+                color="red"
+                size="xs"
+                onClick={() => handleCancel(row.original.id_request)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
             </Group>
           );
         },
@@ -353,7 +410,7 @@ export default function AdminList() {
       permissions,
       router,
       user.token,
-    ]
+    ],
   );
 
   const table = useReactTable({
@@ -385,7 +442,7 @@ export default function AdminList() {
     const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
 
     const filterObj = Object.fromEntries(
-      columnFilters.map((f) => [f.id, f.value])
+      columnFilters.map((f) => [f.id, f.value]),
     );
 
     const search = JSON.stringify({
@@ -396,12 +453,12 @@ export default function AdminList() {
     try {
       const res = await axios.post(
         `${API_URL}/requests/serverside_list?search=${encodeURIComponent(
-          search
+          search,
         )}&sort_by=${sort_by}&sort_order=${sort_order}&page=${
           pagination.pageIndex
         }&size=${pagination.pageSize}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       setData(res.data.data);
