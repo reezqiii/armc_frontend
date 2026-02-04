@@ -5,7 +5,7 @@ import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import useEncrypt from "@/hooks/useEncrypt";
 import axios from "axios";
-import { Badge, Button, Paper, SimpleGrid } from "@mantine/core";
+import { Badge, Button, Group, Paper, SimpleGrid } from "@mantine/core";
 import {
   IconEdit,
   IconInfoCircle,
@@ -249,10 +249,8 @@ export default function UserList() {
           };
 
           return (
-            <SimpleGrid cols={2} spacing={6}>
-              {/* EDIT */}
+            <Group gap={6} justify="center" wrap="nowrap">
               <Button
-                fullWidth
                 size="xs"
                 color="yellow"
                 leftSection={<IconEdit size={14} />}
@@ -263,9 +261,7 @@ export default function UserList() {
                 Update
               </Button>
 
-              {/* RESET PASSWORD */}
               <Button
-                fullWidth
                 size="xs"
                 color="gray"
                 leftSection={<IconKey size={14} />}
@@ -273,7 +269,7 @@ export default function UserList() {
               >
                 Reset Password
               </Button>
-            </SimpleGrid>
+            </Group>
           );
         },
       },
