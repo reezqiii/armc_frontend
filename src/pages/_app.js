@@ -47,7 +47,10 @@ export default function App({ Component, pageProps }) {
       return;
     }
 
-    const encryptedId = router.query.auth_user || Cookies.get("portal_user_js");
+    // console.log(router.query.user)
+    // return
+
+    const encryptedId = router.query.user || Cookies.get("portal_user_js");
 
     if (!encryptedId) {
       router.push(API.LINK_PORTAL);
