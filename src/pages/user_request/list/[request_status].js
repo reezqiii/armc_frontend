@@ -127,7 +127,6 @@ export default function RequestListDynamic({ request_status }) {
   const API = useApi();
   const API_URL = API.API_URL;
   const { encrypt } = useEncrypt();
-
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [rowSelection, setRowSelection] = useState({});
