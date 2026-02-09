@@ -67,7 +67,7 @@ function CreateUser() {
           axios.get(`${API_URL}/portal_company/list`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`${API_URL}/iss_dept`, {
+          axios.get(`${API_URL}/portal-department`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
           axios.get(`${API_URL}/portal-project`, {
@@ -92,12 +92,19 @@ function CreateUser() {
           })),
         );
 
-        setDeptOptions(
-          deptRes.data.map((d) => ({
-            value: String(d.dept_id),
-            label: d.dept,
-          })),
+        const uniqueDept = Array.from(
+          new Map(
+            deptRes.data.map((d) => [
+              String(d.temp_iss_id), // key
+              {
+                value: String(d.temp_iss_id),
+                label: d.name_of_department,
+              },
+            ]),
+          ).values(),
         );
+
+        setDeptOptions(uniqueDept);
 
         setProjectOptions(
           projectRes.data.map((p) => ({
@@ -155,7 +162,8 @@ function CreateUser() {
       username: formData.username,
       email: formData.email,
 
-      dept_id: Number(formData.dept_id),
+      department: Number(formData.department),
+
       project_id: Number(formData.project_id),
       project_ids: formData.project_ids?.map(Number) ?? [],
       company_id: Number(formData.company_id),
@@ -189,7 +197,7 @@ function CreateUser() {
         full_name: "",
         username: "",
         email: "",
-        dept_id: null,
+        department: null,
         project_id: null,
         company_id: null,
         id_role: null,
@@ -263,8 +271,8 @@ function CreateUser() {
                     label="Department"
                     placeholder="Select Department"
                     data={deptOptions}
-                    value={formData.dept_id ?? null}
-                    onChange={(value) => handleChange("dept_id", value)}
+                    value={formData.department ?? null}
+                    onChange={(value) => handleChange("department", value)}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",
