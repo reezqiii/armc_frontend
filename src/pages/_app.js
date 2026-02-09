@@ -47,9 +47,6 @@ export default function App({ Component, pageProps }) {
       return;
     }
 
-    // console.log(router.query.user)
-    // return
-
     const encryptedId = router.query.user || Cookies.get("portal_user_js");
 
     if (!encryptedId) {

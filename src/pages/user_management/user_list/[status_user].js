@@ -50,7 +50,9 @@ export default function UserList() {
   );
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+  const [sorting, setSorting] = useState([
+    { id: "created_date", desc: false }, // ASC = terlama
+  ]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
@@ -252,17 +254,6 @@ export default function UserList() {
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
                 size="xs"
-                color="yellow"
-                leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(`/user_management/edit/${encryptedId}`)
-                }
-              >
-                Update
-              </Button>
-
-              <Button
-                size="xs"
                 color="gray"
                 leftSection={<IconKey size={14} />}
                 onClick={handleResetPassword}
@@ -274,15 +265,7 @@ export default function UserList() {
         },
       },
     ];
-  }, [
-    pagination.pageIndex,
-    pagination.pageSize,
-    statusNameMap,
-    encrypt,
-    API_URL,
-    user.token,
-    router,
-  ]);
+  }, [pagination.pageIndex, pagination.pageSize, statusNameMap, encrypt, API_URL, user.token]);
 
   const table = useReactTable({
     data,
