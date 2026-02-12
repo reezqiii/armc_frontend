@@ -36,8 +36,10 @@ function CreateRequest() {
     full_name: "",
     badge_no: "",
     email: "",
-    project: "",
-    department: "",
+    department: null,
+    position: null,
+    project: null,
+    company: null,
     request_reason: "",
     approval_hod_by: "",
     approval_it_hod_by: "",
@@ -46,7 +48,6 @@ function CreateRequest() {
     position_name: "",
     project_name: "",
     remarks: "",
-    company: "",
     company_name: "",
     category_account: "",
     access_yard_company: [],
@@ -70,6 +71,10 @@ function CreateRequest() {
   const [badgeLoading, setBadgeLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [accessYardOptions, setAccessYardOptions] = useState([]);
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [positionOptions, setPositionOptions] = useState([]);
+  const [projectOptions, setProjectOptions] = useState([]);
+  const [companyOptions, setCompanyOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const CATEGORY_ACCOUNT_OPTIONS = [
@@ -97,7 +102,7 @@ function CreateRequest() {
           `${API_URL}/iss_employee/search?badge=${debouncedSearch}`,
           {
             headers: { Authorization: `Bearer ${user.token}` },
-          }
+          },
         );
         const employees = Array.isArray(res.data) ? res.data : [res.data];
         setBadgeOptions(
@@ -108,7 +113,7 @@ function CreateRequest() {
             department_name: e.dept || "",
             position_name: e.design_desc || "",
             project_name: e.project_desc || "",
-          }))
+          })),
         );
       } catch (err) {
         console.error(err);
@@ -121,71 +126,108 @@ function CreateRequest() {
   }, [API_URL, debouncedSearch, user.token]);
 
   useEffect(() => {
-    console.log("Fetch initial data running...");
-    const fetchInitialData = async () => {
+    const fetchAllData = async () => {
       setLoading(true);
       try {
-        const [hodRes, companyRes, navMenuRes] = await Promise.all([
-          axios.get(`${API_URL}/requests/hods`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/portal_company/list`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/portal_nav_menu/list`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-        ]);
+        const [hodRes, deptRes, posRes, projectRes, companyRes, navMenuRes] =
+          await Promise.all([
+            axios.get(`${API_URL}/requests/hods`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/iss_dept`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/position`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/iss_project`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/portal_company/list`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/portal_nav_menu/list`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+          ]);
+
+        // HOD
         setHodOptions(
           hodRes.data.map((u) => ({
             value: String(u.id_user),
             label: `${u.badge_no} - ${u.full_name}`,
-          }))
+          })),
         );
-        setAccessYardOptions(
-          companyRes.data.map((c) => ({
-            value: String(c.id_company),
-            label: c.company_name,
-          }))
+
+        // Department
+        setDeptOptions(
+          deptRes.data.map((d) => ({
+            value: String(d.dept_id),
+            label: d.dept,
+          })),
         );
+
+        // Position
+        setPositionOptions(
+          posRes.data.map((p) => ({
+            value: String(p.design_id),
+            label: p.design_desc,
+          })),
+        );
+
+        // Project
+        setProjectOptions(
+          projectRes.data.map((p) => ({
+            value: String(p.project_id),
+            label: p.project_desc,
+          })),
+        );
+
+        // Company
+        const companyOptions = companyRes.data.map((c) => ({
+          value: String(c.id_company),
+          label: c.company_name,
+        }));
+
+        setCompanyOptions(companyOptions);
+        setAccessYardOptions(companyOptions);
+
+        // Nav Menu
         setNavMenuOptions(
           navMenuRes.data.map((n) => ({
             value: String(n.id_application),
             label: n.application_name,
-          }))
+          })),
         );
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load data", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchInitialData();
-  }, [API_URL, user.token]);
+    if (user?.token) {
+      fetchAllData();
+    }
+  }, [API_URL, user?.token]);
 
   const handleSelectBadge = async (value) => {
     try {
       const res = await axios.get(`${API_URL}/iss_employee/employee/${value}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
+
       setFormData((prev) => ({
         ...prev,
         badge_no: value,
         full_name: res.data.name ?? "",
-        department_name: res.data.department.dept ?? "",
-        position_name: res.data.position?.design_desc ?? "",
-        project_name: res.data.project.project_desc ?? "",
-        company_name: res.data.company_name ?? res.data.company ?? "",
-        company: res.data.id_company ?? "",
-        department: res.data.department.dept_id ?? "",
-        position: res.data.position?.design_id ?? "",
-        project: res.data.project.project_id ?? "",
+        department: String(res.data.department?.dept_id ?? ""),
+        position: String(res.data.position?.design_id ?? ""),
+        project: String(res.data.project?.project_id ?? ""),
+        company: String(res.data.id_company ?? ""),
       }));
     } catch (err) {
       console.error(err);
-    } finally {
-      setBadgeLoading(false);
     }
   };
 
@@ -241,10 +283,10 @@ function CreateRequest() {
       remarks: formData.remarks,
       created_by: user.id,
       status_active: 1,
-      project_id: Number(formData.project),
-      dept_id: Number(formData.department),
-      design_id: Number(formData.position),
-      id_company: Number(formData.company),
+      project_id: formData.project ? Number(formData.project) : undefined,
+      dept_id: formData.department ? Number(formData.department) : undefined,
+      design_id: formData.position ? Number(formData.position) : undefined,
+      id_company: formData.company ? Number(formData.company) : undefined,
       approval_hod_by: formData.approval_hod_by,
       approval_it_hod_by: formData.approval_it_hod_by,
       access_yard_company: formData.access_yard_company,
@@ -276,8 +318,9 @@ function CreateRequest() {
           full_name: "",
           badge_no: "",
           email: "",
-          project: "",
-          department: "",
+          project: null,
+          department: null,
+          position: null,
           request_reason: "",
           approval_hod_by: "",
           approval_it_hod_by: "",
@@ -286,7 +329,7 @@ function CreateRequest() {
           position_name: "",
           project_name: "",
           remarks: "",
-          company: "",
+          company: null,
           company_name: "",
           category_account: null,
           access_yard_company: [],
@@ -391,10 +434,6 @@ function CreateRequest() {
                     onOptionSubmit={(item) => handleSelectBadge(item)}
                     filter={null}
                     nothingFound="No employees found"
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
                   />
 
                   <TextInput
@@ -402,59 +441,51 @@ function CreateRequest() {
                     label="Full Name"
                     placeholder="Input Full Name"
                     value={formData.full_name || ""}
-                    readOnly
+                    onChange={(e) => handleChange("full_name", e.target.value)}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",
                     }}
                   />
 
-                  <TextInput
+                  <Select
                     required
                     label="Department"
-                    placeholder="Input Department"
-                    value={formData.department_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Department"
+                    data={deptOptions}
+                    value={formData.department}
+                    onChange={(val) => handleChange("department", val)}
+                    searchable
                   />
 
-                  <TextInput
+                  <Select
                     required
                     label="Position"
-                    placeholder="Input Position"
-                    value={formData.position_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Position"
+                    data={positionOptions}
+                    value={formData.position}
+                    onChange={(val) => handleChange("position", val)}
+                    searchable
                   />
 
-                  <TextInput
+                  <Select
                     required
                     label="Project"
-                    placeholder="Input Project"
-                    value={formData.project_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Project"
+                    data={projectOptions}
+                    value={formData.project}
+                    onChange={(val) => handleChange("project", val)}
+                    searchable
                   />
 
-                  <TextInput
+                  <Select
                     required
                     label="Company"
-                    placeholder="Input Company"
-                    value={formData.company_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Company"
+                    data={companyOptions}
+                    value={formData.company}f
+                    onChange={(val) => handleChange("company", val)}
+                    searchable
                   />
 
                   <MultiSelect
@@ -584,7 +615,7 @@ function CreateRequest() {
                       error={errors.approval_hod_by}
                       placeholder="Select HOD Requestor"
                       searchable
-                      value={formData.approval_hod_by || ""}
+                      value={formData.approval_hod_by}
                       onChange={(val) => handleChange("approval_hod_by", val)}
                       data={hodOptions}
                       variant="unstyled"
