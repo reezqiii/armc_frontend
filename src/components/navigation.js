@@ -76,7 +76,7 @@ export default function Navigation() {
       external: true,
     },
     {
-      name: "User Request",
+      name: "PCMS Access Request",
       url: "/user_request/list/all",
       icon: <IconUser size={20} />,
     },
