@@ -19,7 +19,7 @@ const isActive = (val) => currentStatus === val;
 
 const requestorList = [
   {
-    title: "User Request",
+    title: "PCMS Access Request",
     href: "/",
     active: "User Request",
     icon: <IconListDetails size={18} />,
