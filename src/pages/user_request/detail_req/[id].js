@@ -53,7 +53,7 @@ function RequestDetail() {
     const userId = String(user.id ?? "");
     // const hodId = String(data.approval_hod_by ?? "");
     setHodName(
-      data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-"
+      data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-",
     );
     setLeadItName(data.approval_lead_it_by_name ?? "-");
     setItManagerName(data.approval_it_hod_by_name ?? "-");
@@ -97,10 +97,10 @@ function RequestDetail() {
 
       const res = await axios.post(
         `${API_URL}/log_portal/serverside_list?search=${encodeURIComponent(
-          JSON.stringify(searchObj)
+          JSON.stringify(searchObj),
         )}&sort_by=${sort_by}&sort_order=${sort_order}&page=${page}&size=${size}`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       setLogs(res.data?.data ?? res.data ?? []);
@@ -156,7 +156,7 @@ function RequestDetail() {
       await axios.put(
         `${API_URL}/requests/${id}/submit-to-hod`,
         {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       Swal.fire({
@@ -198,7 +198,7 @@ function RequestDetail() {
         Swal.fire(
           "Cancelled",
           "You must provide a reason for rejection.",
-          "info"
+          "info",
         );
         return;
       }
@@ -211,7 +211,7 @@ function RequestDetail() {
       await axios.put(
         `${API_URL}/requests/${realId}/hod-approval`,
         { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       Swal.fire({
@@ -228,7 +228,7 @@ function RequestDetail() {
       Swal.fire(
         "Error",
         "Failed to update request. Please try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -256,7 +256,7 @@ function RequestDetail() {
         Swal.fire(
           "Cancelled",
           "You must provide a reason for rejection.",
-          "info"
+          "info",
         );
         return;
       }
@@ -269,7 +269,7 @@ function RequestDetail() {
       await axios.put(
         `${API_URL}/requests/${realId}/lead-it-approval`,
         { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       Swal.fire({
@@ -286,7 +286,7 @@ function RequestDetail() {
       Swal.fire(
         "Error",
         "Failed to update request. Please try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -314,7 +314,7 @@ function RequestDetail() {
         Swal.fire(
           "Cancelled",
           "You must provide a reason for rejection.",
-          "info"
+          "info",
         );
         return;
       }
@@ -327,7 +327,7 @@ function RequestDetail() {
       await axios.put(
         `${API_URL}/requests/${realId}/it-approval`,
         { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       Swal.fire({
@@ -344,7 +344,7 @@ function RequestDetail() {
       Swal.fire(
         "Error",
         "Failed to update request. Please try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -364,7 +364,7 @@ function RequestDetail() {
       await axios.put(
         `${API_URL}/requests/${id}/submit-return`,
         { target_status: data.previous_status },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       Swal.fire({
@@ -745,8 +745,8 @@ function RequestDetail() {
                             <span className="text-gray-500">Date</span>
                             <span className="text-gray-500">:</span>
                             <span className="text-gray-800 text-sm">
-                              {data?.approval_it_hod_date_at
-                                ? formatDate(data?.approval_it_hod_date_at, {
+                              {data?.approval_it_date_at
+                                ? formatDate(data?.approval_it_date_at, {
                                     showTime: true,
                                   })
                                 : "-"}
