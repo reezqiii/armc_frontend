@@ -70,15 +70,15 @@ export default function Navigation() {
       external: true,
     },
     {
+      name: "PCMS Access Request",
+      url: "/user_request/list/all",
+      icon: <IconUser size={20} />,
+    },
+    {
       name: "UAT",
       target: `${IT_FORM}/uat_app/master_app`,
       icon: <IconDatabase size={20} />,
       external: true,
-    },
-    {
-      name: "PCMS Access Request",
-      url: "/user_request/list/all",
-      icon: <IconUser size={20} />,
     },
     {
       name: "User Management",
