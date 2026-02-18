@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="mt-auto">
       <div className="flex justify-center bg-white text-black text-sm py-2">
-        <p className="text-xs">© 2025 - PCMS ARMC - SEATRIUM</p>
+        <p className="text-xs">© 2026 - ARMC - SEATRIUM</p>
       </div>
     </footer>
   );
