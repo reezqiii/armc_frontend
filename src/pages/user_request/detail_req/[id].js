@@ -862,5 +862,5 @@ function RequestDetail() {
   );
 }
 
-RequestDetail.title = "Request Detail Form";
+RequestDetail.title = "Detail Request Form";
 export default RequestDetail;

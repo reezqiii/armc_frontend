@@ -45,6 +45,7 @@ import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import { getRequestStatus } from "@/lib/requestStatusList";
 import Head from "next/head";
+import Link from "next/link";
 
 const STATUS_CONFIG = {
   all: {
@@ -710,31 +711,39 @@ export default function RequestListDynamic({ request_status }) {
 
         return (
           <SimpleGrid cols={2} spacing={6}>
-            <Button
-              fullWidth
-              size="xs"
-              color="blue"
-              leftSection={<IconInfoCircle size={14} />}
-              onClick={() =>
-                router.push(`/user_request/detail_req/${encryptedId}`)
-              }
+            <Link
+              href={`/user_request/detail_req/${encryptedId}`}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Details
-            </Button>
+              <Button
+                component="a"
+                fullWidth
+                size="xs"
+                color="blue"
+                leftSection={<IconInfoCircle size={14} />}
+              >
+                Details
+              </Button>
+            </Link>
 
             {/* UPDATE */}
             {canEditCancel && (
-              <Button
-                fullWidth
-                leftSection={<IconEdit size={16} />}
-                color="yellow"
-                size="xs"
-                onClick={() =>
-                  router.push(`/user_request/edit_req/${encryptedId}`)
-                }
+              <Link
+                href={`/user_request/edit_req/${encryptedId}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Update
-              </Button>
+                <Button
+                  component="a"
+                  fullWidth
+                  leftSection={<IconEdit size={16} />}
+                  color="yellow"
+                  size="xs"
+                >
+                  Update
+                </Button>
+              </Link>
             )}
 
             {/* CANCEL */}
@@ -750,15 +759,21 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            <Button
-              fullWidth
-              leftSection={<IconFileTypePdf size={16} />}
-              color="gray"
-              size="xs"
-              onClick={() => handleDownloadPdf(request.id_request)}
+            <Link
+              href={`${API_URL}/requests/${encryptedId}/generate-pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              PDF
-            </Button>
+              <Button
+                component="a"
+                fullWidth
+                leftSection={<IconFileTypePdf size={16} />}
+                color="gray"
+                size="xs"
+              >
+                PDF
+              </Button>
+            </Link>
 
             {/* RETURN */}
             {canReturn && (
