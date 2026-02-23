@@ -53,7 +53,7 @@ const STATUS_CONFIG = {
     label: "All User Request",
     icon: IconListLetters,
     color: "blue",
-    actions: ["detail"],
+    actions: ["detail", "admin_status"],
   },
   draft: {
     id: 0,
@@ -67,21 +67,21 @@ const STATUS_CONFIG = {
     label: "Awaiting HOD Approval",
     icon: IconClock,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk"],
+    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
   },
   "awaiting-lead-it-approval": {
     id: 3,
     label: "Awaiting Lead IT Approval",
     icon: IconUserExclamation,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk"],
+    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
   },
   "awaiting-it-manager-approval": {
     id: 5,
     label: "Awaiting IT Manager Approval",
     icon: IconUserCog,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk"],
+    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
   },
   completed: {
     id: 7,
@@ -679,8 +679,11 @@ export default function RequestListDynamic({ request_status }) {
 
     if (config?.actions.includes("admin_status")) {
       cols.push({
+        accessorFn: (row) => row.request_admin,
         id: "request_admin",
         header: "IT Action",
+        enableColumnFilter: false,
+        enableSorting: true,
         cell: ({ row }) => (
           <AdminStatusCell
             value={row.original.request_admin}
@@ -804,6 +807,7 @@ export default function RequestListDynamic({ request_status }) {
     handleCancel,
     handleDownloadPdf,
     handleReturn,
+    setData,
   ]);
 
   const table = useReactTable({

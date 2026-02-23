@@ -1,13 +1,8 @@
+import { ADMIN_STATUS_MAP, getAdminStatus } from "@/lib/adminStatus";
 import { hasPermission } from "@/lib/permissionHelper";
 import { Badge, Select, Center } from "@mantine/core";
 import axios from "axios";
 import { useState } from "react";
-
-const STATUS_MAP = {
-  0: { label: "On Queue", color: "yellow" },
-  1: { label: "On Progress", color: "yellow" },
-  2: { label: "Completed", color: "green" },
-};
 
 export default function AdminStatusCell({
   value: initialValue,
@@ -22,10 +17,7 @@ export default function AdminStatusCell({
   // PERMISSION IT ACTION (index 3)
   const canEdit = hasPermission(2);
 
-  const status = STATUS_MAP[value] || {
-    label: "Unknown",
-    color: "dark",
-  };
+  const status = getAdminStatus(value);
 
   const handleChange = async (newValue) => {
     setValue(newValue);
@@ -35,15 +27,15 @@ export default function AdminStatusCell({
       await axios.patch(
         `${API_URL}/requests/${id_request}/admin-status`,
         { request_admin: newValue },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setData(prev =>
-        prev.map(item =>
+      setData((prev) =>
+        prev.map((item) =>
           item.id_request === id_request
             ? { ...item, request_admin: newValue }
-            : item
-        )
+            : item,
+        ),
       );
     } catch (err) {
       console.error(err);
@@ -53,24 +45,36 @@ export default function AdminStatusCell({
     }
   };
 
-  // TIDAK PUNYA PERMISSION → TEXT SAJA
+  // TIDAK PUNYA PERMISSION
   if (!canEdit) {
     return (
-      <Center>
-        <Badge color={status.color} variant="light">
+      <div className="flex justify-center w-full">
+        <Badge
+          radius="sm"
+          px="sm"
+          styles={{
+            root: {
+              backgroundColor: status.bg,
+              color: status.text,
+              fontWeight: 600,
+              textAlign: "center",
+              textTransform: "none",
+            },
+          }}
+        >
           {status.label}
         </Badge>
-      </Center>
+      </div>
     );
   }
 
-  // PUNYA PERMISSION → DROPDOWN
+  // PUNYA PERMISSION
   return (
     <Select
       size="xs"
       value={String(value)}
       onChange={(val) => handleChange(Number(val))}
-      data={Object.entries(STATUS_MAP).map(([key, item]) => ({
+      data={Object.entries(ADMIN_STATUS_MAP).map(([key, item]) => ({
         value: key,
         label: item.label,
       }))}
