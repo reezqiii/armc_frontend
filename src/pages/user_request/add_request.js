@@ -483,7 +483,7 @@ function CreateRequest() {
                     label="Company"
                     placeholder="Select Company"
                     data={companyOptions}
-                    value={formData.company}f
+                    value={formData.company}
                     onChange={(val) => handleChange("company", val)}
                     searchable
                   />
