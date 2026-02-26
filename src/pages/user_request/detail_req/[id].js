@@ -850,7 +850,7 @@ function RequestDetail() {
                 </div>
               </Tabs.Panel>
 
-              {/* ================= TAB LOG ================= */}
+              {/* {TAB LOG} */}
               <Tabs.Panel value="log">
                 <HistoryLog
                   logs={logs}
@@ -859,7 +859,7 @@ function RequestDetail() {
                 />
               </Tabs.Panel>
 
-              {/* ================= TAB ATTACHMENTS ================= */}
+              {/* TAB ATTACHMENTS */}
               <Tabs.Panel value="attachment">
                 <AttachmentTab
                   attachments={data?.attachments}

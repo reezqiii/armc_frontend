@@ -80,7 +80,7 @@ const AttachmentTab = ({ idRequest }) => {
     async (id) => {
       const result = await Swal.fire({
         title: "Are you sure?",
-        text: "This attachment will be permanently deleted.",
+        text: "This attachment will be removed.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
@@ -105,7 +105,18 @@ const AttachmentTab = ({ idRequest }) => {
   );
 
   const handleUpload = async () => {
-    if (!file) return alert("Please select file");
+    if (!file) {
+      Swal.fire("Warning", "Please select a PDF file first.", "warning");
+      return;
+    }
+
+    if (
+      file.type !== "application/pdf" ||
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      Swal.fire("Error", "Only PDF files are allowed.", "error");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -120,17 +131,23 @@ const AttachmentTab = ({ idRequest }) => {
         },
       });
 
+      Swal.fire("Success", "File uploaded successfully.", "success");
+
       setFile(null);
       setRemarks("");
 
       setPagination((p) => ({ ...p, pageIndex: 0 }));
       getData();
     } catch (err) {
-      console.error(err);
+      Swal.fire(
+        "Upload Failed",
+        err?.response?.data?.message || "Failed to upload file.",
+        "error",
+      );
     }
   };
 
-  /* ================= TABLE ================= */
+  /* TABLE */
   const columns = useMemo(
     () => [
       {
@@ -144,15 +161,15 @@ const AttachmentTab = ({ idRequest }) => {
         accessorKey: "file_name",
         header: "Attachment",
         enableSorting: true,
-        enableColumnFilter: true,
+        enableColumnFilter: false,
         cell: ({ row }) => (
           <a
             href={`${API_URL}/sftp/download/${row.original.id}`}
             target="_blank"
             rel="noreferrer"
-            className="text-blue-600 underline"
+            className="text-blue-600 underline font-medium"
           >
-            {row.original.file_name}
+            Attachment
           </a>
         ),
       },
@@ -241,9 +258,35 @@ const AttachmentTab = ({ idRequest }) => {
           <FileInput
             label="Select File to Upload :"
             value={file}
-            onChange={setFile}
-            placeholder="Choose file"
+            onChange={(selectedFile) => {
+              if (!selectedFile) {
+                setFile(null);
+                return;
+              }
+
+              const isPdf =
+                selectedFile.type === "application/pdf" &&
+                selectedFile.name.toLowerCase().endsWith(".pdf");
+
+              if (!isPdf) {
+                Swal.fire({
+                  icon: "error",
+                  title: "Invalid File",
+                  text: "Only PDF files are allowed.",
+                });
+                return;
+              }
+
+              setFile(selectedFile);
+            }}
+            placeholder="Choose PDF file"
+            accept="application/pdf"
             clearable
+            description={
+              <span className="text-xs text-red-500">
+                * Only PDF format is allowed.
+              </span>
+            }
           />
 
           <Button onClick={handleUpload} leftSection={<IconUpload size={16} />}>
