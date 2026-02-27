@@ -21,6 +21,7 @@ import HistoryLog from "@/components/historyLog";
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestStatus } from "@/lib/requestStatusList";
+import AttachmentTab from "@/components/attachmentTab";
 
 function RequestDetail() {
   const router = useRouter();
@@ -414,6 +415,9 @@ function RequestDetail() {
                 </Tabs.Tab>
                 <Tabs.Tab value="log" className="font-semibold text-sm">
                   HISTORY LOG
+                </Tabs.Tab>
+                <Tabs.Tab value="attachment" className="font-semibold text-sm">
+                  ATTACHMENTS
                 </Tabs.Tab>
               </Tabs.List>
 
@@ -846,11 +850,19 @@ function RequestDetail() {
                 </div>
               </Tabs.Panel>
 
-              {/* ================= TAB LOG ================= */}
+              {/* {TAB LOG} */}
               <Tabs.Panel value="log">
                 <HistoryLog
                   logs={logs}
                   getStatus={getRequestStatus}
+                  idRequest={data?.id_request}
+                />
+              </Tabs.Panel>
+
+              {/* TAB ATTACHMENTS */}
+              <Tabs.Panel value="attachment">
+                <AttachmentTab
+                  attachments={data?.attachments}
                   idRequest={data?.id_request}
                 />
               </Tabs.Panel>
