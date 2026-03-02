@@ -9,6 +9,7 @@ import "@/styles/globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import useApi from "@/hooks/useApi";
+import { usePathname } from "next/navigation";
 
 const COOKIE_EXPIRE_TIME = 86400;
 
@@ -16,7 +17,7 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
   const { setUser } = useUser();
   const API = useApi();
-
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -74,9 +75,10 @@ export default function App({ Component, pageProps }) {
       });
 
       setIsAuthenticated(true);
+      router.replace(pathname);
       setLoading(false);
     })();
-  }, [router.isReady, router, API.LINK_PORTAL, validateUser, setUser]);
+  }, [router.isReady, router, API.LINK_PORTAL, validateUser, setUser, pathname]);
 
   return (
     <>
