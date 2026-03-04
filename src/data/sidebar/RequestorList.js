@@ -9,11 +9,13 @@ import {
   IconUserExclamation,
   IconUserShield,
   IconRefresh,
-} from '@tabler/icons-react';
+  IconLayoutDashboard,
+} from "@tabler/icons-react";
 
-const currentStatus = typeof window !== "undefined"
-  ? new URLSearchParams(window.location.search).get("status")
-  : null;
+const currentStatus =
+  typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("status")
+    : null;
 
 const isActive = (val) => currentStatus === val;
 
@@ -24,6 +26,12 @@ const requestorList = [
     active: "User Request",
     icon: <IconListDetails size={18} />,
     child: [
+      {
+        title: "Dashboard",
+        href: "/user_request/dashboard",
+        active: "Dashboard",
+        icon: <IconLayoutDashboard size={18} />,
+      },
       {
         title: "User Request List",
         href: "/user_request/list/all",
@@ -38,37 +46,37 @@ const requestorList = [
       },
       {
         title: "Return Request",
-        href: "/user_request/list/returned",  
+        href: "/user_request/list/returned",
         active: "Return Request",
         icon: <IconRefresh size={18} />,
       },
       {
         title: "Draft",
-        href: "/user_request/list/draft", 
+        href: "/user_request/list/draft",
         active: "Draft",
         icon: <IconFileText size={18} />,
       },
       {
         title: "Pending HOD Request",
-        href: "/user_request/list/awaiting-hod-approval", 
+        href: "/user_request/list/awaiting-hod-approval",
         active: "Pending HOD Request",
         icon: <IconUserCheck size={18} />,
       },
       {
         title: "Pending Lead IT Request",
-        href: "/user_request/list/awaiting-lead-it-approval", 
+        href: "/user_request/list/awaiting-lead-it-approval",
         active: "Pending Lead IT Request",
         icon: <IconUserExclamation size={18} />,
       },
       {
         title: "Pending IT Mgr / Asst. IT Mgr",
-        href: "/user_request/list/awaiting-it-manager-approval", 
+        href: "/user_request/list/awaiting-it-manager-approval",
         active: "Pending IT Manager",
         icon: <IconUserCog size={18} />,
       },
       {
         title: "Completed",
-        href: "/user_request/list/completed",  
+        href: "/user_request/list/completed",
         active: "Completed",
         icon: <IconCircleCheck size={18} />,
       },
@@ -104,12 +112,10 @@ if (true == true) {
         active: isActive("completed"),
         icon: <IconCircleCheck size={18} />,
         restricted: true,
-
       },
     ],
   });
 }
-
 
 // const filteredSidebar = requestorList.filter(menu => {
 //   if (!menu.requiredPermission) return true;

@@ -796,19 +796,7 @@ export default function RequestListDynamic({ request_status }) {
     });
 
     return cols;
-  }, [
-    config?.actions,
-    pagination.pageIndex,
-    pagination.pageSize,
-    API_URL,
-    user.token,
-    encrypt,
-    router,
-    handleCancel,
-    handleDownloadPdf,
-    handleReturn,
-    setData,
-  ]);
+  }, [config?.actions, pagination.pageIndex, pagination.pageSize, API_URL, user.token, encrypt, handleCancel, handleReturn, setData]);
 
   const table = useReactTable({
     data,

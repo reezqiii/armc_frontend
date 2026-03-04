@@ -10,6 +10,7 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import useApi from "@/hooks/useApi";
 import { usePathname } from "next/navigation";
+import '@mantine/charts/styles.css';
 
 const COOKIE_EXPIRE_TIME = 86400;
 
@@ -37,29 +38,29 @@ export default function App({ Component, pageProps }) {
   );
 
   useEffect(() => {
+    // 1. Cek jika router belum siap
     if (!router.isReady) return;
 
-    const PUBLIC_ROUTES = ["/public_request", "/armc/public_request"];
-    const currentPath = window.location.pathname;
+    const initAuth = async () => {
+      const PUBLIC_ROUTES = ["/public_request", "/armc/public_request"];
+      // Gunakan pathname dari hook agar konsisten
+      if (PUBLIC_ROUTES.some((p) => pathname?.includes(p))) {
+        setIsAuthenticated(true);
+        setLoading(false);
+        return;
+      }
 
-    if (PUBLIC_ROUTES.some((p) => currentPath.includes(p))) {
-      setIsAuthenticated(true);
-      setLoading(false);
-      return;
-    }
+      const encryptedId = router.query.user || Cookies.get("portal_user_js");
 
-    const encryptedId = router.query.user || Cookies.get("portal_user_js");
+      if (!encryptedId) {
+        window.location.href = API.LINK_PORTAL;
+        return;
+      }
 
-    if (!encryptedId) {
-      router.push(API.LINK_PORTAL);
-      return;
-    }
-
-    (async () => {
       const valid = await validateUser(encryptedId);
 
       if (!valid) {
-        router.push(API.LINK_PORTAL);
+        window.location.href = API.LINK_PORTAL;
         return;
       }
 
@@ -75,10 +76,14 @@ export default function App({ Component, pageProps }) {
       });
 
       setIsAuthenticated(true);
-      router.replace(pathname);
       setLoading(false);
-    })();
-  }, [router.isReady, router, API.LINK_PORTAL, validateUser, setUser, pathname]);
+      if (router.query.user) {
+        router.replace(pathname, undefined, { shallow: true });
+      }
+    };
+
+    initAuth();
+  }, [router.isReady, router.query.user, validateUser, setUser, API.LINK_PORTAL, router, pathname]);
 
   return (
     <>
