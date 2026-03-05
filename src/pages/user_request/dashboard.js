@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { getAdminStatus } from "@/lib/adminStatus";
 import axios from "axios";
+import { motion } from "framer-motion";
 import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
 import {
   Select,
-  Button,
   Paper,
   Loader,
   SimpleGrid,
@@ -12,23 +13,29 @@ import {
   Group,
   Box,
   Title,
-  rem,
-  NumberInput,
   ActionIcon,
   ScrollArea,
+  Flex,
+  Stack,
+  Badge,
+  ThemeIcon,
 } from "@mantine/core";
 import {
-  IconFilter,
   IconClock,
   IconLoader2,
-  IconCircleCheck,
-  IconLayoutDashboard,
-  IconTrendingUp,
   IconSearch,
+  IconPlayerPause,
+  IconLayoutGrid,
+  IconBuildingCommunity,
+  IconChevronRight,
+  IconCircleCheck,
+  IconFiles,
+  IconCheck,
+  IconTrendingUp,
+  IconLayoutList,
 } from "@tabler/icons-react";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
-import { BarChart, DonutChart } from "@mantine/charts";
 
 function Dashboard() {
   const API = useApi();
@@ -39,7 +46,6 @@ function Dashboard() {
   const [year, setYear] = useState(null);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
-  const companyStats = summary?.companyStats ?? [];
 
   const monthNames = [
     "January",
@@ -56,14 +62,11 @@ function Dashboard() {
     "December",
   ];
 
-  const ACTION_COLORS = [
-    "#3B82F6", // blue
-    "#0EA5E9", // sky
-    "#10B981", // emerald
-    "#6366F1", // indigo
-    "#F59E0B", // amber (sedikit aksen)
-    "#64748B", // slate
-  ];
+  const isSummaryEmpty =
+    !summary ||
+    ((summary.deptStats?.length === 0 || !summary.deptStats) &&
+      (summary.total === 0 || !summary.total) &&
+      (summary.companyStats?.length === 0 || !summary.companyStats));
 
   useEffect(() => {
     const fetchLatestPeriod = async () => {
@@ -104,286 +107,465 @@ function Dashboard() {
     fetchSummary();
   }, [month, year, user?.token, API_URL]);
 
-  if (loading || !user?.token) {
+  if (loading) {
     return (
       <AuthLayout sidebarList={requestorList}>
-        <div className="flex flex-col justify-center items-center h-[70vh] gap-4">
+        <Flex
+          justify="center"
+          align="center"
+          h="70vh"
+          direction="column"
+          gap="md"
+        >
           <Loader size="lg" type="dots" color="blue" />
           <Text fw={500} c="dimmed">
             Preparing analytics...
           </Text>
-        </div>
+        </Flex>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout sidebarList={requestorList}>
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#f8f9fb",
-          padding: "32px",
-        }}
-      >
-        <Paper
-          radius="lg"
-          p="xl"
-          withBorder
-          shadow="md"
-          mb="xl"
-          style={{ background: "#ffffff" }}
-        >
-          <Group justify="space-between" align="center" wrap="wrap">
-            {/* LEFT SIDE */}
-            <Group gap="md">
-              <Box
-                p="sm"
-                style={{
-                  backgroundColor: "var(--mantine-color-blue-0)",
-                  borderRadius: "14px",
-                }}
-              >
-                <IconTrendingUp size={26} color="var(--mantine-color-blue-6)" />
-              </Box>
-
-              <Box>
-                <Title order={3} fw={600}>
-                  Monthly Request Dashboard
-                </Title>
-
-                <Text size="sm" c="dimmed" mt={4}>
-                  Monitoring performance for{" "}
-                  <Text span fw={500} c="blue.6">
-                    {month !== null ? `${monthNames[month]} ${year}` : "..."}
-                  </Text>
-                </Text>
-              </Box>
+      <Box p="xl" bg="#f4f6f8" style={{ minHeight: "100vh" }}>
+        {/* --- HEADER --- */}
+        <Group justify="space-between" mb="lg">
+          <Box>
+            <Title order={2} fw={700} lts={-0.5} c="blue" tt="uppercase">
+              Monthly Request Dashboard
+            </Title>
+            <Text size="sm" fw={500} mt={4} style={{ color: "#495057" }}>
+              Request summary for{" "}
+              <Text span fw={600} style={{ color: "#1c7ed6" }}>
+                {monthNames[month]} {year}
+              </Text>
+            </Text>
+          </Box>
+          <Paper radius="md" p="4px 12px" withBorder shadow="xs" bg="white">
+            <Group gap="xs">
+              <Select
+                variant="unstyled"
+                data={monthNames.map((m, i) => ({
+                  value: i.toString(),
+                  label: m,
+                }))}
+                value={month?.toString()}
+                onChange={(val) => setMonth(Number(val))}
+                w={120}
+                size="sm"
+              />
+              <Select
+                variant="unstyled"
+                data={Array.from({ length: 10 }, (_, i) => {
+                  const y = new Date().getFullYear() - i;
+                  return { value: y.toString(), label: y.toString() };
+                })}
+                value={year?.toString()}
+                onChange={(val) => setYear(Number(val))}
+                w={80}
+                size="sm"
+              />
             </Group>
+          </Paper>
+        </Group>
 
-            {/* RIGHT SIDE - COOL FILTER TOOLBAR */}
-            <Box
-              style={{
-                background: "var(--mantine-color-gray-0)",
-                padding: "6px",
-                borderRadius: "16px",
-              }}
+        {/* no found */}
+        {isSummaryEmpty ? (
+          <Paper
+            withBorder
+            radius="lg"
+            p="xl"
+            mt="xl"
+            style={{
+              textAlign: "center",
+              backgroundColor: "#f8f9fa",
+              borderStyle: "dashed",
+              borderWidth: 2,
+              borderColor: "#dee2e6",
+            }}
+          >
+            <Stack align="center" gap="sm">
+              <ThemeIcon size={70} radius="xl" variant="light" color="blue">
+                <IconSearch size={36} stroke={1.8} />
+              </ThemeIcon>
+
+              <Title order={4} fw={600}>
+                No Requests Found
+              </Title>
+
+              <Text size="sm" c="dimmed" maw={420}>
+                There is currently no request data available for{" "}
+                <Text span fw={600} c="dark">
+                  {monthNames[month]} {year}
+                </Text>
+                . Please select another period or check again later.
+              </Text>
+            </Stack>
+          </Paper>
+        ) : (
+          <>
+            <Paper
+              p="xl"
+              mb="xl"
+              withBorder
+              shadow="sm"
+              bg="white"
+              style={{ border: "none" }}
             >
-              <Group gap="xs">
-                <Select
-                  data={monthNames.map((m, i) => ({
-                    value: i.toString(),
-                    label: m,
-                  }))}
-                  value={month?.toString()}
-                  onChange={(val) => setMonth(Number(val))}
-                  w={140}
-                />
+              <Group mb="lg" px="xs" justify="space-between">
+                <Group gap="sm">
+                  <ThemeIcon
+                    variant="light"
+                    color="blue.6"
+                    size="md"
+                    radius="md"
+                  >
+                    <IconLayoutGrid size={18} />
+                  </ThemeIcon>
+                  <Text fw={700} size="md" c="blue.6" lts={0.5}>
+                    BY DEPARTMENT
+                  </Text>
+                </Group>
 
-                <Select
-                  data={Array.from({ length: 5 }, (_, i) => {
-                    const y = new Date().getFullYear() - i;
-                    return { value: y.toString(), label: y.toString() };
-                  })}
-                  value={year?.toString()}
-                  onChange={(val) => setYear(Number(val))}
-                  w={100}
-                />
-
-                <ActionIcon variant="filled" radius="xl" size="lg" color="blue">
-                  <IconSearch size={16} />
-                </ActionIcon>
+                <Badge size="lg" radius="sm" variant="light" color="black">
+                  {summary?.deptStats?.length || 0} Departments
+                </Badge>
               </Group>
-            </Box>
-          </Group>
-        </Paper>
 
-        {/* --- STATS CARDS --- */}
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
-          <StatsCard
-            title="Total Request"
-            value={summary?.total}
-            icon={<IconLayoutDashboard size={28} />}
-            color="blue"
-          />
-          <StatsCard
-            title="On Queue"
-            value={summary?.onQueue}
-            icon={<IconClock size={28} />}
-            color="orange"
-          />
-          <StatsCard
-            title="On Progress"
-            value={summary?.onProgress}
-            icon={<IconLoader2 size={28} />}
-            color="cyan"
-          />
-          <StatsCard
-            title="Completed"
-            value={summary?.completed}
-            icon={<IconCircleCheck size={28} />}
-            color="green"
-          />
-        </SimpleGrid>
+              <ScrollArea pb="md" offsetScrollbars scrollbarSize={6}>
+                <Flex gap="lg">
+                  {summary?.deptStats?.map((item) => (
+                    <Paper
+                      key={item.name}
+                      withBorder
+                      p="lg"
+                      radius="lg"
+                      style={{
+                        minWidth: 220,
+                        background: "#fff",
+                        borderColor: "#f1f3f5",
+                        borderBottom: `4px solid #228be6`,
+                        transition: "all 0.2s ease",
+                        cursor: "default",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        textAlign: "center",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                        e.currentTarget.style.boxShadow =
+                          "var(--mantine-shadow-md)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <Box mb="md">
+                        <Text
+                          size="md"
+                          fw={700}
+                          c="blue.6"
+                          tt="uppercase"
+                          lts={0.5}
+                          style={{
+                            lineHeight: 1.2,
+                            minHeight: "2.4em",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {item.name}
+                        </Text>
+                      </Box>
 
-        {/* CHART DEPARTMENT */}
-<Paper
-  radius={18}
-  p="xl"
-  shadow="sm"
-  style={{
-    background: "linear-gradient(180deg, #ffffff 0%, #fafbff 100%)",
-    border: "1px solid #eef1f6",
-  }}
->
-  {/* ... Header tetap sama ... */}
+                      <Box>
+                        <Text
+                          size="32px"
+                          fw={700}
+                          c="dark.4"
+                          style={{ lineHeight: 1 }}
+                        >
+                          {item.count}
+                        </Text>
+                        <Text size="md" c="dimmed" mt={4} fw={600}>
+                          Total
+                        </Text>
+                      </Box>
+                    </Paper>
+                  ))}
+                </Flex>
+              </ScrollArea>
+            </Paper>
 
-  {/* Area Scroll Horizontal */}
-  <ScrollArea w="100%" pb="md">
-    <Group wrap="nowrap" gap="md">
-      {summary?.deptStats?.map((item) => (
-        <Paper
-          key={item.name}
-          withBorder
-          p="md"
-          radius="md"
-          shadow="xs"
-          style={{
-            minWidth: 160, // Menentukan lebar kartu agar bisa di-scroll
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
-        >
-          <Text size="sm" fw={700} c="blue.7" mb={4} style={{ whiteSpace: 'nowrap' }}>
-            {item.name}
-          </Text>
-          <Text size="xl" fw={800}>
-            {item.count}
-          </Text>
-          <Text size="xs" c="dimmed">
-            Total
-          </Text>
-        </Paper>
-      ))}
-    </Group>
-  </ScrollArea>
-</Paper>
+            <SimpleGrid cols={{ base: 1, md: 3 }} spacing="xl">
+              <Paper
+                p="xl"
+                withBorder
+                shadow="sm"
+                bg="white"
+                style={{ border: "none" }}
+              >
+                <Group mb="lg" px="xs" justify="space-between">
+                  <Group gap="sm">
+                    <ThemeIcon
+                      variant="light"
+                      color="blue.6"
+                      size="md"
+                      radius="md"
+                    >
+                      <IconTrendingUp size={18} />
+                    </ThemeIcon>
+                    <Text
+                      fw={700}
+                      size="md"
+                      c="blue.6"
+                      lts={0.5}
+                      tt="uppercase"
+                    >
+                      STATUS REQUEST
+                    </Text>
+                  </Group>
+                </Group>
 
-         {/* CHART COMPANY */}
-<Paper
-  radius={18}
-  p="xl"
-  shadow="sm"
-  style={{
-    background: "linear-gradient(180deg, #ffffff 0%, #fafbff 100%)",
-    border: "1px solid #eef1f6",
-  }}
->
-  {/* ... Header tetap sama ... */}
+                <Stack gap="lg">
+                  <StatusCard
+                    label="All Request"
+                    value={summary?.total}
+                    color="gray"
+                    icon={<IconLayoutList />}
+                  />
 
-  <ScrollArea w="100%" pb="md">
-    <Group wrap="nowrap" gap="md">
-      {companyStats?.map((item) => (
-        <Paper
-          key={item.name}
-          withBorder
-          p="md"
-          radius="md"
-          style={{ minWidth: 180, textAlign: "center" }}
-        >
-          <Text size="sm" fw={700} c="cyan.7" mb={4}>
-            {item.name}
-          </Text>
-          <Text size="xl" fw={800}>
-            {item.value}
-          </Text>
-          <Text size="xs" c="dimmed">
-            Total
-          </Text>
-        </Paper>
-      ))}
-    </Group>
-  </ScrollArea>
-</Paper>
-</div>
+                  <StatusCard
+                    label="On Queue"
+                    value={summary?.onQueue}
+                    statusCode={0}
+                    icon={<IconClock />}
+                  />
+                  <StatusCard
+                    label="On Progress"
+                    value={summary?.onProgress}
+                    statusCode={1}
+                    icon={<IconLoader2 />}
+                  />
+
+                  <StatusCard
+                    label="Completed"
+                    value={summary?.completed ?? 0}
+                    statusCode={2}
+                    icon={<IconCheck />}
+                  />
+                </Stack>
+              </Paper>
+
+              <Box style={{ gridColumn: "span 2" }}>
+                <Paper
+                  p="xl"
+                  withBorder
+                  shadow="sm"
+                  h="100%"
+                  bg="white"
+                  style={{ border: "none", overflow: "hidden" }}
+                >
+                  <Group mb="lg" px="xs" justify="space-between">
+                    <Group gap="sm">
+                      <ThemeIcon
+                        variant="light"
+                        color="blue.6"
+                        size="md"
+                        radius="md"
+                      >
+                        <IconBuildingCommunity size={18} />
+                      </ThemeIcon>
+                      <Text
+                        fw={700}
+                        size="md"
+                        c="blue.6"
+                        lts={0.5}
+                        tt="uppercase"
+                      >
+                        BY COMPANY
+                      </Text>
+                    </Group>
+
+                    <Badge size="lg" radius="sm" variant="light" color="black">
+                      {summary?.companyStats?.length || 0} Companies
+                    </Badge>
+                  </Group>
+
+                  <ScrollArea h={800} offsetScrollbars scrollbarSize={6}>
+                    <Stack gap="xs" pr="md">
+                      {summary?.companyStats?.map((comp, index) => (
+                        <Paper
+                          key={comp.name}
+                          p="md"
+                          radius="md"
+                          withBorder
+                          style={{
+                            transition: "all 0.2s ease",
+                            borderLeft: "4px solid #228be6",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateX(8px)";
+                            e.currentTarget.style.backgroundColor = "#e7f5ff";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateX(0)";
+                            e.currentTarget.style.backgroundColor =
+                              index % 2 === 0 ? "#f8f9fa" : "#fff";
+                          }}
+                        >
+                          <Group justify="space-between">
+                            <Group>
+                              <Box
+                                w={8}
+                                h={8}
+                                style={{
+                                  borderRadius: "50%",
+                                  background: "#000",
+                                }}
+                              />
+                              <Text fw={700} size="md" c="blue.7">
+                                {comp.name}
+                              </Text>
+                            </Group>
+                            <Group gap="xs">
+                              <Box style={{ textAlign: "center" }}>
+                                <Text fw={800} size="xl" c="dark.4">
+                                  {comp.value}
+                                </Text>
+                                <Text
+                                  size="md"
+                                  c="dimmed"
+                                  mt={4}
+                                  fw={600}
+                                  style={{ marginTop: -4 }}
+                                >
+                                  Total
+                                </Text>
+                              </Box>
+                            </Group>
+                          </Group>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </ScrollArea>
+                </Paper>
+              </Box>
+            </SimpleGrid>
+          </>
+        )}
+      </Box>
     </AuthLayout>
   );
 }
 
-function StatsCard({ title, value, icon, color }) {
-  const c = color || "blue";
+function StatusCard({ label, value, statusCode, color, icon }) {
+  const statusInfo =
+    statusCode !== undefined
+      ? getAdminStatus(statusCode)
+      : { bg: color || "#34495e", text: "#fff" };
+
+  const getIconAnimation = () => {
+    switch (label) {
+      case "On Queue":
+        return {
+          animate: { scale: [1, 1.15, 1] },
+          transition: { repeat: Infinity, duration: 1.5 },
+        };
+
+      case "On Progress":
+        return {
+          animate: { rotate: 360 },
+          transition: { repeat: Infinity, duration: 1.5, ease: "linear" },
+        };
+
+      case "Completed":
+        return {
+          initial: { scale: 0 },
+          animate: { scale: 1 },
+          transition: { type: "spring", stiffness: 200 },
+        };
+
+      case "All Request":
+        return {
+          animate: { y: [0, -3, 0] },
+          transition: { repeat: Infinity, duration: 2 },
+        };
+
+      default:
+        return {};
+    }
+  };
+
+  const iconAnimation = getIconAnimation();
 
   return (
     <Paper
       withBorder
-      p="xl"
       radius="md"
       shadow="sm"
-      className="group"
       style={{
-        transition: "all 0.2s ease",
-        borderTop: `${rem(4)} solid var(--mantine-color-${c}-6)`,
-        backgroundColor: "#fff",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-5px)";
-        e.currentTarget.style.boxShadow = "var(--mantine-shadow-md)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "var(--mantine-shadow-sm)";
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        border: "none",
       }}
     >
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <Box>
-          <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={rem(1)}>
-            {title}
-          </Text>
-          <Text size="2.2rem" fw={800} mt={rem(4)} style={{ lineHeight: 1 }}>
-            {value ?? 0}
-          </Text>
-        </Box>
-
-        <Box
-          p="md"
-          style={{
-            backgroundColor: `var(--mantine-color-${c}-0)`,
-            color: `var(--mantine-color-${c}-6)`,
-            borderRadius: rem(12),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "transform 0.3s ease",
-          }}
-          className="group-hover:scale-110"
-        >
-          {icon}
-        </Box>
-      </Group>
-
-      {/* Progress Bar Mini - Lebih Subtle */}
       <Box
-        mt="md"
-        h={rem(4)}
-        radius="xl"
-        bg={`var(--mantine-color-${c}-1)`}
-        style={{ overflow: "hidden" }}
+        bg={statusInfo.bg}
+        p="xs"
+        style={{ display: "flex", alignItems: "center", gap: "8px" }}
       >
-        <Box
-          h="100%"
-          bg={`var(--mantine-color-${c}-6)`}
-          style={{
-            width: value > 0 ? "70%" : "0%",
-            transition: "width 1s ease-in-out",
-            borderRadius: "inherit",
-          }}
-        />
+        {icon && React.isValidElement(icon) && (
+          <motion.div {...iconAnimation}>
+            {React.cloneElement(icon, {
+              color: statusInfo.text,
+              size: 18,
+              stroke: 2.5,
+            })}
+          </motion.div>
+        )}
+
+        <Text c={statusInfo.text} fw={700} size="sm" tt="uppercase" lts={0.5}>
+          {label}
+        </Text>
       </Box>
+
+      <Stack
+        align="center"
+        justify="center"
+        p="xl"
+        gap={0}
+        style={{
+          flex: 1,
+          minHeight: "140px",
+          backgroundColor: "#ffffff", // Pastikan putih bersih
+        }}
+      >
+        <Text
+          style={{
+            fontSize: "2.5rem",
+            fontWeight: 700,
+            lineHeight: 1,
+            color: "#2C2E33",
+          }}
+        >
+          {value ?? 0}
+        </Text>
+
+        <Text c="dimmed" fw={600} size="md" mt="sm">
+          Total {label}
+        </Text>
+      </Stack>
     </Paper>
   );
 }
 
+Dashboard.title = "Dashboard";
 export default Dashboard;

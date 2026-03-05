@@ -71,7 +71,7 @@ export default function Navigation() {
     },
     {
       name: "PCMS Access Request",
-      url: "/user_request/list/all",
+      url: "/user_request/dashboard",
       icon: <IconUser size={20} />,
     },
     {

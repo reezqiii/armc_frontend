@@ -135,6 +135,8 @@ export default function RequestListDynamic({ request_status }) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState({});
   const [selectedRejectData, setSelectedRejectData] = useState(null);
 
   const canApprove = useMemo(() => {
@@ -332,14 +334,7 @@ export default function RequestListDynamic({ request_status }) {
   };
 
   const handleExportExcel = async () => {
-    if (!canExport) {
-      Swal.fire(
-        "Access Denied",
-        "You are not authorized to export this data",
-        "error",
-      );
-      return;
-    }
+    if (!canExport) return;
 
     try {
       Swal.fire({
@@ -348,27 +343,51 @@ export default function RequestListDynamic({ request_status }) {
         didOpen: () => Swal.showLoading(),
       });
 
+      const tableFilters = {};
+      columnFilters.forEach((f) => {
+        if (f.value !== null && f.value !== "") {
+          tableFilters[f.id] = f.value;
+        }
+      });
+
+      const filterPayload = {
+        ...tableFilters,
+        ...(config.id !== null && { request_status: config.id }),
+        ...(config.id === 0
+          ? { status_active: 1, requestor_id: user.id, type: 0 }
+          : { type: 1 }),
+      };
+
       const response = await axios.get(`${API_URL}/excel/export-list`, {
         params: {
-          search: JSON.stringify({ request_status: config.id }),
+          search: JSON.stringify(filterPayload),
           status: request_status,
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
         "download",
         `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
       );
+
       document.body.appendChild(link);
       link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
       Swal.close();
     } catch (err) {
-      Swal.fire("Error", "Export failed", "error");
+      console.error("Export Error:", err);
+      Swal.fire("Error", "Export failed atau server timeout", "error");
     }
   };
 
@@ -796,7 +815,17 @@ export default function RequestListDynamic({ request_status }) {
     });
 
     return cols;
-  }, [config?.actions, pagination.pageIndex, pagination.pageSize, API_URL, user.token, encrypt, handleCancel, handleReturn, setData]);
+  }, [
+    config?.actions,
+    pagination.pageIndex,
+    pagination.pageSize,
+    API_URL,
+    user.token,
+    encrypt,
+    handleCancel,
+    handleReturn,
+    setData,
+  ]);
 
   const table = useReactTable({
     data,
