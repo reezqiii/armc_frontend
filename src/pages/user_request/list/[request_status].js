@@ -135,8 +135,6 @@ export default function RequestListDynamic({ request_status }) {
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [modalOpen, setModalOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({});
   const [selectedRejectData, setSelectedRejectData] = useState(null);
 
   const canApprove = useMemo(() => {
@@ -163,15 +161,11 @@ export default function RequestListDynamic({ request_status }) {
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
 
-      ...(config.id === 0
-        ? {
-            status_active: 1,
-            requestor_id: user.id,
-            type: 0, // INTERNAL
-          }
-        : {
-            type: 1, // PUBLIC
-          }),
+      ...(config.id === 0 && {
+        status_active: 1,
+        requestor_id: user.id,
+        type: 0,
+      }),
     };
 
     columnFilters.forEach((filter) => {
@@ -355,32 +349,43 @@ export default function RequestListDynamic({ request_status }) {
         ...(config.id !== null && { request_status: config.id }),
         ...(config.id === 0
           ? { status_active: 1, requestor_id: user.id, type: 0 }
-          : { type: 1 }),
+          : {}),
       };
 
       const response = await axios.get(`${API_URL}/excel/export-list`, {
         params: {
           search: JSON.stringify(filterPayload),
           status: request_status,
+          sort_by: sorting[0]?.id,
+          sort_order: sorting[0]?.desc ? "desc" : "asc",
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
       });
 
+      if (!response.data || response.data.size === 0) {
+        throw new Error("Empty file received");
+      }
+
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute(
-        "download",
-        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
-      );
+
+      const now = new Date();
+
+      const timestamp =
+        now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0");
+      const fileName = `pcms-armc-${timestamp}.xlsx`;
+      link.setAttribute("download", fileName);
 
       document.body.appendChild(link);
       link.click();
-
       link.remove();
       window.URL.revokeObjectURL(url);
 
@@ -588,12 +593,18 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue(),
       },
       {
-        accessorFn: (row) => row.type,
+        accessorFn: (row) => {
+          const TYPE_LABELS = {
+            0: "Internal",
+            1: "External",
+          };
+          return TYPE_LABELS[row.type] ?? "-";
+        },
         id: "type",
         header: "Type",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => (row.original.type === 1 ? "External" : "Internal"),
+        cell: (info) => info.getValue(),
       },
       {
         accessorFn: (row) => row.category_account,
@@ -893,7 +904,7 @@ export default function RequestListDynamic({ request_status }) {
               {canExport && (
                 <Button
                   color="green"
-                  size="xs"
+                  size="sm"
                   leftSection={<IconFileSpreadsheet size={16} />}
                   onClick={handleExportExcel}
                 >

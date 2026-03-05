@@ -645,10 +645,6 @@ function EditRequest() {
                       {formData.approval_lead_it_by_name || "-"}
                     </div>
                     <div className="text-[10px] text-gray-500 mt-1">
-                      {console.log(
-                        "Lead IT date:",
-                        formData.approval_lead_date_at
-                      )}
                       {formData.approval_lead_date_at
                         ? formatDate(formData.approval_lead_date_at, {
                             showTime: true,
