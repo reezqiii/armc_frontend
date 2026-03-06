@@ -127,85 +127,51 @@ function CreateUser() {
     fetchMasterData();
   }, [API_URL, user.token]);
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newErrors = {};
-    if (!formData.project_ids || formData.project_ids.length === 0) {
-      newErrors.project_ids = "Additional project is required";
-    }
-    if (formData.access_yard_company.length === 0)
-      newErrors.access_yard_company = "Company Yard Access is required";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    // Validasi sederhana
+    if (formData.access_yard_company.length === 0) {
+      setErrors({ access_yard_company: "Company Yard Access is required" });
       return;
     }
 
-    // KONFIRMASI SEBELUM SUBMIT
-    const confirm = await Swal.fire({
-      title: "Create User?",
-      text: "Are you sure you want to create this user?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, create",
-      cancelButtonText: "Cancel",
-      reverseButtons: true,
-    });
+    // Gunakan showConfirm dari hook custom kamu
+    const confirm = await showConfirm(
+      "Create User?",
+      "Are you sure you want to create this user account?"
+    );
 
-    // Jika cancel
     if (!confirm.isConfirmed) return;
 
     const payload = {
+      ...formData,
       badge_no: Number(formData.badge_no),
-      full_name: formData.full_name,
-      username: formData.username,
-      email: formData.email,
-
       department: Number(formData.department),
-
       project_id: Number(formData.project_id),
       project_ids: formData.project_ids?.map(Number) ?? [],
       company_id: Number(formData.company_id),
       id_role: Number(formData.id_role),
-
       outside_access: Number(formData.outside_access),
       portal_type: Number(formData.portal_type),
       status_user: Number(formData.status_user),
-
       access_yard_company: formData.access_yard_company?.map(Number) ?? [],
       created_by: user.id,
     };
 
     try {
       setLoadingSubmit(true);
-
       await axios.post(`${API_URL}/api/user/create`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
 
-      await Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "User successfully created",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setFormData({
-        badge_no: "",
-        full_name: "",
-        username: "",
-        email: "",
-        department: null,
-        project_id: null,
-        company_id: null,
-        id_role: null,
-        access_yard_company: [],
-      });
+      // Gunakan showAlert dari hook custom kamu
+      await showAlert("Success", "success", "User successfully created", "Great!");
+      
+      router.push("/user_management/user_list/list");
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", "Failed to create user", "error");
+      showAlert("Error", "error", err.response?.data?.message || "Failed to create user");
     } finally {
       setLoadingSubmit(false);
     }

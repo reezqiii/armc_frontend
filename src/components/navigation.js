@@ -41,9 +41,13 @@ export default function Navigation() {
   const navigation = [
     {
       name: "Home",
-      target: `${IT_FORM}/home/home`,
+      url: "/dashboard/home",
       icon: <IconHome size={20} />,
-      external: true,
+    },
+    {
+      name: "User Management",
+      url: "/user_management/user_list/list",
+      icon: <IconUserCog size={20} />,
     },
     {
       name: "Computer & Account",
@@ -52,39 +56,9 @@ export default function Navigation() {
       external: true,
     },
     {
-      name: "Cross Dept. Share Folder Access",
-      target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
-      icon: <IconFolderOpen size={20} />,
-      external: true,
-    },
-    {
-      name: "Wifi Access",
-      target: `${IT_FORM}/Wifi_access/wifi_access`,
-      icon: <IconWifi size={20} />,
-      external: true,
-    },
-    {
-      name: "Software Development",
-      target: `${IT_FORM}/software_request/software_request`,
-      icon: <IconTerminal size={20} />,
-      external: true,
-    },
-    {
-      name: "PCMS Access Request",
+      name: "Portal Access Request",
       url: "/user_request/list/all",
       icon: <IconUser size={20} />,
-    },
-    {
-      name: "UAT",
-      target: `${IT_FORM}/uat_app/master_app`,
-      icon: <IconDatabase size={20} />,
-      external: true,
-    },
-    {
-      name: "User Management",
-      url: "/user_management/user_list/active",
-      icon: <IconUserCog size={20} />,
-      permission: 2,
     },
   ];
 

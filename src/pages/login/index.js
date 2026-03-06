@@ -1,0 +1,205 @@
+import React, { useState, useEffect } from "react";
+import Cookies from "js-cookie";
+import {
+  TextInput,
+  PasswordInput,
+  Button,
+  Title,
+  Text,
+  Group,
+  Anchor,
+  Stack,
+} from "@mantine/core";
+import { useForm } from "@mantine/form";
+import Swal from "sweetalert2";
+import { motion } from "framer-motion";
+import axios from "axios";
+import { useRouter } from "next/router";
+import useUser from "@/store/useUser";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { setUser } = useUser();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  const form = useForm({
+    initialValues: { username: "", password: "" },
+    validate: {
+      username: (value) => (value.length < 1 ? "Username is required" : null),
+      password: (value) => (value.length < 1 ? "Password is required" : null),
+    },
+  });
+
+  // PWA Logic (show text prompt only)
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      if (window.innerWidth <= 768 && !localStorage.getItem("pwaInstalled")) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () =>
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+  }, []);
+
+  const handleSubmit = async (values) => {
+    Swal.fire({
+      title: "Processing...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/api/auth/validate",
+        values,
+      );
+
+      if (res.data.token) {
+        Cookies.set("token", res.data.token, { expires: 1 });
+        Cookies.set("user_info", JSON.stringify(res.data.user), { expires: 1 });
+
+        setUser({
+          id: res.data.user.id,
+          name: res.data.user.full_name,
+          token: res.data.token,
+          permissions: res.data.user.permissions ?? [],
+        });
+
+        Swal.fire({
+          icon: "success",
+          title: "Login Successful",
+          text: `Welcome back, ${res.data.user.full_name}!`,
+          confirmButtonText: "OK", 
+          confirmButtonColor: "#1d4ed8", 
+        }).then((result) => {
+          if (result.isConfirmed) {
+            router.push("/dashboard/home"); 
+          }
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: err.response?.data?.message || "Invalid username or password",
+      });
+    }
+  };
+  
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {/* FORM SECTION */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-200"
+        >
+          <Title order={2} className="text-center text-gray-900 mb-6">
+            Sign In To Portal
+          </Title>
+
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Stack spacing="md">
+              <TextInput
+                required
+                label="Username"
+                placeholder="Enter your username"
+                {...form.getInputProps("username")}
+                radius="md"
+                size="md"
+              />
+
+              <PasswordInput
+                required
+                label="Password"
+                placeholder="Enter your password"
+                {...form.getInputProps("password")}
+                radius="md"
+                size="md"
+              />
+
+              <Group position="apart">
+                <Anchor
+                  href="/reset-password"
+                  size="sm"
+                  className="text-blue-700 hover:underline"
+                >
+                  Forgot Password?
+                </Anchor>
+              </Group>
+
+              <Button
+                type="submit"
+                radius="md"
+                size="md"
+                fullWidth
+                className="bg-blue-700 hover:bg-blue-800 text-white transition-colors"
+              >
+                Sign In
+              </Button>
+            </Stack>
+          </form>
+
+          {/* PWA text banner */}
+          {showInstallBanner && (
+            <Text
+              size="sm"
+              className="mt-4 text-center text-gray-600 border-t pt-3"
+            >
+              You can install this app to your device for a faster experience.
+            </Text>
+          )}
+        </motion.div>
+      </div>
+
+      {/* RIGHT SIDE*/}
+      <div className="hidden lg:flex lg:w-1/2 bg-blue-900 items-center justify-center p-12 text-white">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="max-w-lg"
+        >
+          <Title
+            order={1}
+            className="text-6xl font-extrabold mb-6 leading-tight"
+          >
+            Welcome <span className="text-blue-400">Back.</span>
+          </Title>
+
+          <Text
+            size="xl"
+            className="text-blue-100 mb-8 opacity-90 leading-relaxed"
+          >
+            We are glad to see you again. Log in to continue managing your
+            dashboard and access your latest updates.
+          </Text>
+
+          <div className="space-y-4 border-l-4 border-blue-500 pl-6">
+            <Text italic className="text-lg text-blue-200">
+              Efficiency is doing things right; effectiveness is doing the right
+              things.
+            </Text>
+            <Text
+              size="sm"
+              className="font-semibold tracking-widest uppercase text-blue-400"
+            >
+              — PORTAL
+            </Text>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
