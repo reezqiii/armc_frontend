@@ -43,7 +43,6 @@ import AdminStatusCell from "@/data/status/AdminStatusCell";
 import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
-import { getRequestStatus } from "@/lib/requestStatusList";
 import Head from "next/head";
 import Link from "next/link";
 
@@ -164,12 +163,16 @@ export default function RequestListDynamic({ request_status }) {
       ...(config.id === 0 && {
         status_active: 1,
         requestor_id: user.id,
-        type: 0,
+        // type: 0,
       }),
     };
 
     columnFilters.forEach((filter) => {
-      if (filter.value !== null && filter.value !== "") {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
         searchQuery[filter.id] = filter.value;
       }
     });
@@ -194,7 +197,7 @@ export default function RequestListDynamic({ request_status }) {
       setData(data.data);
       setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Error fetching data:", err.response?.data || err);
     }
   }, [
     config,
@@ -593,123 +596,42 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue(),
       },
       {
-        accessorFn: (row) => {
-          const TYPE_LABELS = {
-            0: "Internal",
-            1: "External",
-          };
-          return TYPE_LABELS[row.type] ?? "-";
-        },
+        accessorFn: (row) => row.type_name,
         id: "type",
         header: "Type",
         enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.category_account,
-        id: "category_account",
+        accessorFn: (row) => row.category_account_name,
+        id: "category_account_name",
         header: "Category Account",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => {
-          const CATEGORY_LABELS = {
-            0: "Create New Account",
-            1: "Request Permission",
-            2: "Request Outside Access",
-          };
-          return CATEGORY_LABELS[row.original.category_account] || "-";
-        },
+        cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.request_status,
+        accessorFn: (row) => row.request_status_name,
         id: "request_status",
         header: "Status Approval",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: ({ row }) => {
-          const rawStatus = row.original.request_status;
-
-          const displayStatus =
-            rawStatus === 8 && row.original.previous_status !== null
-              ? row.original.previous_status
-              : rawStatus;
-
-          const status = getRequestStatus(displayStatus);
-
-          let rejectField = null;
-
-          if (displayStatus === 2) {
-            rejectField = {
-              by: row.original.approval_hod_by?.full_name,
-              at: row.original.approval_hod_date_at,
-              reason: row.original.rejected_hod_remarks,
-            };
-          }
-
-          if (displayStatus === 4) {
-            rejectField = {
-              by: row.original.approval_lead_it_by?.full_name,
-              at: row.original.approval_lead_date_at,
-              reason: row.original.rejected_lead_remarks,
-            };
-          }
-
-          if (displayStatus === 6) {
-            rejectField = {
-              by: row.original.approval_it_hod_by?.full_name,
-              at: row.original.approval_it_date_at,
-              reason: row.original.rejected_it_remarks,
-            };
-          }
-
-          return (
-            <div className="flex flex-col items-center justify-center gap-1 w-full">
-              {/* STATUS BADGE */}
-              <Badge
-                radius="sm"
-                px="sm"
-                styles={{
-                  root: {
-                    backgroundColor: status.bg,
-                    color: status.text,
-                    fontWeight: 600,
-                    textAlign: "center",
-                    textTransform: "none",
-                  },
-                }}
-              >
-                {status.label}
-              </Badge>
-
-              {/* VIEW REASON */}
-              {rejectField && (
-                <Button
-                  size="compact-xs"
-                  variant="light"
-                  color="red"
-                  onClick={() => {
-                    setSelectedRejectData({
-                      status: status.label,
-                      rejected_by_name: rejectField.by,
-                      rejected_at: formatDate(row.original.created_date),
-                      rejected_reason: rejectField.reason,
-                    });
-                    setModalOpen(true);
-                  }}
-                >
-                  View Reason
-                </Button>
-              )}
-            </div>
-          );
-        },
+        cell: ({ row }) => (
+          <Badge
+            radius="sm"
+            px="sm"
+            color={row.original.request_status_color || "gray"}
+            styles={{
+              root: { fontWeight: 600, textTransform: "none" },
+            }}
+          >
+            {row.original.request_status_name}
+          </Badge>
+        ),
       },
     );
 
     if (config?.actions.includes("admin_status")) {
       cols.push({
-        accessorFn: (row) => row.request_admin,
+        accessorFn: (row) => row.request_admin_name,
         id: "request_admin",
         header: "IT Action",
         enableColumnFilter: false,
