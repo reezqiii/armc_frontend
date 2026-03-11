@@ -10,7 +10,7 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import useApi from "@/hooks/useApi";
 import { usePathname } from "next/navigation";
-import '@mantine/charts/styles.css';
+import "@mantine/charts/styles.css";
 
 const COOKIE_EXPIRE_TIME = 86400;
 
@@ -25,7 +25,7 @@ export default function App({ Component, pageProps }) {
   const validateUser = useCallback(
     async (encryptedId) => {
       try {
-        const { data } = await axios.post(`${API.API_URL}/api/auth/validate`, {
+        const { data } = await axios.post(`${API.API_URL}/auth/validate`, {
           id_user: encryptedId,
         });
         return data?.success ? data : null;
@@ -83,7 +83,15 @@ export default function App({ Component, pageProps }) {
     };
 
     initAuth();
-  }, [router.isReady, router.query.user, validateUser, setUser, API.LINK_PORTAL, router, pathname]);
+  }, [
+    router.isReady,
+    router.query.user,
+    validateUser,
+    setUser,
+    API.LINK_PORTAL,
+    router,
+    pathname,
+  ]);
 
   return (
     <>
