@@ -43,8 +43,8 @@ import AdminStatusCell from "@/data/status/AdminStatusCell";
 import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
+import { getRequestStatus } from "@/lib/requestStatusList";
 import Head from "next/head";
-import Link from "next/link";
 
 const STATUS_CONFIG = {
   all: {
@@ -157,13 +157,14 @@ export default function RequestListDynamic({ request_status }) {
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
 
+    const isSpecialUser = hasPermission(2);
+
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
 
       ...(config.id === 0 && {
         status_active: 1,
-        requestor_id: user.id,
-        // type: 0,
+        ...(!isSpecialUser && { requestor_id: user.id }),
       }),
     };
 
@@ -197,7 +198,7 @@ export default function RequestListDynamic({ request_status }) {
       setData(data.data);
       setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error fetching data:", err.response?.data || err);
+      console.error("Error fetching data:", err);
     }
   }, [
     config,
@@ -331,7 +332,14 @@ export default function RequestListDynamic({ request_status }) {
   };
 
   const handleExportExcel = async () => {
-    if (!canExport) return;
+    if (!canExport) {
+      Swal.fire(
+        "Access Denied",
+        "You are not authorized to export this data",
+        "error",
+      );
+      return;
+    }
 
     try {
       Swal.fire({
@@ -340,64 +348,31 @@ export default function RequestListDynamic({ request_status }) {
         didOpen: () => Swal.showLoading(),
       });
 
-      const tableFilters = {};
-      columnFilters.forEach((f) => {
-        if (f.value !== null && f.value !== "") {
-          tableFilters[f.id] = f.value;
-        }
-      });
-
-      const filterPayload = {
-        ...tableFilters,
-        ...(config.id !== null && { request_status: config.id }),
-        ...(config.id === 0
-          ? { status_active: 1, requestor_id: user.id, type: 0 }
-          : {}),
-      };
-
       const response = await axios.get(`${API_URL}/excel/export-list`, {
         params: {
-          search: JSON.stringify(filterPayload),
+          search: JSON.stringify({ request_status: config.id }),
           status: request_status,
-          sort_by: sorting[0]?.id,
-          sort_order: sorting[0]?.desc ? "desc" : "asc",
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
       });
 
-      if (!response.data || response.data.size === 0) {
-        throw new Error("Empty file received");
-      }
-
-      const blob = new Blob([response.data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-
-      const now = new Date();
-
-      const timestamp =
-        now.getFullYear() +
-        String(now.getMonth() + 1).padStart(2, "0") +
-        String(now.getDate()).padStart(2, "0");
-      const fileName = `pcms-armc-${timestamp}.xlsx`;
-      link.setAttribute("download", fileName);
-
+      link.setAttribute(
+        "download",
+        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
       Swal.close();
     } catch (err) {
-      console.error("Export Error:", err);
-      Swal.fire("Error", "Export failed atau server timeout", "error");
+      Swal.fire("Error", "Export failed", "error");
     }
   };
+console.log("user permissions:", user?.permissions);
+console.log("canExport:", canExport);
 
   const handleDownloadPdf = useCallback(
     async (id) => {
@@ -611,31 +586,95 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.request_status_name,
+        accessorFn: (row) => row.request_status,
         id: "request_status",
         header: "Status Approval",
-        cell: ({ row }) => (
-          <Badge
-            radius="sm"
-            px="sm"
-            color={row.original.request_status_color || "gray"}
-            styles={{
-              root: { fontWeight: 600, textTransform: "none" },
-            }}
-          >
-            {row.original.request_status_name}
-          </Badge>
-        ),
+        enableColumnFilter: false,
+        enableSorting: true,
+        cell: ({ row }) => {
+          const rawStatus = row.original.request_status;
+
+          const displayStatus =
+            rawStatus === 8 && row.original.previous_status !== null
+              ? row.original.previous_status
+              : rawStatus;
+
+          const status = getRequestStatus(displayStatus);
+
+          let rejectField = null;
+
+          if (displayStatus === 2) {
+            rejectField = {
+              by: row.original.approval_hod_by?.full_name,
+              at: row.original.approval_hod_date_at,
+              reason: row.original.rejected_hod_remarks,
+            };
+          }
+
+          if (displayStatus === 4) {
+            rejectField = {
+              by: row.original.approval_lead_it_by?.full_name,
+              at: row.original.approval_lead_date_at,
+              reason: row.original.rejected_lead_remarks,
+            };
+          }
+
+          if (displayStatus === 6) {
+            rejectField = {
+              by: row.original.approval_it_hod_by?.full_name,
+              at: row.original.approval_it_date_at,
+              reason: row.original.rejected_it_remarks,
+            };
+          }
+
+          return (
+            <div className="flex flex-col items-center justify-center gap-1 w-full">
+              {/* STATUS BADGE */}
+              <Badge
+                radius="sm"
+                px="sm"
+                styles={{
+                  root: {
+                    backgroundColor: status.bg,
+                    color: status.text,
+                    fontWeight: 600,
+                    textAlign: "center",
+                    textTransform: "none",
+                  },
+                }}
+              >
+                {status.label}
+              </Badge>
+
+              {/* VIEW REASON */}
+              {rejectField && (
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  color="red"
+                  onClick={() => {
+                    setSelectedRejectData({
+                      status: status.label,
+                      rejected_by_name: rejectField.by,
+                      rejected_at: formatDate(row.original.created_date),
+                      rejected_reason: rejectField.reason,
+                    });
+                    setModalOpen(true);
+                  }}
+                >
+                  View Reason
+                </Button>
+              )}
+            </div>
+          );
+        },
       },
     );
 
     if (config?.actions.includes("admin_status")) {
       cols.push({
-        accessorFn: (row) => row.request_admin_name,
         id: "request_admin",
         header: "IT Action",
-        enableColumnFilter: false,
-        enableSorting: true,
         cell: ({ row }) => (
           <AdminStatusCell
             value={row.original.request_admin}
@@ -666,39 +705,31 @@ export default function RequestListDynamic({ request_status }) {
 
         return (
           <SimpleGrid cols={2} spacing={6}>
-            <Link
-              href={`/user_request/detail_req/${encryptedId}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              fullWidth
+              size="xs"
+              color="blue"
+              leftSection={<IconInfoCircle size={14} />}
+              onClick={() =>
+                router.push(`/user_request/detail_req/${encryptedId}`)
+              }
             >
-              <Button
-                component="a"
-                fullWidth
-                size="xs"
-                color="blue"
-                leftSection={<IconInfoCircle size={14} />}
-              >
-                Details
-              </Button>
-            </Link>
+              Details
+            </Button>
 
             {/* UPDATE */}
             {canEditCancel && (
-              <Link
-                href={`/user_request/edit_req/${encryptedId}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Button
+                fullWidth
+                leftSection={<IconEdit size={16} />}
+                color="yellow"
+                size="xs"
+                onClick={() =>
+                  router.push(`/user_request/edit_req/${encryptedId}`)
+                }
               >
-                <Button
-                  component="a"
-                  fullWidth
-                  leftSection={<IconEdit size={16} />}
-                  color="yellow"
-                  size="xs"
-                >
-                  Update
-                </Button>
-              </Link>
+                Update
+              </Button>
             )}
 
             {/* CANCEL */}
@@ -714,21 +745,15 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            <Link
-              href={`${API_URL}/requests/${encryptedId}/generate-pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              fullWidth
+              leftSection={<IconFileTypePdf size={16} />}
+              color="gray"
+              size="xs"
+              onClick={() => handleDownloadPdf(request.id_request)}
             >
-              <Button
-                component="a"
-                fullWidth
-                leftSection={<IconFileTypePdf size={16} />}
-                color="gray"
-                size="xs"
-              >
-                PDF
-              </Button>
-            </Link>
+              PDF
+            </Button>
 
             {/* RETURN */}
             {canReturn && (
@@ -755,9 +780,10 @@ export default function RequestListDynamic({ request_status }) {
     API_URL,
     user.token,
     encrypt,
+    router,
     handleCancel,
+    handleDownloadPdf,
     handleReturn,
-    setData,
   ]);
 
   const table = useReactTable({
@@ -781,6 +807,14 @@ export default function RequestListDynamic({ request_status }) {
     manualFiltering: true,
     manualPagination: true,
   });
+
+  useEffect(() => {
+    table.resetColumnFilters();
+    table.setPageIndex(0);
+    setRowSelection({});
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request_status]);
 
   useEffect(() => {
     getData();
@@ -826,7 +860,7 @@ export default function RequestListDynamic({ request_status }) {
               {canExport && (
                 <Button
                   color="green"
-                  size="sm"
+                  size="xs"
                   leftSection={<IconFileSpreadsheet size={16} />}
                   onClick={handleExportExcel}
                 >

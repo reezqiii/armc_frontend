@@ -13,7 +13,6 @@ import {
   Group,
   Box,
   Title,
-  ActionIcon,
   ScrollArea,
   Flex,
   Stack,
@@ -24,26 +23,68 @@ import {
   IconClock,
   IconLoader2,
   IconSearch,
-  IconPlayerPause,
   IconLayoutGrid,
   IconBuildingCommunity,
-  IconChevronRight,
-  IconCircleCheck,
-  IconFiles,
   IconCheck,
   IconTrendingUp,
   IconLayoutList,
+  IconChartBar,
 } from "@tabler/icons-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
+} from "recharts";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <Paper
+        p="sm"
+        withBorder
+        shadow="md"
+        radius="md"
+        bg="white"
+        style={{ minWidth: 160 }}
+      >
+        <Text fw={600} size="sm" c="blue.7" mb={4}>
+          {label}
+        </Text>
+        {payload.map((p) => (
+          <Group key={p.name} gap="xs">
+            <Box
+              w={10}
+              h={10}
+              style={{ borderRadius: 2, background: p.fill }}
+            />
+            <Text size="sm" c="dimmed">
+              {p.name}:
+            </Text>
+            <Text size="sm" fw={600}>
+              {p.value}
+            </Text>
+          </Group>
+        ))}
+      </Paper>
+    );
+  }
+  return null;
+};
 
 function Dashboard() {
   const API = useApi();
   const API_URL = API.API_URL;
   const { user } = useUser();
 
-  const [month, setMonth] = useState(null);
-  const [year, setYear] = useState(null);
+  const [month, setMonth] = useState("all");
+  const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
 
@@ -62,6 +103,11 @@ function Dashboard() {
     "December",
   ];
 
+  const monthOptions = [
+    { value: "all", label: "All Months" },
+    ...monthNames.map((m, i) => ({ value: i.toString(), label: m })),
+  ];
+
   const isSummaryEmpty =
     !summary ||
     ((summary.deptStats?.length === 0 || !summary.deptStats) &&
@@ -72,16 +118,9 @@ function Dashboard() {
     const fetchLatestPeriod = async () => {
       try {
         if (!API_URL) return;
-        const res = await axios.get(
-          `${API_URL}/requests/dashboard/latest-period`,
-          {
-            headers: { Authorization: `Bearer ${user?.token}` },
-          },
-        );
-        if (res.data) {
-          setMonth(res.data.month - 1);
-          setYear(res.data.year);
-        }
+        await axios.get(`${API_URL}/requests/dashboard/latest-period`, {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        });
       } catch (e) {
         console.error(e);
       } finally {
@@ -96,7 +135,7 @@ function Dashboard() {
     const fetchSummary = async () => {
       try {
         const res = await axios.get(`${API_URL}/requests/dashboard/summary`, {
-          params: { month: month + 1, year: year },
+          params: { month: month === "all" ? null : Number(month) + 1, year },
           headers: { Authorization: `Bearer ${user?.token}` },
         });
         setSummary(res.data);
@@ -106,6 +145,20 @@ function Dashboard() {
     };
     fetchSummary();
   }, [month, year, user?.token, API_URL]);
+
+  const chartData = (summary?.deptStats || [])
+    .map((d) => ({
+      name: d.name,
+      onQueue: d.onQueue ?? d.count ?? 0,
+      onProgress: d.onProgress ?? 0,
+    }))
+    .sort((a, b) => b.onQueue + b.onProgress - (a.onQueue + a.onProgress));
+
+  const companyStats = (summary?.companyStats || []).filter(
+    (c) => c.name && c.name.trim() !== "" && c.name !== "No Company",
+  );
+
+  const chartHeight = Math.max(chartData.length * 44 + 40, 300);
 
   if (loading) {
     return (
@@ -118,7 +171,7 @@ function Dashboard() {
           gap="md"
         >
           <Loader size="lg" type="dots" color="blue" />
-          <Text fw={500} c="dimmed">
+          <Text fw={500} c="dimmed" size="md">
             Preparing analytics...
           </Text>
         </Flex>
@@ -129,16 +182,17 @@ function Dashboard() {
   return (
     <AuthLayout sidebarList={requestorList}>
       <Box p="xl" bg="#f4f6f8" style={{ minHeight: "100vh" }}>
-        {/* --- HEADER --- */}
+        {/* HEADER */}
         <Group justify="space-between" mb="lg">
           <Box>
             <Title order={2} fw={700} lts={-0.5} c="blue" tt="uppercase">
               Monthly Request Dashboard
             </Title>
-            <Text size="sm" fw={500} mt={4} style={{ color: "#495057" }}>
+            <Text size="md" fw={500} mt={4} style={{ color: "#495057" }}>
               Request summary for{" "}
               <Text span fw={600} style={{ color: "#1c7ed6" }}>
-                {monthNames[month]} {year}
+                {month === "all" ? "All Months" : monthNames[Number(month)]}{" "}
+                {year}
               </Text>
             </Text>
           </Box>
@@ -146,13 +200,10 @@ function Dashboard() {
             <Group gap="xs">
               <Select
                 variant="unstyled"
-                data={monthNames.map((m, i) => ({
-                  value: i.toString(),
-                  label: m,
-                }))}
+                data={monthOptions}
                 value={month?.toString()}
-                onChange={(val) => setMonth(Number(val))}
-                w={120}
+                onChange={(val) => setMonth(val)}
+                w={140}
                 size="sm"
               />
               <Select
@@ -170,7 +221,6 @@ function Dashboard() {
           </Paper>
         </Group>
 
-        {/* no found */}
         {isSummaryEmpty ? (
           <Paper
             withBorder
@@ -189,12 +239,10 @@ function Dashboard() {
               <ThemeIcon size={70} radius="xl" variant="light" color="blue">
                 <IconSearch size={36} stroke={1.8} />
               </ThemeIcon>
-
               <Title order={4} fw={600}>
                 No Requests Found
               </Title>
-
-              <Text size="sm" c="dimmed" maw={420}>
+              <Text size="md" c="dimmed" maw={420}>
                 There is currently no request data available for{" "}
                 <Text span fw={600} c="dark">
                   {monthNames[month]} {year}
@@ -205,6 +253,7 @@ function Dashboard() {
           </Paper>
         ) : (
           <>
+            {/* BY DEPARTMENT */}
             <Paper
               p="xl"
               mb="xl"
@@ -227,7 +276,6 @@ function Dashboard() {
                     BY DEPARTMENT
                   </Text>
                 </Group>
-
                 <Badge size="lg" radius="sm" variant="light" color="black">
                   {summary?.deptStats?.length || 0} Departments
                 </Badge>
@@ -245,7 +293,7 @@ function Dashboard() {
                         minWidth: 220,
                         background: "#fff",
                         borderColor: "#f1f3f5",
-                        borderBottom: `4px solid #228be6`,
+                        borderBottom: "4px solid #228be6",
                         transition: "all 0.2s ease",
                         cursor: "default",
                         display: "flex",
@@ -282,7 +330,6 @@ function Dashboard() {
                           {item.name}
                         </Text>
                       </Box>
-
                       <Box>
                         <Text
                           size="32px"
@@ -302,6 +349,136 @@ function Dashboard() {
               </ScrollArea>
             </Paper>
 
+            {/* ON QUEUE & ON PROGRESS — Horizontal Bar Chart */}
+            {chartData.length > 0 && (
+              <Paper
+                p="xl"
+                mb="xl"
+                withBorder
+                shadow="sm"
+                bg="white"
+                style={{ border: "none" }}
+              >
+                <Group mb="lg" px="xs" justify="space-between">
+                  <Group gap="sm">
+                    <ThemeIcon
+                      variant="light"
+                      color="blue.6"
+                      size="md"
+                      radius="md"
+                    >
+                      <IconChartBar size={18} />
+                    </ThemeIcon>
+                    <Text fw={700} size="md" c="blue.6" lts={0.5}>
+                      ON QUEUE &amp; ON PROGRESS REQUEST
+                    </Text>
+                  </Group>
+                  <Group gap="lg">
+                    <Group gap={6}>
+                      <Box
+                        w={12}
+                        h={12}
+                        style={{ borderRadius: 2, background: "#185FA5" }}
+                      />
+                      <Text size="md" c="dimmed" fw={500}>
+                        On Queue
+                      </Text>
+                    </Group>
+                    <Group gap={6}>
+                      <Box
+                        w={12}
+                        h={12}
+                        style={{ borderRadius: 2, background: "#85B7EB" }}
+                      />
+                      <Text size="md" c="dimmed" fw={500}>
+                        On Progress
+                      </Text>
+                    </Group>
+                  </Group>
+                </Group>
+
+                <ScrollArea h={400} offsetScrollbars scrollbarSize={6}>
+                  <Box
+                    style={{
+                      height: Math.max(chartData.length * 44 + 40, 300),
+                    }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        layout="vertical"
+                        margin={{ top: 4, right: 56, left: 16, bottom: 4 }}
+                        barCategoryGap="25%"
+                        barGap={3}
+                      >
+                        <CartesianGrid horizontal={false} stroke="#f1f3f5" />
+                        <XAxis
+                          type="number"
+                          allowDecimals={false}
+                          tick={{ fontSize: 13, fill: "#adb5bd" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          width={200}
+                          tick={{
+                            fontSize: 13,
+                            fill: "#495057",
+                            fontWeight: 500,
+                          }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          cursor={{ fill: "#f8f9fa" }}
+                        />
+                        <Bar
+                          dataKey="onQueue"
+                          name="On Queue"
+                          fill="#185FA5"
+                          barSize={14}
+                          radius={[0, 2, 2, 0]}
+                        >
+                          <LabelList
+                            dataKey="onQueue"
+                            position="right"
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              fill: "#495057",
+                            }}
+                            formatter={(v) => (v > 0 ? v : "")}
+                          />
+                        </Bar>
+                        <Bar
+                          dataKey="onProgress"
+                          name="On Progress"
+                          fill="#85B7EB"
+                          barSize={14}
+                          radius={[0, 2, 2, 0]}
+                        >
+                          <LabelList
+                            dataKey="onProgress"
+                            position="right"
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              fill: "#495057",
+                            }}
+                            formatter={(v) => (v > 0 ? v : "")}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </ScrollArea>
+              </Paper>
+            )}
+
+            {/* STATUS + BY COMPANY */}
             <SimpleGrid cols={{ base: 1, md: 3 }} spacing="xl">
               <Paper
                 p="xl"
@@ -331,7 +508,6 @@ function Dashboard() {
                     </Text>
                   </Group>
                 </Group>
-
                 <Stack gap="lg">
                   <StatusCard
                     label="All Request"
@@ -339,7 +515,6 @@ function Dashboard() {
                     color="gray"
                     icon={<IconLayoutList />}
                   />
-
                   <StatusCard
                     label="On Queue"
                     value={summary?.onQueue}
@@ -352,7 +527,6 @@ function Dashboard() {
                     statusCode={1}
                     icon={<IconLoader2 />}
                   />
-
                   <StatusCard
                     label="Completed"
                     value={summary?.completed ?? 0}
@@ -391,15 +565,14 @@ function Dashboard() {
                         BY COMPANY
                       </Text>
                     </Group>
-
                     <Badge size="lg" radius="sm" variant="light" color="black">
-                      {summary?.companyStats?.length || 0} Companies
+                      {companyStats.length} Companies
                     </Badge>
                   </Group>
 
                   <ScrollArea h={800} offsetScrollbars scrollbarSize={6}>
                     <Stack gap="xs" pr="md">
-                      {summary?.companyStats?.map((comp, index) => (
+                      {companyStats.map((comp, index) => (
                         <Paper
                           key={comp.name}
                           p="md"
@@ -408,6 +581,7 @@ function Dashboard() {
                           style={{
                             transition: "all 0.2s ease",
                             borderLeft: "4px solid #228be6",
+                            borderRadius: 0,
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = "translateX(8px)";
@@ -426,29 +600,21 @@ function Dashboard() {
                                 h={8}
                                 style={{
                                   borderRadius: "50%",
-                                  background: "#000",
+                                  background: "#228be6",
                                 }}
                               />
                               <Text fw={700} size="md" c="blue.7">
                                 {comp.name}
                               </Text>
                             </Group>
-                            <Group gap="xs">
-                              <Box style={{ textAlign: "center" }}>
-                                <Text fw={800} size="xl" c="dark.4">
-                                  {comp.value}
-                                </Text>
-                                <Text
-                                  size="md"
-                                  c="dimmed"
-                                  mt={4}
-                                  fw={600}
-                                  style={{ marginTop: -4 }}
-                                >
-                                  Total
-                                </Text>
-                              </Box>
-                            </Group>
+                            <Box style={{ textAlign: "center" }}>
+                              <Text fw={700} size="xl" c="dark.4">
+                                {comp.value}
+                              </Text>
+                              <Text size="md" c="dimmed" mt={4} fw={600}>
+                                Total
+                              </Text>
+                            </Box>
                           </Group>
                         </Paper>
                       ))}
@@ -477,32 +643,26 @@ function StatusCard({ label, value, statusCode, color, icon }) {
           animate: { scale: [1, 1.15, 1] },
           transition: { repeat: Infinity, duration: 1.5 },
         };
-
       case "On Progress":
         return {
           animate: { rotate: 360 },
           transition: { repeat: Infinity, duration: 1.5, ease: "linear" },
         };
-
       case "Completed":
         return {
           initial: { scale: 0 },
           animate: { scale: 1 },
           transition: { type: "spring", stiffness: 200 },
         };
-
       case "All Request":
         return {
           animate: { y: [0, -3, 0] },
           transition: { repeat: Infinity, duration: 2 },
         };
-
       default:
         return {};
     }
   };
-
-  const iconAnimation = getIconAnimation();
 
   return (
     <Paper
@@ -523,7 +683,7 @@ function StatusCard({ label, value, statusCode, color, icon }) {
         style={{ display: "flex", alignItems: "center", gap: "8px" }}
       >
         {icon && React.isValidElement(icon) && (
-          <motion.div {...iconAnimation}>
+          <motion.div {...getIconAnimation()}>
             {React.cloneElement(icon, {
               color: statusInfo.text,
               size: 18,
@@ -531,22 +691,16 @@ function StatusCard({ label, value, statusCode, color, icon }) {
             })}
           </motion.div>
         )}
-
         <Text c={statusInfo.text} fw={700} size="sm" tt="uppercase" lts={0.5}>
           {label}
         </Text>
       </Box>
-
       <Stack
         align="center"
         justify="center"
         p="xl"
         gap={0}
-        style={{
-          flex: 1,
-          minHeight: "140px",
-          backgroundColor: "#ffffff", // Pastikan putih bersih
-        }}
+        style={{ flex: 1, minHeight: "140px", backgroundColor: "#ffffff" }}
       >
         <Text
           style={{
@@ -558,8 +712,7 @@ function StatusCard({ label, value, statusCode, color, icon }) {
         >
           {value ?? 0}
         </Text>
-
-        <Text c="dimmed" fw={600} size="md" mt="sm">
+        <Text c="dimmed" fw={500} size="md" mt="sm">
           Total {label}
         </Text>
       </Stack>

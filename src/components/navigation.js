@@ -65,7 +65,7 @@ export default function Navigation() {
     },
     {
       name: "Software Development",
-      target: `${IT_FORM}/software_request/software_request`,
+      target: `${IT_FORM}/software_request/`,
       icon: <IconTerminal size={20} />,
       external: true,
     },
@@ -80,12 +80,12 @@ export default function Navigation() {
       icon: <IconDatabase size={20} />,
       external: true,
     },
-    {
-      name: "User Management",
-      url: "/user_management/user_list/active",
-      icon: <IconUserCog size={20} />,
-      permission: 2,
-    },
+    // {
+    //   name: "User Management",
+    //   url: "/user_management/user_list/active",
+    //   icon: <IconUserCog size={20} />,
+    //   permission: 2,
+    // },
   ];
 
   const filteredNavigation = useMemo(() => {

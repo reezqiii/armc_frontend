@@ -77,13 +77,37 @@ function CreateRequest() {
   const [companyOptions, setCompanyOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [debouncedSearch] = useDebouncedValue(search, 300);
-  const CATEGORY_ACCOUNT_OPTIONS = [
-    { value: "0", label: "Create New Account" },
-    { value: "1", label: "Request Permission" },
-    { value: "2", label: "Request Outside Access" },
-  ];
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const category = categoryOptions.find(
+    (c) => c.value === formData.category_account,
+  );
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const handleChange = (field, value) => {
+    if (field === "category_account") {
+      const category = categoryOptions.find((c) => c.value === value);
+
+      setSelectedCategory(category);
+
+      setFormData((prev) => ({
+        ...prev,
+        category_account: value,
+        access_yard_company: category?.access_yard_required
+          ? prev.access_yard_company
+          : [],
+        access_nav_menu: category?.application_required
+          ? prev.access_nav_menu
+          : [],
+      }));
+
+      if (errors.category_account) {
+        setErrors((prev) => ({ ...prev, category_account: null }));
+      }
+
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
@@ -129,27 +153,37 @@ function CreateRequest() {
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        const [hodRes, deptRes, posRes, projectRes, companyRes, navMenuRes] =
-          await Promise.all([
-            axios.get(`${API_URL}/requests/hods`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/iss_dept`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/position`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/iss_project`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/portal_company/list`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/portal_nav_menu/list`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-          ]);
+        const [
+          hodRes,
+          deptRes,
+          posRes,
+          projectRes,
+          companyRes,
+          navMenuRes,
+          categoryRes,
+        ] = await Promise.all([
+          axios.get(`${API_URL}/requests/hods`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/iss_dept`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/position`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/iss_project`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/portal_company/list`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/portal_nav_menu/list`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/category-account`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+        ]);
 
         // HOD
         setHodOptions(
@@ -180,6 +214,16 @@ function CreateRequest() {
           projectRes.data.map((p) => ({
             value: String(p.project_id),
             label: p.project_desc,
+          })),
+        );
+
+        // Category Account
+        setCategoryOptions(
+          categoryRes.data.map((c) => ({
+            value: String(c.id),
+            label: c.name,
+            access_yard_required: c.access_yard_required,
+            application_required: c.application_required,
           })),
         );
 
@@ -235,24 +279,24 @@ function CreateRequest() {
     e.preventDefault();
 
     const newErrors = {};
-
-    if (
-      !formData.access_yard_company ||
-      formData.access_yard_company.length === 0
-    ) {
-      newErrors.access_yard_company = "Company Yard Access is required";
-    }
-
-    if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
-      newErrors.access_nav_menu = "Application Access is required";
-    }
-
-    if (!formData.approval_hod_by) {
-      newErrors.approval_hod_by = "HOD must be selected";
-    }
+    const isActivation = formData.category_account === "3";
 
     if (!formData.category_account) {
       newErrors.category_account = "Category account is required";
+    }
+    if (!formData.approval_hod_by) {
+      newErrors.approval_hod_by = "HOD must be selected";
+    }
+    if (category?.access_yard_required) {
+      if (!formData.access_yard_company?.length) {
+        newErrors.access_yard_company = "Company Yard Access is required";
+      }
+    }
+
+    if (category?.application_required) {
+      if (!formData.access_nav_menu?.length) {
+        newErrors.access_nav_menu = "Application Access is required";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -275,7 +319,7 @@ function CreateRequest() {
 
     const payload = {
       full_name: formData.full_name,
-      badge_no: formData.badge_no ? Number(formData.badge_no) : undefined,
+      badge_no: formData.badge_no ? String(formData.badge_no).trim() : null,
       email: formData.email,
       request_type: 1,
       request_reason: formData.request_reason,
@@ -400,7 +444,7 @@ function CreateRequest() {
                     required
                     label="Category Account"
                     placeholder="Select Category"
-                    data={CATEGORY_ACCOUNT_OPTIONS}
+                    data={categoryOptions}
                     value={formData.category_account}
                     onChange={(value) => {
                       handleChange("category_account", value);
@@ -489,7 +533,7 @@ function CreateRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={selectedCategory?.access_yard_required}
                     error={errors.access_yard_company}
                     label="Company Yard Access"
                     placeholder="Select Company Yard"
@@ -513,10 +557,10 @@ function CreateRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={selectedCategory?.application_required}
                     error={errors.access_nav_menu}
                     label="Application Access"
-                    placeholder="Select Access"
+                    placeholder="Select Application Access"
                     data={navMenuOptions}
                     value={formData.access_nav_menu}
                     onChange={(val) => {
@@ -680,3 +724,4 @@ function CreateRequest() {
 
 CreateRequest.title = "Create Request Form";
 export default CreateRequest;
+

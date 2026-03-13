@@ -21,7 +21,6 @@ import HistoryLog from "@/components/historyLog";
 import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestStatus } from "@/lib/requestStatusList";
-import AttachmentTab from "@/components/attachmentTab";
 
 function RequestDetail() {
   const router = useRouter();
@@ -34,31 +33,30 @@ function RequestDetail() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hodName, setHodName] = useState("");
-  const [itManagerName, setItManagerName] = useState("");
-  const [isHod, setIsHod] = useState(false);
   const [logs, setLogs] = useState([]);
   const [loadingLog, setLoadingLog] = useState(false);
-  const [leadItName, setLeadItName] = useState("");
-  const CATEGORY_ACCOUNT_MAP = {
-    0: "Create New Account",
-    1: "Request Permission",
-    2: "Request Outside Access",
+  const isApprover = (approverId) => {
+    if (!approverId) return false;
+    return String(user?.id) === String(approverId);
   };
-  const canApproveLeadIt = hasPermission(0);
-  const canApproveItHod = hasPermission(1);
+  const canApproveHod =
+    data?.request_status === 1 && isApprover(data?.approval_hod_by?.id);
 
-  useEffect(() => {
-    if (!data || !user) return;
+  const canApproveLeadIt = data?.request_status === 3 && hasPermission(0);
 
-    const userId = String(user.id ?? "");
-    // const hodId = String(data.approval_hod_by ?? "");
-    setHodName(
-      data.approval_hod_by_name ?? data.approval_hod_by?.full_name ?? "-",
-    );
-    setLeadItName(data.approval_lead_it_by_name ?? "-");
-    setItManagerName(data.approval_it_hod_by_name ?? "-");
-  }, [data, user]);
+  const canApproveItHod = data?.request_status === 5 && hasPermission(1);
+
+  const approverNames = {
+    hod: data?.approval_hod_by_name ?? data?.approval_hod_by?.full_name ?? "-",
+    leadIt:
+      data?.approval_lead_it_by_name ??
+      data?.approval_lead_it_by?.full_name ??
+      "-",
+    itManager:
+      data?.approval_it_hod_by_name ??
+      data?.approval_it_hod_by?.full_name ??
+      "-",
+  };
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -178,63 +176,7 @@ function RequestDetail() {
     }
   };
 
-  const handleHodAction = async (action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to approve this request?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-    });
-    if (!confirm.isConfirmed) return;
-
-    let remarks = "";
-    if (action === "reject") {
-      const { value: inputRemarks } = await Swal.fire({
-        title: "Reason for Rejection",
-        input: "textarea",
-        inputPlaceholder: "Enter your reason...",
-        showCancelButton: true,
-      });
-      if (!inputRemarks) {
-        Swal.fire(
-          "Cancelled",
-          "You must provide a reason for rejection.",
-          "info",
-        );
-        return;
-      }
-      remarks = inputRemarks;
-    }
-
-    try {
-      const realId = id;
-
-      await axios.put(
-        `${API_URL}/requests/${realId}/hod-approval`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      fetchData();
-    } catch (err) {
-      console.error("Error updating status:", err);
-      Swal.fire(
-        "Error",
-        "Failed to update request. Please try again.",
-        "error",
-      );
-    }
-  };
-
-  const handleLeadItAction = async (action) => {
+  const handleApproval = async (endpoint, action) => {
     const confirm = await Swal.fire({
       title: `Are you sure you want to ${action}?`,
       icon: "question",
@@ -245,30 +187,26 @@ function RequestDetail() {
     if (!confirm.isConfirmed) return;
 
     let remarks = "";
+
     if (action === "reject") {
-      const { value: inputRemarks } = await Swal.fire({
+      const { value } = await Swal.fire({
         title: "Reason for Rejection",
         input: "textarea",
         inputPlaceholder: "Enter your reason...",
         showCancelButton: true,
       });
 
-      if (!inputRemarks) {
-        Swal.fire(
-          "Cancelled",
-          "You must provide a reason for rejection.",
-          "info",
-        );
+      if (!value) {
+        Swal.fire("Cancelled", "You must provide a reason.", "info");
         return;
       }
-      remarks = inputRemarks;
+
+      remarks = value;
     }
 
     try {
-      const realId = id;
-
       await axios.put(
-        `${API_URL}/requests/${realId}/lead-it-approval`,
+        `${API_URL}/requests/${id}/${endpoint}`,
         { action, remarks },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
@@ -283,70 +221,7 @@ function RequestDetail() {
 
       fetchData();
     } catch (err) {
-      console.error("Error updating status:", err);
-      Swal.fire(
-        "Error",
-        "Failed to update request. Please try again.",
-        "error",
-      );
-    }
-  };
-
-  const handleItHodAction = async (action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action}?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    let remarks = "";
-    if (action === "reject") {
-      const { value: inputRemarks } = await Swal.fire({
-        title: "Reason for Rejection",
-        input: "textarea",
-        inputPlaceholder: "Enter your reason...",
-        showCancelButton: true,
-      });
-
-      if (!inputRemarks) {
-        Swal.fire(
-          "Cancelled",
-          "You must provide a reason for rejection.",
-          "info",
-        );
-        return;
-      }
-      remarks = inputRemarks;
-    }
-
-    try {
-      const realId = id;
-
-      await axios.put(
-        `${API_URL}/requests/${realId}/it-approval`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      fetchData();
-    } catch (err) {
-      console.error("Error updating status:", err);
-      Swal.fire(
-        "Error",
-        "Failed to update request. Please try again.",
-        "error",
-      );
+      Swal.fire("Error", "Failed to update request.", "error");
     }
   };
 
@@ -416,9 +291,6 @@ function RequestDetail() {
                 <Tabs.Tab value="log" className="font-semibold text-sm">
                   HISTORY LOG
                 </Tabs.Tab>
-                <Tabs.Tab value="attachment" className="font-semibold text-sm">
-                  ATTACHMENTS
-                </Tabs.Tab>
               </Tabs.List>
 
               {/* ================= TAB DETAIL ================= */}
@@ -441,7 +313,7 @@ function RequestDetail() {
                         Requestor <span className="text-red-500">*</span>
                       </label>
                       <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
-                        {data?.created_by_name || "-"}
+                        {data?.requestor_name || data?.created_by_name || "-"}
                       </div>
                     </div>
                   </div>
@@ -461,7 +333,9 @@ function RequestDetail() {
                           <span className="text-red-500">*</span>
                         </label>
                         <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
-                          {CATEGORY_ACCOUNT_MAP[data.category_account] || "-"}
+                          {data.category_account_name ||
+                            data.category?.name ||
+                            "-"}
                         </div>
                       </div>
 
@@ -521,7 +395,7 @@ function RequestDetail() {
 
                       <div className="space-y-1">
                         <label className="font-semibold text-gray-700 text-sm">
-                          Company Yard Accessy{" "}
+                          Company Yard Access{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
@@ -609,7 +483,9 @@ function RequestDetail() {
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
                             <span className="text-gray-800 text-sm">
-                              {data?.created_by_name || "-"}
+                              {data?.requestor_name ||
+                                data?.created_by_name ||
+                                "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">
@@ -649,7 +525,7 @@ function RequestDetail() {
                             </span>
                           </div>
                         </div>
-                        {data.request_status === 1 && (
+                        {canApproveHod && (
                           <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
                             <Button
                               variant="outline"
@@ -658,7 +534,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconCheck size={14} />}
-                              onClick={() => handleHodAction("approve")}
+                              onClick={() =>
+                                handleApproval("hod-approval", "approve")
+                              }
                             >
                               Approve
                             </Button>
@@ -670,7 +548,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconX size={14} />}
-                              onClick={() => handleHodAction("reject")}
+                              onClick={() =>
+                                handleApproval("hod-approval", "reject")
+                              }
                             >
                               Rejected
                             </Button>
@@ -703,7 +583,7 @@ function RequestDetail() {
                             </span>
                           </div>
                         </div>
-                        {canApproveLeadIt && data.request_status === 3 && (
+                        {canApproveLeadIt && (
                           <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
                             <Button
                               variant="outline"
@@ -712,7 +592,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconCheck size={14} />}
-                              onClick={() => handleLeadItAction("approve")}
+                              onClick={() =>
+                                handleApproval("lead-it-approval", "approve")
+                              }
                             >
                               Approve
                             </Button>
@@ -724,7 +606,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconX size={14} />}
-                              onClick={() => handleLeadItAction("reject")}
+                              onClick={() =>
+                                handleApproval("lead-it-approval", "reject")
+                              }
                             >
                               Rejected
                             </Button>
@@ -757,7 +641,7 @@ function RequestDetail() {
                             </span>
                           </div>
                         </div>
-                        {canApproveItHod && data.request_status === 5 && (
+                        {canApproveItHod && (
                           <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
                             <Button
                               variant="outline"
@@ -766,7 +650,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconCheck size={14} />}
-                              onClick={() => handleItHodAction("approve")}
+                              onClick={() =>
+                                handleApproval("it-approval", "approve")
+                              }
                             >
                               Approve
                             </Button>
@@ -778,7 +664,9 @@ function RequestDetail() {
                               fullWidth
                               className="font-bold uppercase tracking-wider text-[10px]"
                               leftSection={<IconX size={14} />}
-                              onClick={() => handleItHodAction("reject")}
+                              onClick={() =>
+                                handleApproval("it-approval", "reject")
+                              }
                             >
                               Rejected
                             </Button>
@@ -850,19 +738,11 @@ function RequestDetail() {
                 </div>
               </Tabs.Panel>
 
-              {/* {TAB LOG} */}
+              {/* ================= TAB LOG ================= */}
               <Tabs.Panel value="log">
                 <HistoryLog
                   logs={logs}
                   getStatus={getRequestStatus}
-                  idRequest={data?.id_request}
-                />
-              </Tabs.Panel>
-
-              {/* TAB ATTACHMENTS */}
-              <Tabs.Panel value="attachment">
-                <AttachmentTab
-                  attachments={data?.attachments}
                   idRequest={data?.id_request}
                 />
               </Tabs.Panel>
@@ -874,5 +754,5 @@ function RequestDetail() {
   );
 }
 
-RequestDetail.title = "Detail Request Form";
+RequestDetail.title = "Request Detail Form";
 export default RequestDetail;
