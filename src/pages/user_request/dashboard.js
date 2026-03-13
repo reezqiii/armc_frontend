@@ -18,6 +18,7 @@ import {
   Stack,
   Badge,
   ThemeIcon,
+  ActionIcon,
 } from "@mantine/core";
 import {
   IconClock,
@@ -29,6 +30,8 @@ import {
   IconTrendingUp,
   IconLayoutList,
   IconChartBar,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-react";
 import {
   BarChart,
@@ -87,6 +90,7 @@ function Dashboard() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
+  const [deptPage, setDeptPage] = useState(0);
 
   const monthNames = [
     "January",
@@ -281,72 +285,108 @@ function Dashboard() {
                 </Badge>
               </Group>
 
-              <ScrollArea pb="md" offsetScrollbars scrollbarSize={6}>
-                <Flex gap="lg">
-                  {summary?.deptStats?.map((item) => (
-                    <Paper
-                      key={item.name}
-                      withBorder
-                      p="lg"
-                      radius="lg"
-                      style={{
-                        minWidth: 220,
-                        background: "#fff",
-                        borderColor: "#f1f3f5",
-                        borderBottom: "4px solid #228be6",
-                        transition: "all 0.2s ease",
-                        cursor: "default",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        textAlign: "center",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow =
-                          "var(--mantine-shadow-md)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
+              {/* Carousel wrapper */}
+              {(() => {
+                const itemsPerPage = 7;
+                const deptStats = summary?.deptStats || [];
+                const totalDeptPages = Math.ceil(
+                  deptStats.length / itemsPerPage,
+                );
+                const visible = deptStats.slice(
+                  deptPage * itemsPerPage,
+                  deptPage * itemsPerPage + itemsPerPage,
+                );
+
+                return (
+                  <Group align="center" gap="xs" wrap="nowrap">
+                    <ActionIcon
+                      variant="filled"
+                      color="blue"
+                      radius="xl"
+                      size="lg"
+                      disabled={deptPage === 0}
+                      onClick={() => setDeptPage((p) => p - 1)}
                     >
-                      <Box mb="md">
-                        <Text
-                          size="md"
-                          fw={700}
-                          c="blue.6"
-                          tt="uppercase"
-                          lts={0.5}
+                      <IconChevronLeft size={18} />
+                    </ActionIcon>
+
+                    <Flex gap="lg" style={{ flex: 1, overflow: "hidden" }}>
+                      {visible.map((item) => (
+                        <Paper
+                          key={item.name}
+                          withBorder
+                          p="lg"
+                          radius="lg"
                           style={{
-                            lineHeight: 1.2,
-                            minHeight: "2.4em",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
+                            width: `calc((100% - ${(itemsPerPage - 1) * 16}px) / ${itemsPerPage})`,
+                            flexShrink: 0,
+                            background: "#fff",
+                            borderColor: "#f1f3f5",
+                            borderBottom: "4px solid #228be6",
+                            transition: "all 0.2s ease",
+                            cursor: "default",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform =
+                              "translateY(-4px)";
+                            e.currentTarget.style.boxShadow =
+                              "var(--mantine-shadow-md)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "none";
                           }}
                         >
-                          {item.name}
-                        </Text>
-                      </Box>
-                      <Box>
-                        <Text
-                          size="32px"
-                          fw={700}
-                          c="dark.4"
-                          style={{ lineHeight: 1 }}
-                        >
-                          {item.count}
-                        </Text>
-                        <Text size="md" c="dimmed" mt={4} fw={600}>
-                          Total
-                        </Text>
-                      </Box>
-                    </Paper>
-                  ))}
-                </Flex>
-              </ScrollArea>
+                          <Text
+                            size="md"
+                            fw={700}
+                            c="blue.6"
+                            tt="uppercase"
+                            lts={0.5}
+                            style={{
+                              lineHeight: 1.2,
+                              minHeight: "2.4em",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {item.name}
+                          </Text>
+                          <Text
+                            size="32px"
+                            fw={700}
+                            c="dark.4"
+                            mt="md"
+                            style={{ lineHeight: 1 }}
+                          >
+                            {item.count}
+                          </Text>
+                          <Text size="md" c="dimmed" mt={4} fw={600}>
+                            Total
+                          </Text>
+                        </Paper>
+                      ))}
+                    </Flex>
+
+                    <ActionIcon
+                      variant="filled"
+                      color="blue"
+                      radius="xl"
+                      size="lg"
+                      disabled={deptPage >= totalDeptPages - 1}
+                      onClick={() => setDeptPage((p) => p + 1)}
+                    >
+                      <IconChevronRight size={18} />
+                    </ActionIcon>
+                  </Group>
+                );
+              })()}
             </Paper>
 
             {/* ON QUEUE & ON PROGRESS — Horizontal Bar Chart */}

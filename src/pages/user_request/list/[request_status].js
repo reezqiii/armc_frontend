@@ -150,9 +150,7 @@ export default function RequestListDynamic({ request_status }) {
     return false;
   }, [config, data, user.id]);
 
-  const canExport = useMemo(() => {
-    return hasPermission(3);
-  }, []);
+  const canExport = hasPermission(3);
 
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
@@ -233,7 +231,6 @@ export default function RequestListDynamic({ request_status }) {
           },
         );
 
-        // Hapus item dari data
         setData((prev) => prev.filter((item) => item.id_request !== id));
 
         Swal.fire("Success", "Request canceled", "success");
@@ -253,7 +250,6 @@ export default function RequestListDynamic({ request_status }) {
       return;
     }
 
-    // Tentukan judul Swal sesuai action
     let title = "";
     if (action === "approve") title = `Approve ${ids.length} request(s)?`;
     else if (action === "reject") title = `Reject ${ids.length} request(s)?`;
@@ -290,7 +286,6 @@ export default function RequestListDynamic({ request_status }) {
       remarks = value;
     }
 
-    // Encrypt semua IDs
     let encryptedIds;
     try {
       encryptedIds = ids.map((id) => encrypt(String(id)));
@@ -299,7 +294,6 @@ export default function RequestListDynamic({ request_status }) {
       return;
     }
 
-    // Tentukan endpoint
     let endpoint = "";
     if (action === "submit") endpoint = "/requests/submit-to-hod/bulk";
     else if (action === "approve" || action === "reject")
@@ -347,11 +341,30 @@ export default function RequestListDynamic({ request_status }) {
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
+      
+      const activeFilters = {
+        ...(config.id !== null && { request_status: config.id }),
+      };
+
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          activeFilters[filter.id] = filter.value;
+        }
+      });
+      
+      const sort_by = sorting.length > 0 ? sorting[0].id : null;
+      const sort_order =
+        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
 
       const response = await axios.get(`${API_URL}/excel/export-list`, {
         params: {
-          search: JSON.stringify({ request_status: config.id }),
-          status: request_status,
+          search: JSON.stringify(activeFilters),
+          sort_by,
+          sort_order,
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
@@ -368,11 +381,14 @@ export default function RequestListDynamic({ request_status }) {
       link.click();
       Swal.close();
     } catch (err) {
-      Swal.fire("Error", "Export failed", "error");
+      console.error("Export error:", err.response?.data || err.message);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Export failed",
+        "error",
+      );
     }
   };
-console.log("user permissions:", user?.permissions);
-console.log("canExport:", canExport);
 
   const handleDownloadPdf = useCallback(
     async (id) => {

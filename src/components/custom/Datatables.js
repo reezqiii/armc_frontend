@@ -1,13 +1,17 @@
 import { cn } from "@/lib/utils";
 import { Pagination, Select, Table, Text, TextInput } from "@mantine/core";
-import { IconSortAscending, IconSortDescending } from "@tabler/icons-react";
+import { IconSortAscending, IconSortDescending, IconX } from "@tabler/icons-react";
 import { flexRender } from "@tanstack/react-table";
 import React from "react";
 
 export default function Datatables({ table, totalPages, info }) {
   return (
     <>
-      <Table.ScrollContainer minWidth={500} mt="md">
+      <Table.ScrollContainer
+        minWidth={1700}
+        style={{ overflowX: "auto", overflowY: "hidden" }}
+        mt="md"
+      >
         <Table
           striped
           highlightOnHover
@@ -39,7 +43,7 @@ export default function Datatables({ table, totalPages, info }) {
                           {...{
                             className: header.column.getCanSort()
                               ? `${cn(
-                                  `cursor-pointer select-none flex justify-center items-center`
+                                  `cursor-pointer select-none flex justify-center items-center`,
                                 )}`
                               : "flex flex-col justify-start align-top",
                             onClick: header.column.getToggleSortingHandler(),
@@ -47,7 +51,7 @@ export default function Datatables({ table, totalPages, info }) {
                         >
                           {flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
 
                           {header.column.getIsSorted() === "asc" ? (
@@ -62,12 +66,25 @@ export default function Datatables({ table, totalPages, info }) {
                             <TextInput
                               size="xs"
                               placeholder="Search"
+                              value={header.column.getFilterValue() ?? ""}
                               onChange={(event) => {
                                 header.column.setFilterValue(
-                                  event.target.value
+                                  event.target.value,
                                 );
                                 table.setPageIndex(0);
                               }}
+                              rightSection={
+                                header.column.getFilterValue() ? (
+                                  <IconX
+                                    size={14}
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                      header.column.setFilterValue("");
+                                      table.setPageIndex(0);
+                                    }}
+                                  />
+                                ) : null
+                              }
                             />
                           </div>
                         ) : (
@@ -102,7 +119,7 @@ export default function Datatables({ table, totalPages, info }) {
                     <Table.Td key={cell.id} ta="center">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </Table.Td>
                   ))}
@@ -146,7 +163,7 @@ export default function Datatables({ table, totalPages, info }) {
             {Math.min(
               (table.getState().pagination.pageIndex + 1) *
                 table.getState().pagination.pageSize,
-              table.getCoreRowModel().rows.length
+              table.getCoreRowModel().rows.length,
             )}{" "}
             of {info.totalElements ?? 0} entries{" "}
             {table.getState().columnFilters.length > 0

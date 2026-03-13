@@ -84,7 +84,6 @@ const requestorList = [
   },
 ];
 
-if (true == true) {
   requestorList.push({
     title: "IT Action",
     href: "/",
@@ -115,7 +114,6 @@ if (true == true) {
       },
     ],
   });
-}
 
 // const filteredSidebar = requestorList.filter(menu => {
 //   if (!menu.requiredPermission) return true;
