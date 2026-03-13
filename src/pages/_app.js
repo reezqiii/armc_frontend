@@ -38,12 +38,10 @@ export default function App({ Component, pageProps }) {
   );
 
   useEffect(() => {
-    // 1. Cek jika router belum siap
     if (!router.isReady) return;
 
     const initAuth = async () => {
       const PUBLIC_ROUTES = ["/public_request", "/armc/public_request"];
-      // Gunakan pathname dari hook agar konsisten
       if (PUBLIC_ROUTES.some((p) => pathname?.includes(p))) {
         setIsAuthenticated(true);
         setLoading(false);
