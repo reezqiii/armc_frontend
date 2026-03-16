@@ -17,6 +17,7 @@ import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
 import { useDebouncedValue } from "@mantine/hooks";
 import { formatDate } from "@/lib/dateFormat";
+import userList from "@/data/sidebar/UserList";
 
 function CreateUser() {
   const router = useRouter();
@@ -212,7 +213,7 @@ function CreateUser() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout sidebarList={userList}>
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
         <Paper
           radius="md"

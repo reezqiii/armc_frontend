@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-
-
 const useUser = create(
   persist(
     (set) => ({
@@ -13,6 +11,17 @@ const useUser = create(
         permissions: [],
       },
       setUser: (value) => {
+        if (!value) {
+          set({
+            user: {
+              id: 0,
+              name: null,
+              token: null,
+              permissions: [],
+            },
+          });
+          return;
+        }
 
         set({
           user: {
@@ -25,7 +34,7 @@ const useUser = create(
       },
     }),
     {
-      name: "user", // key untuk persist di localStorage
+      name: "user",
     }
   )
 );

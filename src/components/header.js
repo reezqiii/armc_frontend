@@ -1,20 +1,38 @@
-import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import { Button, Image } from "@mantine/core";
-import { IconUser } from "@tabler/icons-react";
-import Link from "next/link";
+import { IconUser, IconLogout } from "@tabler/icons-react";
+import { useRouter } from "next/router";
+import Cookies from "js-cookie";
+import useSwal from "@/hooks/useSwal";
 import React from "react";
 
 export default function Header() {
-  const { user }    = useUser();
-  const API         = useApi()
-  const LINK_PORTAL = API.LINK_PORTAL
-  
+  const { user, setUser } = useUser();
+  const router = useRouter();
+  const { showAlert } = useSwal();
+
+  const handleLogout = async () => {
+    const result = await showAlert(
+      "Logout",
+      "question",
+      "Are you sure you want to logout?",
+      "Yes, Logout",
+      true,
+    );
+
+    if (result.isConfirmed) {
+      Cookies.remove("token");
+      Cookies.remove("user_info");
+      setUser(null);
+      router.push("/login/login");
+    }
+  };
+
   return (
     <header className="flex flex-col md:flex-row items-center md:justify-between py-8 px-8">
       <div>
         <Image
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH}/images/logo_white.png`}
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH}/images/armc.png`}
           w={200}
           alt="logo"
         />
@@ -26,17 +44,18 @@ export default function Header() {
           leftSection={<IconUser size={20} />}
           size="md"
           className="mr-2"
+          color="teal"
         >
           {user.name}
         </Button>
         <Button
-          component={Link}
-          href={LINK_PORTAL}
+          onClick={handleLogout}
           variant="filled"
           color="red"
           size="md"
+          leftSection={<IconLogout size={20} />}
         >
-          Portal
+          Logout
         </Button>
       </div>
     </header>

@@ -31,19 +31,25 @@ export default function Navigation() {
       if (!targetUrl) return "";
       return `${process.env.NEXT_PUBLIC_LINK_PORTAL}/jump_url/redirect_v2/${encrypt(
         targetUrl,
-      )}`;
-    },
-    [encrypt],
-  );
-
+        )}`;
+      },
+      [encrypt],
+    );
+    
   const IT_FORM = process.env.NEXT_PUBLIC_IT_FORM;
-
+  
   const navigation = [
     {
       name: "Home",
       target: `${IT_FORM}/home/home`,
       icon: <IconHome size={20} />,
       external: true,
+    },
+    {
+      name: "User Management",
+      url: "/user_management/user_list/list",
+      icon: <IconUserCog size={20} />,
+      // permission: 2,
     },
     {
       name: "Computer & Account",
@@ -80,12 +86,6 @@ export default function Navigation() {
       icon: <IconDatabase size={20} />,
       external: true,
     },
-    // {
-    //   name: "User Management",
-    //   url: "/user_management/user_list/active",
-    //   icon: <IconUserCog size={20} />,
-    //   permission: 2,
-    // },
   ];
 
   const filteredNavigation = useMemo(() => {
@@ -137,7 +137,7 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="w-full sticky md:relative top-0 z-50 flex items-center justify-between bg-blue-600 px-4">
+      <nav className="w-full sticky md:relative top-0 z-50 flex items-center justify-between bg-teal-600 px-4">
         <div className="flex">
           <ActionIcon
             variant="subtle"
@@ -153,7 +153,7 @@ export default function Navigation() {
       </nav>
 
       <Collapse in={opened} className="md:hidden sticky top-10 z-50">
-        <nav className="w-full flex flex-col bg-blue-600 px-4 py-1">
+        <nav className="w-full flex flex-col bg-teal-600 px-4 py-1">
           {filteredNavigation.map((item, index) => {
             const href = item.external ? buildJumpLink(item.target) : item.url;
 

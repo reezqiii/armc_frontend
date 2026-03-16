@@ -41,55 +41,35 @@ export default function App({ Component, pageProps }) {
     if (!router.isReady) return;
 
     const initAuth = async () => {
-      const PUBLIC_ROUTES = ["/public_request", "/armc/public_request"];
+      const PUBLIC_ROUTES = ["/login/login"];
       if (PUBLIC_ROUTES.some((p) => pathname?.includes(p))) {
         setIsAuthenticated(true);
         setLoading(false);
         return;
       }
 
-      const encryptedId = router.query.user || Cookies.get("portal_user_js");
+      const token = Cookies.get("token");
+      const userInfo = Cookies.get("user_info");
 
-      if (!encryptedId) {
-        window.location.href = API.LINK_PORTAL;
+      if (!token || !userInfo) {
+        router.push("/login/login");
         return;
       }
 
-      const valid = await validateUser(encryptedId);
-
-      if (!valid) {
-        window.location.href = API.LINK_PORTAL;
-        return;
-      }
-
-      Cookies.set("portal_user_js", encryptedId, {
-        expires: COOKIE_EXPIRE_TIME / 86400,
-      });
-
+      const user = JSON.parse(userInfo);
       setUser({
-        id: valid.user.id,
-        name: valid.user.full_name,
-        token: valid.token,
-        permissions: valid.user.permissions,
+        id: user.id,
+        name: user.full_name,
+        token: token,
+        permissions: user.permissions ?? [],
       });
 
       setIsAuthenticated(true);
       setLoading(false);
-      if (router.query.user) {
-        router.replace(pathname, undefined, { shallow: true });
-      }
     };
 
     initAuth();
-  }, [
-    router.isReady,
-    router.query.user,
-    validateUser,
-    setUser,
-    API.LINK_PORTAL,
-    router,
-    pathname,
-  ]);
+  }, [router.isReady, pathname]);
 
   return (
     <>

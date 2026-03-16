@@ -7,6 +7,7 @@ import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
+import userList from "@/data/sidebar/UserList";
 
 function EditUser() {
   const router = useRouter();
@@ -227,7 +228,7 @@ function EditUser() {
   if (loadingData) return null;
 
   return (
-    <AuthLayout>
+    <AuthLayout sidebarList={userList}>
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
         <Paper
           radius="md"
