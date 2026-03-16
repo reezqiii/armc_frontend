@@ -19,6 +19,7 @@ import {
   Badge,
   ThemeIcon,
   ActionIcon,
+  Progress,
 } from "@mantine/core";
 import {
   IconClock,
@@ -106,12 +107,30 @@ function Dashboard() {
     "November",
     "December",
   ];
-
   const monthOptions = [
     { value: "all", label: "All Months" },
     ...monthNames.map((m, i) => ({ value: i.toString(), label: m })),
   ];
-
+  const DEPT_COLORS = [
+    "#3b82f6",
+    "#f59f00",
+    "#20c997",
+    "#f03e3e",
+    "#7950f2",
+    "#fd7014",
+    "#1c7ed6",
+    "#37b24d",
+  ];
+  const COMPANY_COLORS = [
+    "#3b82f6",
+    "#f59f00",
+    "#20c997",
+    "#f03e3e",
+    "#7950f2",
+    "#fd7014",
+    "#1c7ed6",
+    "#37b24d",
+  ];
   const isSummaryEmpty =
     !summary ||
     ((summary.deptStats?.length === 0 || !summary.deptStats) &&
@@ -162,7 +181,8 @@ function Dashboard() {
     (c) => c.name && c.name.trim() !== "" && c.name !== "No Company",
   );
 
-  const chartHeight = Math.max(chartData.length * 44 + 40, 300);
+  const maxValue =
+    companyStats.length > 0 ? Math.max(...companyStats.map((c) => c.value)) : 1;
 
   if (loading) {
     return (
@@ -185,7 +205,7 @@ function Dashboard() {
 
   return (
     <AuthLayout sidebarList={requestorList}>
-      <Box p="xl" bg="#f4f6f8" style={{ minHeight: "100vh" }}>
+      <Box p="xl" bg="#f0f4ff" style={{ minHeight: "100vh" }}>
         {/* HEADER */}
         <Group justify="space-between" mb="lg">
           <Box>
@@ -311,67 +331,73 @@ function Dashboard() {
                     </ActionIcon>
 
                     <Flex gap="lg" style={{ flex: 1, overflow: "hidden" }}>
-                      {visible.map((item) => (
-                        <Paper
-                          key={item.name}
-                          withBorder
-                          p="lg"
-                          radius="lg"
-                          style={{
-                            width: `calc((100% - ${(itemsPerPage - 1) * 16}px) / ${itemsPerPage})`,
-                            flexShrink: 0,
-                            background: "#fff",
-                            borderColor: "#f1f3f5",
-                            borderBottom: "4px solid #228be6",
-                            transition: "all 0.2s ease",
-                            cursor: "default",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            textAlign: "center",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform =
-                              "translateY(-4px)";
-                            e.currentTarget.style.boxShadow =
-                              "var(--mantine-shadow-md)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "none";
-                          }}
-                        >
-                          <Text
-                            size="md"
-                            fw={700}
-                            c="blue.6"
-                            tt="uppercase"
-                            lts={0.5}
+                      {visible.map((item, idx) => {
+                        const color =
+                          DEPT_COLORS[
+                            (deptPage * itemsPerPage + idx) % DEPT_COLORS.length
+                          ];
+                        return (
+                          <Paper
+                            key={item.name}
+                            withBorder
+                            p="lg"
+                            radius="lg"
                             style={{
-                              lineHeight: 1.2,
-                              minHeight: "2.4em",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
+                              width: `calc((100% - ${(itemsPerPage - 1) * 16}px) / ${itemsPerPage})`,
+                              flexShrink: 0,
+                              background: "#fff",
+                              borderColor: "#f1f3f5",
+                              borderBottom: `4px solid ${color}`, // ← warna per item
+                              transition: "all 0.2s ease",
+                              cursor: "default",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              textAlign: "center",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform =
+                                "translateY(-4px)";
+                              e.currentTarget.style.boxShadow =
+                                "var(--mantine-shadow-md)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow = "none";
                             }}
                           >
-                            {item.name}
-                          </Text>
-                          <Text
-                            size="32px"
-                            fw={700}
-                            c="dark.4"
-                            mt="md"
-                            style={{ lineHeight: 1 }}
-                          >
-                            {item.count}
-                          </Text>
-                          <Text size="md" c="dimmed" mt={4} fw={600}>
-                            Total
-                          </Text>
-                        </Paper>
-                      ))}
+                            <Text
+                              size="md"
+                              fw={700}
+                              tt="uppercase"
+                              lts={0.5}
+                              style={{
+                                color, // ← warna teks ikut border
+                                lineHeight: 1.2,
+                                minHeight: "2.4em",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {item.name}
+                            </Text>
+                            <Text
+                              size="32px"
+                              fw={700}
+                              c="dark.4"
+                              mt="md"
+                              style={{ lineHeight: 1 }}
+                            >
+                              {item.count}
+                            </Text>
+                            <Text size="md" c="dimmed" mt={4} fw={600}>
+                              Total
+                            </Text>
+                          </Paper>
+                        );
+                      })}
                     </Flex>
 
                     <ActionIcon
@@ -418,7 +444,7 @@ function Dashboard() {
                       <Box
                         w={12}
                         h={12}
-                        style={{ borderRadius: 2, background: "#185FA5" }}
+                        style={{ borderRadius: 2, background: "#3b82f6" }}
                       />
                       <Text size="md" c="dimmed" fw={500}>
                         On Queue
@@ -428,7 +454,7 @@ function Dashboard() {
                       <Box
                         w={12}
                         h={12}
-                        style={{ borderRadius: 2, background: "#85B7EB" }}
+                        style={{ borderRadius: 2, background: "#93c5fd" }}
                       />
                       <Text size="md" c="dimmed" fw={500}>
                         On Progress
@@ -478,7 +504,7 @@ function Dashboard() {
                         <Bar
                           dataKey="onQueue"
                           name="On Queue"
-                          fill="#185FA5"
+                          fill="#3b82f6"
                           barSize={14}
                           radius={[0, 2, 2, 0]}
                         >
@@ -496,7 +522,7 @@ function Dashboard() {
                         <Bar
                           dataKey="onProgress"
                           name="On Progress"
-                          fill="#85B7EB"
+                          fill="#93c5fd"
                           barSize={14}
                           radius={[0, 2, 2, 0]}
                         >
@@ -612,52 +638,36 @@ function Dashboard() {
 
                   <ScrollArea h={800} offsetScrollbars scrollbarSize={6}>
                     <Stack gap="xs" pr="md">
-                      {companyStats.map((comp, index) => (
-                        <Paper
-                          key={comp.name}
-                          p="md"
-                          radius="md"
-                          withBorder
-                          style={{
-                            transition: "all 0.2s ease",
-                            borderLeft: "4px solid #228be6",
-                            borderRadius: 0,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateX(8px)";
-                            e.currentTarget.style.backgroundColor = "#e7f5ff";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateX(0)";
-                            e.currentTarget.style.backgroundColor =
-                              index % 2 === 0 ? "#f8f9fa" : "#fff";
-                          }}
-                        >
-                          <Group justify="space-between">
-                            <Group>
-                              <Box
-                                w={8}
-                                h={8}
-                                style={{
-                                  borderRadius: "50%",
-                                  background: "#228be6",
-                                }}
-                              />
-                              <Text fw={700} size="md" c="blue.7">
-                                {comp.name}
-                              </Text>
-                            </Group>
-                            <Box style={{ textAlign: "center" }}>
-                              <Text fw={700} size="xl" c="dark.4">
+                      {companyStats.map((comp, index) => {
+                        const pct = Math.round((comp.value / maxValue) * 100);
+                        const appPct = Math.round(
+                          (comp.approved / comp.value) * 100,
+                        );
+
+                        return (
+                          <Paper key={comp.name} p="md" radius="md" withBorder>
+                            <Group justify="space-between" mb={6}>
+                              <Group gap="xs">
+                                <Text size="xs" c="dimmed">
+                                  #{index + 1}
+                                </Text>
+                                <Text fw={500} size="sm">
+                                  {comp.name}
+                                </Text>
+                              </Group>
+                              <Text fw={500} size="lg">
                                 {comp.value}
                               </Text>
-                              <Text size="md" c="dimmed" mt={4} fw={600}>
-                                Total
-                              </Text>
-                            </Box>
-                          </Group>
-                        </Paper>
-                      ))}
+                            </Group>
+                            <Progress
+                              value={pct}
+                              color="blue"
+                              size="sm"
+                              radius="xl"
+                            />
+                          </Paper>
+                        );
+                      })}
                     </Stack>
                   </ScrollArea>
                 </Paper>
@@ -671,10 +681,18 @@ function Dashboard() {
 }
 
 function StatusCard({ label, value, statusCode, color, icon }) {
+  const STATUS_COLORS = {
+    "All Request": { bg: "#5c7cfa", text: "#fff" },
+    "On Queue": { bg: "#f59f00", text: "#fff" },
+    "On Progress": { bg: "#20c997", text: "#fff" },
+    Completed: { bg: "#51cf66", text: "#fff" },
+  };
+
   const statusInfo =
-    statusCode !== undefined
+    STATUS_COLORS[label] ??
+    (statusCode !== undefined
       ? getAdminStatus(statusCode)
-      : { bg: color || "#34495e", text: "#fff" };
+      : { bg: color || "#34495e", text: "#fff" });
 
   const getIconAnimation = () => {
     switch (label) {
