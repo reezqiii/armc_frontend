@@ -3,37 +3,37 @@ import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
-import {
-  Button,
-  Paper,
-  Badge,
-  ButtonGroup,
-  Group,
-  SimpleGrid,
-} from "@mantine/core";
+import { Button, Paper, Badge, Group, SimpleGrid } from "@mantine/core";
+
 import {
   IconInfoCircle,
   IconEdit,
   IconX,
   IconFileSpreadsheet,
   IconClipboardList,
+  IconFileTypePdf,
+  IconRefresh,
 } from "@tabler/icons-react";
+
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useRouter } from "next/router";
 import { formatDate } from "@/lib/dateFormat";
-import { hasPermission } from "@/lib/permissionHelper";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   getCoreRowModel,
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+
 import { usePathname } from "next/navigation";
 import useEncrypt from "@/hooks/useEncrypt";
 import Head from "next/head";
+
 import AdminStatusCell from "@/data/status/AdminStatusCell";
 import { getRequestStatus } from "@/lib/requestStatusList";
+import { hasPermission } from "@/lib/permissionHelper";
 
 export default function AdminList() {
   const router = useRouter();
@@ -47,30 +47,56 @@ export default function AdminList() {
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [status, setStatus] = useState("onQueue");
-  const [isCanceling, setIsCanceling] = useState(false);
+
   const [sorting, setSorting] = useState([{ id: "id_request", desc: true }]);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState([]);
-  const [permissions, setPermissions] = useState({
-    approvalLeadIt: [],
-    approvalItManager: [],
-    itAction: [],
-  });
+  const [rowSelection, setRowSelection] = useState({});
+
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
 
+  const canExport = hasPermission(3);
+
+  const fetchData = useCallback(async () => {
+    const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
+
+    let searchObj = {
+      request_admin: statusMap[status],
+    };
+
+    columnFilters.forEach((filter) => {
+      searchObj[filter.id] = filter.value;
+    });
+
+    const search = JSON.stringify(searchObj);
+
+    try {
+      const res = await axios.post(
+        `${API_URL}/requests/serverside_list?search=${encodeURIComponent(
+          search,
+        )}&page=${pagination.pageIndex}&size=${pagination.pageSize}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+
+      setData(res.data.data);
+      setTotalPages(res.data.total_pages);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [API_URL, status, pagination, columnFilters, user.token]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
     if (queryStatus) {
       setStatus(String(queryStatus));
     }
-
-    if (user?.permissions) {
-      setPermissions(user.permissions);
-    }
-  }, [queryStatus, user]);
+  }, [queryStatus]);
 
   const titleMap = {
     onQueue: "On Queue - ARMC",
@@ -100,14 +126,11 @@ export default function AdminList() {
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
         confirmButtonText: "Yes, cancel it!",
-        cancelButtonText: "No, keep it",
       });
 
       if (!result.isConfirmed) return;
 
-      setIsDeleting(true);
       try {
         const encryptedId = encrypt(String(id_request));
 
@@ -121,71 +144,145 @@ export default function AdminList() {
           prev.filter((item) => item.id_request !== id_request),
         );
 
-        Swal.fire({
-          icon: "success",
-          title: "Canceled!",
-          text: "The request has been marked as canceled.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        Swal.fire("Success", "Request canceled", "success");
       } catch (err) {
-        console.error(err);
-        Swal.fire({
-          icon: "error",
-          title: "Failed!",
-          text: "Failed to cancel the request.",
-        });
-      } finally {
-        setIsDeleting(false);
+        Swal.fire("Error", "Failed to cancel", "error");
       }
     },
     [API_URL, user.token, encrypt],
   );
 
-  const handleExportExcel = async () => {
-    try {
-      const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
-
-      const sort_by = sorting[0]?.id || "id_request";
-      const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
-
-      const filterObj = Object.fromEntries(
-        columnFilters.map((f) => [f.id, f.value]),
-      );
-
-      const search = JSON.stringify({
-        request_admin: statusMap[status],
-        ...filterObj,
+  const handleReturn = useCallback(
+    async (id) => {
+      const confirm = await Swal.fire({
+        title: "Return this request?",
+        icon: "warning",
+        showCancelButton: true,
       });
 
-      const url = `${API_URL}/excel/export-list?search=${encodeURIComponent(
-        search,
-      )}&sort_by=${sort_by}&sort_order=${sort_order}`;
+      if (!confirm.isConfirmed) return;
 
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
+      try {
+        const encryptedId = encrypt(String(id));
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Export failed:", errorText);
-        throw new Error("Gagal export excel");
+        await axios.post(
+          `${API_URL}/requests/${encryptedId}/return`,
+          {},
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        );
+
+        Swal.fire("Success", "Returned for revision", "success");
+        fetchData();
+      } catch (err) {
+        Swal.fire("Error", "Failed to return request", "error");
       }
+    },
+    [encrypt, API_URL, user.token, fetchData],
+  );
 
-      const blob = await res.blob();
+  const handleExportExcel = async () => {
+    if (!canExport) {
+      Swal.fire(
+        "Access Denied",
+        "You are not authorized to export this data",
+        "error",
+      );
+      return;
+    }
 
+    try {
+      Swal.fire({
+        title: "Preparing File...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const activeFilters = {
+        ...(config.id !== null && { request_status: config.id }),
+      };
+
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          activeFilters[filter.id] = filter.value;
+        }
+      });
+
+      const sort_by = sorting.length > 0 ? sorting[0].id : null;
+      const sort_order =
+        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
+
+      const response = await axios.get(`${API_URL}/excel/export-list`, {
+        params: {
+          search: JSON.stringify(activeFilters),
+          sort_by,
+          sort_order,
+        },
+        headers: { Authorization: `Bearer ${user.token}` },
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = "export_requests_list.xlsx";
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `${config.label.replace(/\s+/g, "_")}_Requests.xlsx`,
+      );
+      document.body.appendChild(link);
       link.click();
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Export Excel gagal. Cek console.");
+      Swal.close();
+    } catch (err) {
+      console.error("Export error:", err.response?.data || err.message);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Export failed",
+        "error",
+      );
     }
   };
+
+  const handleDownloadPdf = useCallback(
+    async (id) => {
+      try {
+        Swal.fire({
+          title: "Generating PDF...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
+        const encryptedId = encrypt(String(id));
+
+        const response = await axios.get(
+          `${API_URL}/requests/${encryptedId}/generate-pdf`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+            responseType: "blob",
+          },
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.setAttribute(
+          "download",
+          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`,
+        );
+
+        document.body.appendChild(link);
+        link.click();
+
+        Swal.close();
+      } catch (err) {
+        Swal.fire("Error", "Failed generate PDF", "error");
+      }
+    },
+    [API_URL, user.token, encrypt],
+  );
 
   const columns = useMemo(
     () => [
@@ -196,6 +293,7 @@ export default function AdminList() {
           row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
       },
+
       {
         accessorFn: (row) => row.id_request,
         id: "id_request",
@@ -205,6 +303,7 @@ export default function AdminList() {
         cell: ({ row }) =>
           `ITF14-${String(row.original.id_request).padStart(6, "0")}`,
       },
+
       {
         accessorFn: (row) => row.created_date,
         id: "created_date",
@@ -213,6 +312,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: ({ row }) => formatDate(row.original.created_date),
       },
+
       {
         accessorFn: (row) => row.requestor_name,
         id: "requestor_name",
@@ -221,6 +321,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.badge_no,
         id: "badge_no",
@@ -229,6 +330,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.full_name,
         id: "full_name",
@@ -237,6 +339,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.department_name,
         id: "department_name",
@@ -245,6 +348,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.position_name,
         id: "position_name",
@@ -253,6 +357,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.project_name,
         id: "project_name",
@@ -261,6 +366,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.company_name,
         id: "company_name",
@@ -269,6 +375,7 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
         accessorFn: (row) => row.email,
         id: "email",
@@ -277,30 +384,25 @@ export default function AdminList() {
         enableSorting: true,
         cell: (info) => info.getValue(),
       },
+
       {
-        accessorFn: (row) => row.type,
+        accessorFn: (row) => row.type_name,
         id: "type",
         header: "Type",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => (row.original.type === 1 ? "External" : "Internal"),
+        cell: (info) => info.getValue() || "-",
       },
+
       {
-        accessorFn: (row) => row.category_account,
-        id: "category_account",
+        accessorFn: (row) => row.category_account_name,
+        id: "category_account_name",
         header: "Category Account",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => {
-          const CATEGORY_LABELS = {
-            0: "Create New Account",
-            1: "Request Permission",
-            2: "Request Outside Access",
-          };
-
-          return CATEGORY_LABELS[row.original.category_account] || "-";
-        },
+        cell: (info) => info.getValue() || "-",
       },
+
       {
         accessorFn: (row) => row.request_status,
         id: "request_status",
@@ -308,21 +410,16 @@ export default function AdminList() {
         enableColumnFilter: false,
         enableSorting: true,
         cell: ({ row }) => {
-          const statusCode = row.original.request_status;
-          const status = getRequestStatus(statusCode);
+          const status = getRequestStatus(row.original.request_status);
 
           return (
-            <div className="flex justify-center w-full">
+            <div className="flex justify-center">
               <Badge
-                radius="sm"
-                px="sm"
                 styles={{
                   root: {
                     backgroundColor: status.bg,
                     color: status.text,
                     fontWeight: 600,
-                    textAlign: "center",
-                    textTransform: "none",
                   },
                 }}
               >
@@ -346,26 +443,27 @@ export default function AdminList() {
             API_URL={API_URL}
             token={user.token}
             setData={setData}
-            permissions={permissions}
           />
         ),
       },
+
       {
-        accessorFn: (row) => row.id_request,
         id: "action",
         header: "Action",
         enableColumnFilter: false,
-        enableSorting: false,
+        enableSorting: true,
+        size: 300,
         cell: ({ row }) => {
-          const encryptedId = encrypt(String(row.original.id_request));
+          const request = row.original;
+          const encryptedId = encrypt(String(request.id_request));
 
           return (
-           <Group gap={6} justify="center" wrap="nowrap">
+            <SimpleGrid cols={2} spacing={6}>
               <Button
                 fullWidth
-                leftSection={<IconInfoCircle size={16} />}
-                color="blue"
                 size="xs"
+                color="blue"
+                leftSection={<IconInfoCircle size={14} />}
                 onClick={() =>
                   router.push(`/user_request/detail_req/${encryptedId}`)
                 }
@@ -375,9 +473,9 @@ export default function AdminList() {
 
               <Button
                 fullWidth
-                leftSection={<IconEdit size={16} />}
-                color="yellow"
                 size="xs"
+                color="yellow"
+                leftSection={<IconEdit size={14} />}
                 onClick={() =>
                   router.push(`/user_request/edit_req/${encryptedId}`)
                 }
@@ -387,90 +485,65 @@ export default function AdminList() {
 
               <Button
                 fullWidth
-                leftSection={<IconX size={16} />}
-                color="red"
                 size="xs"
-                onClick={() => handleCancel(row.original.id_request)}
-                disabled={isDeleting}
+                color="red"
+                leftSection={<IconX size={14} />}
+                onClick={() => handleCancel(request.id_request)}
               >
                 Cancel
               </Button>
-            </Group>
+
+              <Button
+                fullWidth
+                size="xs"
+                color="gray"
+                leftSection={<IconFileTypePdf size={14} />}
+                onClick={() => handleDownloadPdf(request.id_request)}
+              >
+                PDF
+              </Button>
+
+              <Button
+                fullWidth
+                size="xs"
+                color="orange"
+                leftSection={<IconRefresh size={14} />}
+                onClick={() => handleReturn(request.id_request)}
+              >
+                Return
+              </Button>
+            </SimpleGrid>
           );
         },
       },
     ],
     [
-      API_URL,
-      encrypt,
-      handleCancel,
-      isDeleting,
       pagination.pageIndex,
       pagination.pageSize,
-      permissions,
-      router,
+      API_URL,
       user.token,
+      encrypt,
+      router,
+      handleCancel,
+      handleDownloadPdf,
+      handleReturn,
     ],
   );
 
   const table = useReactTable({
     data,
     columns,
-    filterFns: {},
-    state: {
-      columnFilters,
-      sorting,
-      pagination,
-      rowSelection,
-    },
+    state: { columnFilters, sorting, pagination, rowSelection },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     onRowSelectionChange: setRowSelection,
-    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
   });
-
-  const fetchData = useCallback(async () => {
-    const statusMap = { onQueue: 0, onProgress: 1, completed: 2 };
-
-    const sort_by = sorting[0]?.id || "id_request";
-    const sort_order = sorting[0]?.desc ? "DESC" : "ASC";
-
-    const filterObj = Object.fromEntries(
-      columnFilters.map((f) => [f.id, f.value]),
-    );
-
-    const search = JSON.stringify({
-      request_admin: statusMap[status],
-      ...filterObj,
-    });
-
-    try {
-      const res = await axios.post(
-        `${API_URL}/requests/serverside_list?search=${encodeURIComponent(
-          search,
-        )}&sort_by=${sort_by}&sort_order=${sort_order}&page=${
-          pagination.pageIndex
-        }&size=${pagination.pageSize}`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-
-      setData(res.data.data);
-      setTotalPages(res.data.total_pages);
-    } catch (err) {
-      console.error("Error fetching admin data:", err);
-    }
-  }, [API_URL, status, sorting, columnFilters, pagination, user.token]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, status]);
 
   return (
     <>
@@ -481,7 +554,6 @@ export default function AdminList() {
       <AuthLayout sidebarList={updatedSidebarList}>
         <div className="py-6 px-4">
           <Paper radius="md" p="md" withBorder shadow="sm">
-            {/* HEADER */}
             <div className="flex items-center justify-between border-b pb-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
@@ -490,29 +562,24 @@ export default function AdminList() {
 
                 <div>
                   <h1 className="text-md font-extrabold text-blue-600 uppercase">
-                    {titleMap[status] || "Request List"}
+                    {pageTitle}
                   </h1>
-                  <p className="text-xs text-gray-500">
-                    Manage and review request data
-                  </p>
                 </div>
               </div>
 
-              {/* Optional Action */}
-              <Button
-                color="green"
-                size="sm"
-                onClick={handleExportExcel}
-                leftSection={<IconFileSpreadsheet size={16} />}
-              >
-                Export Excel
-              </Button>
+              {canExport && (
+                <Button
+                  color="green"
+                  size="xs"
+                  leftSection={<IconFileSpreadsheet size={16} />}
+                  onClick={handleExportExcel}
+                >
+                  Export Excel
+                </Button>
+              )}
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <Datatables table={table} totalPages={totalPages} />
-            </div>
+            <Datatables table={table} totalPages={totalPages} />
           </Paper>
         </div>
       </AuthLayout>

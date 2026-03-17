@@ -15,13 +15,11 @@ import {
   IconCalendar,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useSwal from "@/hooks/useSwal";
 import useApi from "@/hooks/useApi";
-import useDecrypt from "@/hooks/useDecrypt";
-import useEncrypt from "@/hooks/useEncrypt";
 import Swal from "sweetalert2";
 import { useDebouncedValue } from "@mantine/hooks";
 import { formatDate } from "@/lib/dateFormat";
@@ -33,22 +31,27 @@ function EditRequest() {
   const API = useApi();
   const API_URL = API.API_URL;
   const { user } = useUser();
-  const { encrypt } = useEncrypt();
-  const { decrypt } = useDecrypt();
+
   const [formData, setFormData] = useState({
     created_by_name: null,
     full_name: "",
     badge_no: "",
     email: "",
-    project: "",
-    department: "",
+    project: null,
+    department: null,
+    position: null,
+    company: null,
     request_reason: "",
     approval_hod_by: "",
-    approval_it_hod_by: "",
     remarks: "",
     request_status: 0,
-    company: "",
     company_name: "",
+    category_account: "",
+    access_yard_company: [],
+    access_nav_menu: [],
+    department_name: "",
+    position_name: "",
+    project_name: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -62,6 +65,12 @@ function EditRequest() {
   const [accessYardOptions, setAccessYardOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
+  const [deptOptions, setDeptOptions] = useState([]);
+  const [positionOptions, setPositionOptions] = useState([]);
+  const [projectOptions, setProjectOptions] = useState([]);
+  const [companyOptions, setCompanyOptions] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
   const isReturned = formData.request_status === 8;
 
   useEffect(() => {
@@ -69,25 +78,18 @@ function EditRequest() {
       setBadgeOptions([]);
       return;
     }
-
     const fetchBadges = async () => {
       setBadgeLoading(true);
       try {
         const res = await axios.get(
           `${API_URL}/iss_employee/search?badge=${debouncedSearch}`,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          },
+          { headers: { Authorization: `Bearer ${user.token}` } },
         );
         const employees = Array.isArray(res.data) ? res.data : [res.data];
         setBadgeOptions(
           employees.map((e) => ({
             value: String(e.badge_no || e.badge),
             label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`,
-            full_name: e.full_name || e.name,
-            department_name: e.dept || "",
-            position_name: e.design_desc || "",
-            project_name: e.project_desc || "",
           })),
         );
       } catch (err) {
@@ -96,7 +98,6 @@ function EditRequest() {
         setBadgeLoading(false);
       }
     };
-
     fetchBadges();
   }, [API_URL, debouncedSearch, user.token]);
 
@@ -104,22 +105,37 @@ function EditRequest() {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [hodRes, companyRes, navMenuRes, categoryRes] = await Promise.all(
-          [
-            axios.get(`${API_URL}/requests/hods`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/portal_company/list`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/portal_nav_menu/list`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/category-account`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-          ],
-        );
+        const [
+          hodRes,
+          deptRes,
+          posRes,
+          projectRes,
+          companyRes,
+          navMenuRes,
+          categoryRes,
+        ] = await Promise.all([
+          axios.get(`${API_URL}/requests/hods`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/iss_dept`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/position`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/iss_project`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/portal_company/list`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/portal_nav_menu/list`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+          axios.get(`${API_URL}/category-account`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
+        ]);
 
         setHodOptions(
           hodRes.data.map((u) => ({
@@ -127,13 +143,31 @@ function EditRequest() {
             label: `${u.badge_no} - ${u.full_name}`,
           })),
         );
-
-        setAccessYardOptions(
-          companyRes.data.map((c) => ({
-            value: String(c.id_company),
-            label: c.company_name,
+        setDeptOptions(
+          deptRes.data.map((d) => ({
+            value: String(d.dept_id),
+            label: d.dept,
           })),
         );
+        setPositionOptions(
+          posRes.data.map((p) => ({
+            value: String(p.design_id),
+            label: p.design_desc,
+          })),
+        );
+        setProjectOptions(
+          projectRes.data.map((p) => ({
+            value: String(p.project_id),
+            label: p.project_desc,
+          })),
+        );
+
+        const mappedCompany = companyRes.data.map((c) => ({
+          value: String(c.id_company),
+          label: c.company_name,
+        }));
+        setCompanyOptions(mappedCompany);
+        setAccessYardOptions(mappedCompany);
 
         setNavMenuOptions(
           navMenuRes.data.map((n) => ({
@@ -142,21 +176,29 @@ function EditRequest() {
           })),
         );
 
-        setCategoryOptions(
-          categoryRes.data.map((c) => ({
-            value: String(c.id),
-            label: c.name,
-            access_yard_required: c.access_yard_required,
-            application_required: c.application_required,
-          })),
-        );
+        const mappedCategories = categoryRes.data.map((c) => ({
+          value: String(c.id),
+          label: c.name,
+          access_yard_required: c.access_yard_required,
+          application_required: c.application_required,
+        }));
+        setCategoryOptions(mappedCategories);
 
         if (id) {
           const res = await axios.get(`${API_URL}/requests/${id}`, {
             headers: { Authorization: `Bearer ${user.token}` },
           });
-
           const data = res.data;
+
+          const catValue = data.category?.id
+            ? String(data.category.id)
+            : data.category_account
+              ? String(data.category_account)
+              : "";
+
+          setSelectedCategory(
+            mappedCategories.find((c) => c.value === catValue) || null,
+          );
 
           setFormData((prev) => ({
             ...prev,
@@ -175,28 +217,19 @@ function EditRequest() {
             approval_it_date_at: data.approval_it_date_at || null,
             company: data.company?.id_company
               ? String(data.company.id_company)
-              : "",
-            department: data.dept_id ? String(data.dept_id) : "",
-            project: data.project_id ? String(data.project_id) : "",
-            project_name: data.project_name,
-            department_name: data.department_name,
-            position: data.design_id ? String(data.design_id) : "",
-            position_name: data.position_name ?? data.position ?? "",
+              : null,
+            department: data.dept_id ? String(data.dept_id) : null,
+            project: data.project_id ? String(data.project_id) : null,
+            position: data.design_id ? String(data.design_id) : null,
             request_status: data.request_status,
             company_name: data.company?.company_name || "",
-            category_account: data.category?.id
-              ? String(data.category.id)
-              : data.category_account
-                ? String(data.category_account)
-                : "",
+            category_account: catValue,
             approval_hod_by: data.approval_hod_by?.id
               ? String(data.approval_hod_by.id)
               : "",
-
             access_nav_menu: Array.isArray(data.access_nav_menu)
               ? data.access_nav_menu.map((item) => String(item.id))
               : [],
-
             access_yard_company: Array.isArray(data.access_yard_company)
               ? data.access_yard_company.map((item) => String(item.id))
               : [],
@@ -208,7 +241,6 @@ function EditRequest() {
         setLoading(false);
       }
     };
-
     fetchInitialData();
   }, [API_URL, id, user.token]);
 
@@ -221,14 +253,10 @@ function EditRequest() {
         ...prev,
         badge_no: value,
         full_name: res.data.name ?? "",
-        department_name: res.data.department.dept ?? "",
-        position_name: res.data.position?.design_desc ?? "",
-        project_name: res.data.project.project_desc ?? "",
-        company_name: res.data.company_name ?? "",
-        company: res.data.company ?? "",
-        department: res.data.department.dept_id ?? "",
-        position: res.data.position?.design_id ?? "",
-        project: res.data.project.project_id ?? "",
+        department: String(res.data.department?.dept_id ?? ""),
+        position: String(res.data.position?.design_id ?? ""),
+        project: String(res.data.project?.project_id ?? ""),
+        company: String(res.data.id_company ?? ""),
       }));
     } catch (err) {
       console.error(err);
@@ -238,37 +266,43 @@ function EditRequest() {
   };
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
+    if (field === "category_account") {
+      const cat = categoryOptions.find((c) => c.value === value);
+      setSelectedCategory(cat || null);
+      setFormData((prev) => ({
+        ...prev,
+        category_account: value,
+        access_yard_company: cat?.access_yard_required
+          ? prev.access_yard_company
+          : [],
+        access_nav_menu: cat?.application_required ? prev.access_nav_menu : [],
+      }));
+      if (errors.category_account)
+        setErrors((prev) => ({ ...prev, category_account: null }));
+      return;
     }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const newErrors = {};
 
-    if (!formData.category_account) {
+    if (!formData.category_account)
       newErrors.category_account = "Category account is required";
-    }
-    if (!formData.approval_hod_by) {
+    if (!formData.approval_hod_by)
       newErrors.approval_hod_by = "HOD must be selected";
-    }
-    if (yardRequired) {
-      if (!formData.access_yard_company?.length) {
-        newErrors.access_yard_company = "Company Yard Access is required";
-      }
-    }
-    if (appRequired) {
-      if (!formData.access_nav_menu?.length) {
-        newErrors.access_nav_menu = "Application Access is required";
-      }
-    }
+    if (
+      selectedCategory?.access_yard_required &&
+      !formData.access_yard_company?.length
+    )
+      newErrors.access_yard_company = "Company Yard Access is required";
+    if (
+      selectedCategory?.application_required &&
+      !formData.access_nav_menu?.length
+    )
+      newErrors.access_nav_menu = "Application Access is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -276,17 +310,14 @@ function EditRequest() {
     }
 
     const result = await Swal.fire({
-      title: id
-        ? "Are you sure you want to update this data?"
-        : "Are you sure you want to create a new request?",
+      title: "Are you sure you want to update this data?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: id ? "Yes, update!" : "Yes, save",
+      confirmButtonText: "Yes, update!",
       cancelButtonText: "Cancel",
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
     });
-
     if (!result.isConfirmed) return;
 
     setLoadingSubmit(true);
@@ -299,10 +330,10 @@ function EditRequest() {
       request_reason: formData.request_reason,
       status_active: 1,
       remarks: formData.remarks,
-      project_id: Number(formData.project),
-      dept_id: Number(formData.department),
-      design_id: Number(formData.position),
-      id_company: Number(formData.company),
+      project_id: formData.project ? Number(formData.project) : undefined,
+      dept_id: formData.department ? Number(formData.department) : undefined,
+      design_id: formData.position ? Number(formData.position) : undefined,
+      id_company: formData.company ? Number(formData.company) : undefined,
       category_account:
         formData.category_account !== ""
           ? Number(formData.category_account)
@@ -313,37 +344,22 @@ function EditRequest() {
       access_nav_menu: Array.isArray(formData.access_nav_menu)
         ? formData.access_nav_menu.join(",")
         : formData.access_nav_menu || "",
+      approval_hod_by: formData.approval_hod_by
+        ? { id_user: Number(formData.approval_hod_by) }
+        : null,
     };
-    payload.approval_hod_by = formData.approval_hod_by
-      ? { id_user: Number(formData.approval_hod_by) }
-      : null;
 
     try {
-      if (id) {
-        await axios.put(`${API_URL}/requests/${id}`, payload, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-
-        await Swal.fire({
-          icon: "success",
-          title: "Successful!",
-          text: "The data has been updated successfully.",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      } else {
-        await axios.post(`${API_URL}/requests/create`, payload, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-
-        await Swal.fire({
-          icon: "success",
-          title: "Success!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      }
-
+      await axios.put(`${API_URL}/requests/${id}`, payload, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      await Swal.fire({
+        icon: "success",
+        title: "Successful!",
+        text: "The data has been updated successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
       router.replace(router.asPath);
     } catch (error) {
       console.error(error.response?.data || error.message);
@@ -356,13 +372,6 @@ function EditRequest() {
       setLoadingSubmit(false);
     }
   };
-
-  const selectedCategory = categoryOptions.find(
-    (c) => c.value === formData.category_account,
-  );
-
-  const yardRequired = selectedCategory?.access_yard_required ?? false;
-  const appRequired = selectedCategory?.application_required ?? false;
 
   return (
     <AuthLayout sidebarList={requestorList}>
@@ -381,7 +390,7 @@ function EditRequest() {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6 md:p-10 space-y-10">
-              {/* 1. INFORMASI DASAR (Date & Requestor) */}
+              {/* 1. Date & Requestor */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="block font-semibold text-gray-700 text-sm">
@@ -396,7 +405,6 @@ function EditRequest() {
                     <IconCalendar size={18} className="text-gray-400" />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <label className="block font-semibold text-gray-700 text-sm">
                     Requestor <span className="text-red-500">*</span>
@@ -409,7 +417,7 @@ function EditRequest() {
                 </div>
               </div>
 
-              {/* 2. DESCRIPTION SECTION */}
+              {/* 2. Employee Description */}
               <div className="space-y-6">
                 <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                   <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
@@ -418,22 +426,15 @@ function EditRequest() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* CATEGORY ACCOUNT */}
                   <Select
                     required
                     label="Category Account"
                     placeholder="Select Category"
                     data={categoryOptions}
                     value={formData.category_account}
-                    onChange={(value) => {
-                      handleChange("category_account", value);
-                      if (value) {
-                        setErrors((prev) => ({
-                          ...prev,
-                          category_account: null,
-                        }));
-                      }
-                    }}
+                    onChange={(value) =>
+                      handleChange("category_account", value)
+                    }
                     error={errors.category_account}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
@@ -468,77 +469,81 @@ function EditRequest() {
                     }}
                   />
 
+                  {/* Full Name*/}
                   <TextInput
                     required
                     label="Full Name"
-                    placeholder="Full Name"
+                    placeholder="Input Full Name"
                     value={formData.full_name || ""}
-                    readOnly
+                    onChange={(e) => handleChange("full_name", e.target.value)}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",
                     }}
                   />
 
-                  <TextInput
+                  {/* Department */}
+                  <Select
                     required
                     label="Department"
-                    placeholder="Department"
-                    value={formData.department_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Department"
+                    data={deptOptions}
+                    value={formData.department}
+                    onChange={(val) => handleChange("department", val)}
+                    searchable
+                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  <TextInput
+                  {/* Position */}
+                  <Select
                     required
                     label="Position"
-                    placeholder="Position"
-                    value={formData.position_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Position"
+                    data={positionOptions}
+                    value={formData.position}
+                    onChange={(val) => handleChange("position", val)}
+                    searchable
+                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  <TextInput
+                  {/* Project */}
+                  <Select
                     required
                     label="Project"
-                    placeholder="Project"
-                    value={formData.project_name || ""}
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Project"
+                    data={projectOptions}
+                    value={formData.project}
+                    onChange={(val) => handleChange("project", val)}
+                    searchable
+                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  <TextInput
+                  {/* Company */}
+                  <Select
                     required
                     label="Company"
-                    placeholder="Company"
-                    value={
-                      formData.company_name ||
-                      formData.company?.company_name ||
-                      ""
-                    }
-                    readOnly
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "h-[40px]",
-                    }}
+                    placeholder="Select Company"
+                    data={companyOptions}
+                    value={formData.company}
+                    onChange={(val) => handleChange("company", val)}
+                    searchable
+                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
                   <MultiSelect
-                    required={yardRequired}
+                    required={selectedCategory?.access_yard_required}
                     label="Company Yard Access"
                     placeholder="Select Company Yard"
                     data={accessYardOptions}
                     value={formData.access_yard_company}
-                    onChange={(val) => handleChange("access_yard_company", val)}
+                    onChange={(val) => {
+                      handleChange("access_yard_company", val);
+                      if (val.length > 0)
+                        setErrors((prev) => ({
+                          ...prev,
+                          access_yard_company: null,
+                        }));
+                    }}
                     searchable
                     error={errors.access_yard_company}
                     classNames={{
@@ -548,12 +553,19 @@ function EditRequest() {
                   />
 
                   <MultiSelect
-                    required={appRequired}
+                    required={selectedCategory?.application_required}
                     label="Application Access"
                     placeholder="Select Application Access"
                     data={navMenuOptions}
                     value={formData.access_nav_menu}
-                    onChange={(val) => handleChange("access_nav_menu", val)}
+                    onChange={(val) => {
+                      handleChange("access_nav_menu", val);
+                      if (val.length > 0)
+                        setErrors((prev) => ({
+                          ...prev,
+                          access_nav_menu: null,
+                        }));
+                    }}
                     searchable
                     error={errors.access_nav_menu}
                     classNames={{
@@ -577,7 +589,7 @@ function EditRequest() {
                   />
                 </div>
 
-                {/* 3. REMARKS SECTION */}
+                {/* 3. Purpose & Remarks */}
                 <div className="space-y-4">
                   <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
@@ -596,19 +608,18 @@ function EditRequest() {
                     error={errors.request_reason}
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
+                  <Textarea
+                    label="Additional Remarks (Optional)"
+                    placeholder="Input any other information..."
+                    minRows={2}
+                    value={formData.remarks}
+                    onChange={(e) => handleChange("remarks", e.target.value)}
+                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                  />
                 </div>
-
-                <Textarea
-                  label="Additional Remarks (Optional)"
-                  placeholder="Input any other information..."
-                  minRows={2}
-                  value={formData.remarks}
-                  onChange={(e) => handleChange("remarks", e.target.value)}
-                  classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                />
               </div>
 
-              {/* 4. APPROVAL WORKFLOW SECTION */}
+              {/* 4. Approval Workflow */}
               <div className="space-y-4">
                 <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm mb-8">
                   <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
@@ -622,7 +633,6 @@ function EditRequest() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
-                  {/* Col 1 */}
                   <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Requested By
@@ -634,20 +644,16 @@ function EditRequest() {
                     </div>
                   </div>
 
-                  {/* Col 2 */}
                   <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Acknowledge By
                     </span>
                     <Select
-                      placeholder="Select Head of Department"
+                      placeholder="Select HOD Requestor"
                       searchable
                       value={String(formData.approval_hod_by || "")}
                       onChange={(val) => handleChange("approval_hod_by", val)}
-                      data={hodOptions.map((u) => ({
-                        value: String(u.value),
-                        label: u.label,
-                      }))}
+                      data={hodOptions}
                       disabled={isReturned}
                       error={errors.approval_hod_by}
                       variant="unstyled"
@@ -658,7 +664,6 @@ function EditRequest() {
                     />
                   </div>
 
-                  {/* Col 3 */}
                   <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Checked By
@@ -675,7 +680,6 @@ function EditRequest() {
                     </div>
                   </div>
 
-                  {/* Col 4 */}
                   <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Approved By

@@ -313,7 +313,7 @@ function RequestDetail() {
                         Requestor <span className="text-red-500">*</span>
                       </label>
                       <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
-                        {data?.requestor_name || data?.created_by_name || "-"}
+                        {data?.requestor_name || "-"}
                       </div>
                     </div>
                   </div>
@@ -483,9 +483,7 @@ function RequestDetail() {
                             <span className="text-gray-500">Name</span>
                             <span className="text-gray-500">:</span>
                             <span className="text-gray-800 text-sm">
-                              {data?.requestor_name ||
-                                data?.created_by_name ||
-                                "-"}
+                              {data?.requestor_name || "-"}
                             </span>
                           </div>
                           <div className="grid grid-cols-[50px_10px_1fr] items-start">

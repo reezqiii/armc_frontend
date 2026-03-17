@@ -33,6 +33,7 @@ function CreateRequest() {
   const { user } = useUser();
   const [formData, setFormData] = React.useState({
     full_name: "",
+    requestor_name: "",
     badge_no: "",
     email: "",
     project_id: "",
@@ -46,6 +47,7 @@ function CreateRequest() {
     access_nav_menu: [],
   });
   const [errors, setErrors] = React.useState({
+    requestor_name: null,
     full_name: null,
     badge_no: null,
     email: null,
@@ -65,13 +67,14 @@ function CreateRequest() {
   const [projectOptions, setProjectOptions] = useState([]);
   const [companyOptions, setCompanyOptions] = useState([]);
   const [bgImage, setBgImage] = useState("");
-  const CATEGORY_ACCOUNT_OPTIONS = [
-    { value: "0", label: "Create New Account" },
-    { value: "1", label: "Request Permission" },
-    { value: "2", label: "Request Outside Access" },
-  ];
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const selectedCategory = categoryOptions.find(
+    (c) => c.value === formData.category_account,
+  );
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
@@ -81,14 +84,21 @@ function CreateRequest() {
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        const [deptRes, posRes, projectRes, companyRes, navMenuRes] =
-          await Promise.all([
-            axios.get(`${API_URL}/iss_dept`),
-            axios.get(`${API_URL}/position`),
-            axios.get(`${API_URL}/iss_project`),
-            axios.get(`${API_URL}/portal_company/list`),
-            axios.get(`${API_URL}/portal_nav_menu/list`),
-          ]);
+        const [
+          deptRes,
+          posRes,
+          projectRes,
+          companyRes,
+          navMenuRes,
+          categoryRes,
+        ] = await Promise.all([
+          axios.get(`${API_URL}/iss_dept`),
+          axios.get(`${API_URL}/position`),
+          axios.get(`${API_URL}/iss_project`),
+          axios.get(`${API_URL}/portal_company/list`),
+          axios.get(`${API_URL}/portal_nav_menu/list`),
+          axios.get(`${API_URL}/category-account`),
+        ]);
 
         const companyOptions = companyRes.data.map((c) => ({
           value: String(c.id_company),
@@ -102,28 +112,37 @@ function CreateRequest() {
           deptRes.data.map((d) => ({
             value: String(d.dept_id),
             label: d.dept,
-          }))
+          })),
         );
 
         setPositionOptions(
           posRes.data.map((p) => ({
             value: String(p.design_id),
             label: p.design_desc,
-          }))
+          })),
         );
 
         setProjectOptions(
           projectRes.data.map((p) => ({
             value: String(p.project_id),
             label: p.project_desc,
-          }))
+          })),
         );
 
         setNavMenuOptions(
           navMenuRes.data.map((n) => ({
             value: String(n.id_application),
             label: n.application_name,
-          }))
+          })),
+        );
+
+        setCategoryOptions(
+          categoryRes.data.map((c) => ({
+            value: String(c.id),
+            label: c.name,
+            access_yard_required: c.access_yard_required,
+            application_required: c.application_required,
+          })),
         );
       } catch (err) {
         console.error("Failed to load data", err);
@@ -150,24 +169,30 @@ function CreateRequest() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 1. Validasi Input
     const newErrors = {};
 
+    const currentCategory = categoryOptions.find(
+      (c) => String(c.value) === String(formData.category_account),
+    );
+
     if (
-      !formData.access_yard_company ||
-      formData.access_yard_company.length === 0
+      currentCategory?.access_yard_required == 1 &&
+      (!formData.access_yard_company ||
+        formData.access_yard_company.length === 0)
     ) {
       newErrors.access_yard_company = "Access Yard Company is required";
     }
 
-    if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
+    if (
+      currentCategory?.application_required == 1 &&
+      (!formData.access_nav_menu || formData.access_nav_menu.length === 0)
+    ) {
       newErrors.access_nav_menu = "Application Access is required";
     }
 
-    if (!formData.category_account) {
-      newErrors.category_account = "Category account is required";
-    }
+    if (!formData.requestor_name) newErrors.requestor_name = "Name is required";
+    if (!formData.category_account)
+      newErrors.category_account = "Category is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -194,10 +219,10 @@ function CreateRequest() {
     }
 
     const payload = {
+      requestor_name: formData.requestor_name,
       full_name: formData.full_name,
-      badge_no: formData.badge_no ? Number(formData.badge_no) : null,
+      badge_no: formData.badge_no?.trim() || null,
       email: formData.email,
-      request_type: 1,
       request_reason: formData.request_reason,
       request_status: 3,
       remarks: formData.remarks,
@@ -208,13 +233,13 @@ function CreateRequest() {
       id_company: Number(formData.company_id),
       access_yard_company: formData.access_yard_company,
       access_nav_menu: formData.access_nav_menu,
-      category_account: formData.category_account,
+      category_account: Number(formData.category_account),
     };
 
     try {
       const response = await axios.post(
         `${API_URL}/requests/public/create`,
-        payload
+        payload,
       );
 
       if (response.status === 200 || response.status === 201) {
@@ -227,7 +252,7 @@ function CreateRequest() {
 
         const requestNo = `ITF14-${String(newRequest.id_request).padStart(
           6,
-          "0"
+          "0",
         )}`;
 
         const result = await Swal.fire({
@@ -240,14 +265,11 @@ function CreateRequest() {
       Please save this number to track your request status.
     </p>
   `,
-          confirmButtonText: "Track Request",
+          confirmButtonText: "OK",
         });
 
-        if (result.isConfirmed) {
-          router.push(`/public_request/track_request?no=${requestNo}`);
-        }
         setFormData({
-          created_by_name: user?.full_name || user?.name || "-",
+          requestor_name: "",
           full_name: "",
           badge_no: "",
           email: "",
@@ -321,13 +343,30 @@ function CreateRequest() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <TextInput
+                    required
+                    label="Requestor Name"
+                    description="*Please ensure Requestor Name is the same as Full Name"
+                    placeholder="Input Your Name"
+                    value={formData.requestor_name || ""}
+                    onChange={(e) =>
+                      handleChange("requestor_name", e.target.value)
+                    }
+                    error={errors.requestor_name}
+                    classNames={{
+                      label: "font-semibold mb-1 text-gray-700",
+                      description: "text-xs text-gray-500",
+                      input: "h-[40px]",
+                    }}
+                  />
+
                   <Select
                     required
                     label="Category Account"
                     placeholder="Select Category Account"
-                    value={formData.category_account || ""}
+                    data={categoryOptions}
+                    value={formData.category_account || null}
                     error={errors.category_account}
-                    data={CATEGORY_ACCOUNT_OPTIONS}
                     onChange={(value) =>
                       handleChange("category_account", value)
                     }
@@ -418,7 +457,7 @@ function CreateRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={selectedCategory?.access_yard_required}
                     label="Access Yard Company"
                     placeholder="Select Yard"
                     data={accessYardOptions}
@@ -433,7 +472,7 @@ function CreateRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={selectedCategory?.application_required}
                     label="Application Access"
                     placeholder="Select Access"
                     data={navMenuOptions}

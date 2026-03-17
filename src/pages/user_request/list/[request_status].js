@@ -691,6 +691,8 @@ export default function RequestListDynamic({ request_status }) {
       cols.push({
         id: "request_admin",
         header: "IT Action",
+        enableColumnFilter: false,
+        enableSorting: true,
         cell: ({ row }) => (
           <AdminStatusCell
             value={row.original.request_admin}
