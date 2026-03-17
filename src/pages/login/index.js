@@ -58,7 +58,7 @@ export default function LoginPage() {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/validate",
+        `${process.env.NEXT_PUBLIC_API_PORTAL}/api/auth/validate`,
         values,
       );
 
@@ -77,11 +77,11 @@ export default function LoginPage() {
           icon: "success",
           title: "Login Successful",
           text: `Welcome back, ${res.data.user.full_name}!`,
-          confirmButtonText: "OK", 
-          confirmButtonColor: "#1d4ed8", 
+          confirmButtonText: "OK",
+          confirmButtonColor: "#1d4ed8",
         }).then((result) => {
           if (result.isConfirmed) {
-            router.push("/dashboard/home"); 
+            router.push("/dashboard/home");
           }
         });
       }
@@ -94,7 +94,7 @@ export default function LoginPage() {
       });
     }
   };
-  
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* FORM SECTION */}
