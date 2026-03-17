@@ -3,14 +3,13 @@ import AuthLayout from "@/components/layout/authLayout";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
-import useEncrypt from "@/hooks/useEncrypt";
 import axios from "axios";
 import { Badge, Button, Group, Paper } from "@mantine/core";
-// import { notifications } from "@mantine/notifications"
 import {
-  IconKey,
+  IconEdit,
   IconPlus,
-  IconUserCheck,
+  IconKey,
+  IconFileSpreadsheet,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -19,51 +18,49 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import userListSidebar from "@/data/sidebar/UserList";
 import { formatDate } from "@/lib/dateFormat";
+import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
+import useSwal from "@/hooks/useSwal";
 
 export default function UserList() {
   const router = useRouter();
   const { user } = useUser();
-  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
+  const { encrypt } = useEncrypt();
+  const { showAlert, showConfirm } = useSwal();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [sorting, setSorting] = useState([
-    { id: "created_date", desc: true }, 
-  ]);
+  const [sorting, setSorting] = useState([{ id: "created_date", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {
-    if (!user?.token || !router.isReady) return;
+    if (!user?.token) return;
+    if (!router.isReady) return;
 
-    // Default filter: Hanya User Aktif (status_user: 1)
-    const searchQuery = {
-      status_user: 1,
-    };
-
+    const searchQuery = {};
     columnFilters.forEach((filter) => {
-      if (filter.value) {
-        searchQuery[filter.id] = filter.value;
-      }
+      if (filter.value) searchQuery[filter.id] = filter.value;
     });
 
-    const filterParams = `search=${encodeURIComponent(JSON.stringify(searchQuery))}`;
-    const sort = sorting.length > 0
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
         ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
         : "";
 
     try {
       const { data } = await axios.post(
-        `${API_URL}/api/user/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        `${API_URL}/user/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
         {},
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        },
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
-
       setData(data.data ?? []);
       setTotalPages(data.total_pages ?? 1);
     } catch (err) {
@@ -71,120 +68,197 @@ export default function UserList() {
       setData([]);
       setTotalPages(1);
     }
-  }, [user.token, router.isReady, columnFilters, sorting, API_URL, pagination.pageIndex, pagination.pageSize]);
+  }, [
+    user.token,
+    router.isReady,
+    columnFilters,
+    sorting,
+    API_URL,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const columns = useMemo(() => [
-    {
-      id: "no",
-      header: "No",
-      cell: ({ row }) => row.index + 1 + pagination.pageIndex * pagination.pageSize,
-      size: 40,
-    },
-    {
-      accessorKey: "created_date",
-      header: "Created Date",
-      cell: ({ getValue }) => formatDate(getValue()),
-    },
-    {
-      accessorKey: "username",
-      header: "Username",
-    },
-    {
-      accessorKey: "badge_no",
-      header: "Badge ID",
-    },
-    {
-      accessorKey: "full_name",
-      header: "Full Name",
-    },
-    {
-      accessorKey: "company_name",
-      header: "Company",
-    },
-    {
-      accessorKey: "department_name",
-      header: "Department",
-    },
-    {
-      accessorKey: "project_name",
-      header: "Project",
-    },
-    {
-      accessorKey: "role_name",
-      header: "Role",
-    },
-    {
-      accessorKey: "status_user",
-      header: "Account Status",
-      cell: () => (
-        <Badge color="blue" variant="light" leftSection={<IconUserCheck size={12} />}>
-          Active
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "outside_access",
-      header: "Outside Access",
-      cell: ({ getValue }) => {
-        const value = getValue();
-        return value === 1 ? (
-          <Badge color="green" variant="filled">Enable</Badge>
-        ) : (
-          <Badge color="red" variant="filled">Disabled</Badge>
-        );
-      },
-    },
-    {
-      id: "action",
-      header: "Action",
-      size: 150,
-      cell: ({ row }) => {
-        const userRow = row.original;
-        const handleResetPassword = async () => {
-          try {
-            await axios.post(
-              `${API_URL}/api/user/reset-password`,
-              { id_user: userRow.id_user },
-              { headers: { Authorization: `Bearer ${user.token}` } },
-            );
-            notifications.show({
-              title: "Success",
-              message: "Password has been successfully reset",
-              color: "green",
-            });
-          } catch (error) {
-            notifications.show({
-              title: "Error",
-              message: "Failed to reset password",
-              color: "red",
-            });
-          }
-        };
+  const handleExportExcel = async () => {
+    try {
+      Swal.fire({
+        title: "Preparing File...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
 
-        return (
-          <Group gap={6} justify="center">
-            <Button
-              size="xs"
-              variant="outline"
-              color="gray"
-              leftSection={<IconKey size={14} />}
-              onClick={handleResetPassword}
-            >
-              Reset
-            </Button>
-          </Group>
-        );
+      const searchQuery = {};
+      columnFilters.forEach((filter) => {
+        if (filter.value) searchQuery[filter.id] = filter.value;
+      });
+
+      const sort_by = sorting.length > 0 ? sorting[0].id : null;
+      const sort_order =
+        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
+
+      const response = await axios.get(`${API_URL}/api/user/export-list`, {
+        params: {
+          search: JSON.stringify(searchQuery),
+          sort_by,
+          sort_order,
+        },
+        headers: { Authorization: `Bearer ${user.token}` },
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `User_List.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+
+      Swal.close();
+    } catch (err) {
+      console.error("Export error:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Export failed",
+        "error",
+      );
+    }
+  };
+
+  const columns = useMemo(
+    () => [
+      {
+        id: "no",
+        header: "No",
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
+        size: 40,
       },
-    },
-  ], [pagination.pageIndex, pagination.pageSize, API_URL, user.token]);
+      {
+        accessorFn: (row) => row.created_date,
+        id: "created_date",
+        header: "Created Date",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: ({ row }) => formatDate(row.original.created_date),
+      },
+      {
+        accessorFn: (row) => row.username,
+        id: "username",
+        header: "Username",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.badge_no,
+        id: "badge_no",
+        header: "Badge ID",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.full_name,
+        id: "full_name",
+        header: "Full Name",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.role_name,
+        id: "role_name",
+        header: "Role",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        id: "action",
+        header: "Action",
+        size: 200,
+        cell: ({ row }) => {
+          const userRow = row.original;
+
+          const handleResetPassword = async () => {
+            const result = await showConfirm(
+              "Reset Password?",
+              `Are you sure you want to reset password for ${userRow.full_name}?`,
+              "Yes, Reset!",
+            );
+
+            if (!result.isConfirmed) return;
+
+            try {
+              // ← Hapus Swal.fire loading, tidak perlu
+              const response = await axios.post(
+                `${API_URL}/user/reset-password`,
+                { id_user: userRow.id_user },
+                { headers: { Authorization: `Bearer ${user.token}` } },
+              );
+
+              showAlert(
+                "Success!",
+                "success",
+                `Password for ${userRow.full_name} has been reset. New password: ${response.data.new_password}`,
+                "OK",
+              );
+            } catch (err) {
+              showAlert(
+                "Failed!",
+                "error",
+                err.response?.data?.message || "Failed to reset password",
+                "OK",
+              );
+            }
+          };
+          
+          return (
+            <Group gap={6} justify="center" wrap="nowrap">
+              <Button
+                size="xs"
+                color="blue"
+                leftSection={<IconEdit size={14} />}
+                onClick={() =>
+                  router.push(
+                    `/user_management/user_list/edit/${encrypt(String(userRow.id_user))}`,
+                  )
+                }
+              >
+                Edit
+              </Button>
+              <Button
+                size="xs"
+                color="gray"
+                leftSection={<IconKey size={14} />}
+                onClick={handleResetPassword}
+              >
+                Reset Passw
+              </Button>
+            </Group>
+          );
+        },
+      },
+    ],
+    [
+      pagination.pageIndex,
+      pagination.pageSize,
+      showConfirm,
+      API_URL,
+      user.token,
+      showAlert,
+      router,
+      encrypt,
+    ],
+  );
 
   const table = useReactTable({
     data,
     columns,
+    filterFns: {},
     state: { columnFilters, sorting, pagination },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -199,32 +273,41 @@ export default function UserList() {
   return (
     <>
       <Head>
-        <title>Active Users | ARMC</title>
+        <title>User Management | ARMC</title>
       </Head>
-
-      <AuthLayout sidebarList={userListSidebar}>
+      <AuthLayout sidebarList={userList}>
         <div className="py-6 px-4">
           <Paper radius="md" p="md" withBorder shadow="sm">
             <div className="flex justify-between border-b pb-4 mb-4">
               <div>
-                <h1 className="text-md font-extrabold text-blue-600 uppercase">
-                  Active Users List
+                <h1 className="text-md font-extrabold text-teal-600 uppercase">
+                  User Management
                 </h1>
                 <p className="text-xs text-gray-500">
-                  Manage all active user accounts and their permissions
+                  Manage user accounts and roles
                 </p>
               </div>
-
-              <Button
-                size="sm"
-                color="blue"
-                leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/add_user`)}
-              >
-                Add New User
-              </Button>
+              <Group>
+                <Button
+                  size="sm"
+                  color="teal"
+                  leftSection={<IconFileSpreadsheet size={16} />}
+                  onClick={handleExportExcel}
+                >
+                  Export Excel
+                </Button>
+                <Button
+                  size="sm"
+                  color="teal"
+                  leftSection={<IconPlus size={16} />}
+                  onClick={() =>
+                    router.push(`/user_management/user_list/add_user`)
+                  }
+                >
+                  Add New User
+                </Button>
+              </Group>
             </div>
-
             <Datatables table={table} totalPages={totalPages} />
           </Paper>
         </div>

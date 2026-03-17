@@ -5,11 +5,12 @@ import Footer from "../footer";
 import Sidebar from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 
-
 export default function AuthLayout({ children, sidebarList }) {
-return (
+  return (
     <div className="flex flex-col min-h-screen">
-      <Header /> 
+      <div className="bg-white border-b border-teal-100">
+        <Header />
+      </div>
 
       <Navigation />
 

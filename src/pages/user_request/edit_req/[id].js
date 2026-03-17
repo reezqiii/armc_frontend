@@ -50,11 +50,7 @@ function EditRequest() {
     company: "",
     company_name: "",
   });
-  const CATEGORY_ACCOUNT_OPTIONS = [
-    { value: "0", label: "Create New Account" },
-    { value: "1", label: "Request Permission Access" },
-    { value: "2", label: "Request Outside Access" },
-  ];
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -65,6 +61,7 @@ function EditRequest() {
   const [hodOptions, setHodOptions] = useState([]);
   const [accessYardOptions, setAccessYardOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
   const isReturned = formData.request_status === 8;
 
   useEffect(() => {
@@ -80,7 +77,7 @@ function EditRequest() {
           `${API_URL}/iss_employee/search?badge=${debouncedSearch}`,
           {
             headers: { Authorization: `Bearer ${user.token}` },
-          }
+          },
         );
         const employees = Array.isArray(res.data) ? res.data : [res.data];
         setBadgeOptions(
@@ -91,7 +88,7 @@ function EditRequest() {
             department_name: e.dept || "",
             position_name: e.design_desc || "",
             project_name: e.project_desc || "",
-          }))
+          })),
         );
       } catch (err) {
         console.error(err);
@@ -107,37 +104,51 @@ function EditRequest() {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const [hodRes, companyRes, navMenuRes] = await Promise.all([
-          axios.get(`${API_URL}/requests/hods`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/portal_company/list`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/portal_nav_menu/list`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-        ]);
+        const [hodRes, companyRes, navMenuRes, categoryRes] = await Promise.all(
+          [
+            axios.get(`${API_URL}/requests/hods`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/portal_company/list`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/portal_nav_menu/list`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+            axios.get(`${API_URL}/category-account`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }),
+          ],
+        );
 
         setHodOptions(
           hodRes.data.map((u) => ({
             value: String(u.id_user),
             label: `${u.badge_no} - ${u.full_name}`,
-          }))
+          })),
         );
 
         setAccessYardOptions(
           companyRes.data.map((c) => ({
             value: String(c.id_company),
             label: c.company_name,
-          }))
+          })),
         );
 
         setNavMenuOptions(
           navMenuRes.data.map((n) => ({
             value: String(n.id_application),
             label: n.application_name,
-          }))
+          })),
+        );
+
+        setCategoryOptions(
+          categoryRes.data.map((c) => ({
+            value: String(c.id),
+            label: c.name,
+            access_yard_required: c.access_yard_required,
+            application_required: c.application_required,
+          })),
         );
 
         if (id) {
@@ -149,15 +160,13 @@ function EditRequest() {
 
           setFormData((prev) => ({
             ...prev,
+            requestor_name: data.requestor_name || "-",
             created_by_name: data.created_by_name,
             full_name: data.full_name || "",
             badge_no: data.badge_no || "",
             email: data.email || "",
             request_reason: data.request_reason || "",
             remarks: data.remarks || "",
-            approval_hod_by: data.approval_hod_by?.id_user
-              ? String(data.approval_hod_by.id_user)
-              : "",
             approval_hod_date_at: data.approval_hod_date_at || null,
             approval_lead_it_by_name:
               data.approval_lead_it_by?.full_name || "-",
@@ -175,7 +184,11 @@ function EditRequest() {
             position_name: data.position_name ?? data.position ?? "",
             request_status: data.request_status,
             company_name: data.company?.company_name || "",
-            category_account: String(data.category_account ?? ""),
+            category_account: data.category?.id
+              ? String(data.category.id)
+              : data.category_account
+                ? String(data.category_account)
+                : "",
             approval_hod_by: data.approval_hod_by?.id
               ? String(data.approval_hod_by.id)
               : "",
@@ -240,23 +253,21 @@ function EditRequest() {
 
     const newErrors = {};
 
-    if (
-      !formData.access_yard_company ||
-      formData.access_yard_company.length === 0
-    ) {
-      newErrors.access_yard_company = "Company Yard Access is required";
+    if (!formData.category_account) {
+      newErrors.category_account = "Category account is required";
     }
-
-    if (!formData.access_nav_menu || formData.access_nav_menu.length === 0) {
-      newErrors.access_nav_menu = "Application Access is required";
-    }
-
     if (!formData.approval_hod_by) {
       newErrors.approval_hod_by = "HOD must be selected";
     }
-
-    if (!formData.category_account) {
-      newErrors.category_account = "Category account is required";
+    if (yardRequired) {
+      if (!formData.access_yard_company?.length) {
+        newErrors.access_yard_company = "Company Yard Access is required";
+      }
+    }
+    if (appRequired) {
+      if (!formData.access_nav_menu?.length) {
+        newErrors.access_nav_menu = "Application Access is required";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -346,6 +357,13 @@ function EditRequest() {
     }
   };
 
+  const selectedCategory = categoryOptions.find(
+    (c) => c.value === formData.category_account,
+  );
+
+  const yardRequired = selectedCategory?.access_yard_required ?? false;
+  const appRequired = selectedCategory?.application_required ?? false;
+
   return (
     <AuthLayout sidebarList={requestorList}>
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
@@ -384,7 +402,9 @@ function EditRequest() {
                     Requestor <span className="text-red-500">*</span>
                   </label>
                   <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
-                    {formData?.created_by_name || "-"}
+                    {formData?.created_by_name ||
+                      formData?.requestor_name ||
+                      "-"}
                   </div>
                 </div>
               </div>
@@ -403,7 +423,7 @@ function EditRequest() {
                     required
                     label="Category Account"
                     placeholder="Select Category"
-                    data={CATEGORY_ACCOUNT_OPTIONS}
+                    data={categoryOptions}
                     value={formData.category_account}
                     onChange={(value) => {
                       handleChange("category_account", value);
@@ -513,7 +533,7 @@ function EditRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={yardRequired}
                     label="Company Yard Access"
                     placeholder="Select Company Yard"
                     data={accessYardOptions}
@@ -528,9 +548,9 @@ function EditRequest() {
                   />
 
                   <MultiSelect
-                    required
+                    required={appRequired}
                     label="Application Access"
-                    placeholder="Select Access"
+                    placeholder="Select Application Access"
                     data={navMenuOptions}
                     value={formData.access_nav_menu}
                     onChange={(val) => handleChange("access_nav_menu", val)}
@@ -608,7 +628,9 @@ function EditRequest() {
                       Requested By
                     </span>
                     <div className="text-sm font-bold text-gray-800 py-2 border-b border-gray-100">
-                      {formData?.created_by_name || "-"}
+                      {formData?.created_by_name ||
+                        formData?.requestor_name ||
+                        "-"}
                     </div>
                   </div>
 
@@ -645,10 +667,6 @@ function EditRequest() {
                       {formData.approval_lead_it_by_name || "-"}
                     </div>
                     <div className="text-[10px] text-gray-500 mt-1">
-                      {console.log(
-                        "Lead IT date:",
-                        formData.approval_lead_date_at
-                      )}
                       {formData.approval_lead_date_at
                         ? formatDate(formData.approval_lead_date_at, {
                             showTime: true,

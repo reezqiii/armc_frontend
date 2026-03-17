@@ -1,22 +1,22 @@
 import AuthLayout from "@/components/layout/authLayout";
 import Head from "next/head";
-import React, { useEffect, useState } from "react";
-import { Paper, Text, Grid } from "@mantine/core";
+import useUser from "@/store/useUser";
+import React from "react";
 
 export default function Index() {
+  const { user } = useUser();
+
   return (
     <AuthLayout>
       <Head>
-        <title>Home</title>
+        <title>Home - ARMC</title>
       </Head>
 
-      <div className="py-12">
-        <div className="max-w mx-auto sm:px-6 lg:px-8">
-          <div className="bg-white overflow-hidden shadow-lg border sm:rounded-lg">
-            <div className="p-6 text-gray-900 justify-center text-center">
-              Access Request Management Control
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-teal-600 mb-2">
+            Welcome, {user?.name}! 👋
+          </h1>
         </div>
       </div>
     </AuthLayout>

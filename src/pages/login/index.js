@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import useSwal from "@/hooks/useSwal";
 import {
   TextInput,
   PasswordInput,
@@ -17,9 +18,10 @@ import axios from "axios";
 import { useRouter } from "next/router";
 import useUser from "@/store/useUser";
 
-export default function LoginPage() {
+function LoginPage() {
   const router = useRouter();
   const { setUser } = useUser();
+  const { showAlert } = useSwal();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
@@ -58,7 +60,7 @@ export default function LoginPage() {
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_PORTAL}/api/auth/validate`,
+        `${process.env.NEXT_PUBLIC_API_PORTAL}/auth/validate`,
         values,
       );
 
@@ -73,25 +75,22 @@ export default function LoginPage() {
           permissions: res.data.user.permissions ?? [],
         });
 
-        Swal.fire({
-          icon: "success",
-          title: "Login Successful",
-          text: `Welcome back, ${res.data.user.full_name}!`,
-          confirmButtonText: "OK",
-          confirmButtonColor: "#1d4ed8",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            router.push("/dashboard/home");
-          }
-        });
+        router.push("/");
+        showAlert(
+          "Login Successful",
+          "success",
+          `Welcome back, ${res.data.user.full_name}!`,
+          "OK",
+        );
       }
     } catch (err) {
       console.error(err);
-      Swal.fire({
-        icon: "error",
-        title: "Login Failed",
-        text: err.response?.data?.message || "Invalid username or password",
-      });
+      showAlert(
+        "Login Failed",
+        "error",
+        err.response?.data?.message || "Invalid username or password",
+        "OK",
+      );
     }
   };
 
@@ -105,7 +104,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-200"
         >
-          <Title order={2} className="text-center text-gray-900 mb-6">
+          <Title order={2} className="text-center text-teal-500 mb-6">
             Sign In To Portal
           </Title>
 
@@ -131,9 +130,10 @@ export default function LoginPage() {
 
               <Group position="apart">
                 <Anchor
-                  href="/reset-password"
+                  component="button"
                   size="sm"
-                  className="text-blue-700 hover:underline"
+                  c="teal"
+                  onClick={() => router.push("/reset_password")}
                 >
                   Forgot Password?
                 </Anchor>
@@ -144,7 +144,7 @@ export default function LoginPage() {
                 radius="md"
                 size="md"
                 fullWidth
-                className="bg-blue-700 hover:bg-blue-800 text-white transition-colors"
+                color="teal"
               >
                 Sign In
               </Button>
@@ -155,7 +155,7 @@ export default function LoginPage() {
           {showInstallBanner && (
             <Text
               size="sm"
-              className="mt-4 text-center text-gray-600 border-t pt-3"
+              className="mt-4 text-center text-teal-600 border-t border-teal-200 pt-3"
             >
               You can install this app to your device for a faster experience.
             </Text>
@@ -164,7 +164,7 @@ export default function LoginPage() {
       </div>
 
       {/* RIGHT SIDE*/}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-900 items-center justify-center p-12 text-white">
+      <div className="hidden lg:flex lg:w-1/2 bg-teal-900 items-center justify-center p-12 text-white">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -175,7 +175,7 @@ export default function LoginPage() {
             order={1}
             className="text-6xl font-extrabold mb-6 leading-tight"
           >
-            Welcome <span className="text-blue-400">Back.</span>
+            Welcome <span className="text-teal-400">Back.</span>
           </Title>
 
           <Text
@@ -203,3 +203,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
+LoginPage.title = "Login";
+export default LoginPage;

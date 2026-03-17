@@ -37,8 +37,8 @@ export default function Sidebar({ className, sidebarList }) {
   return (
     <aside
       className={cn(
-        `bg-slate-800 h-full left-0 md:h-auto top-0 z-40 border-r-2 border-r-muted transition-[width]
-        ${sidebarCollapsed ? "md:w-0 w-0" : "md:w-64 w-80"}`,
+        `bg-teal-900 h-full left-0 md:h-auto top-0 z-40 border-r-2 border-r-muted transition-[width]
+    ${sidebarCollapsed ? "md:w-0 w-0" : "md:w-64 w-80"}`,
         className,
       )}
     >
@@ -56,7 +56,13 @@ export default function Sidebar({ className, sidebarList }) {
             childrenOffset={28}
             defaultOpened
             style={{ color: "white" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "black")}
+            styles={{
+              root: {
+                "&:hover": { backgroundColor: "#0f766e" },
+                "&[dataActive]": { backgroundColor: "#0d9488" },
+              },
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
           >
             {item.child &&
@@ -71,7 +77,13 @@ export default function Sidebar({ className, sidebarList }) {
                   active={isChildActive(child)}
                   childrenOffset={28}
                   style={{ color: "white" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "black")}
+                  styles={{
+                    root: {
+                      "&:hover": { backgroundColor: "#0f766e" },
+                      "&[dataActive]": { backgroundColor: "#0d9488" },
+                    },
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
                 />
               ))}

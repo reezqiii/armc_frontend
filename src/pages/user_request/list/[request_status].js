@@ -45,7 +45,6 @@ import { formatDate } from "@/lib/dateFormat";
 import { getRequestActionPermission } from "@/lib/requestStatus";
 import { getRequestStatus } from "@/lib/requestStatusList";
 import Head from "next/head";
-import Link from "next/link";
 
 const STATUS_CONFIG = {
   all: {
@@ -151,29 +150,28 @@ export default function RequestListDynamic({ request_status }) {
     return false;
   }, [config, data, user.id]);
 
-  const canExport = useMemo(() => {
-    return hasPermission(3);
-  }, []);
+  const canExport = hasPermission(3);
 
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
 
+    const isSpecialUser = hasPermission(2);
+
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
 
-      ...(config.id === 0
-        ? {
-            status_active: 1,
-            requestor_id: user.id,
-            type: 0, // INTERNAL
-          }
-        : {
-            type: 1, // PUBLIC
-          }),
+      ...(config.id === 0 && {
+        status_active: 1,
+        ...(!isSpecialUser && { requestor_id: user.id }),
+      }),
     };
 
     columnFilters.forEach((filter) => {
-      if (filter.value !== null && filter.value !== "") {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
         searchQuery[filter.id] = filter.value;
       }
     });
@@ -233,7 +231,6 @@ export default function RequestListDynamic({ request_status }) {
           },
         );
 
-        // Hapus item dari data
         setData((prev) => prev.filter((item) => item.id_request !== id));
 
         Swal.fire("Success", "Request canceled", "success");
@@ -253,7 +250,6 @@ export default function RequestListDynamic({ request_status }) {
       return;
     }
 
-    // Tentukan judul Swal sesuai action
     let title = "";
     if (action === "approve") title = `Approve ${ids.length} request(s)?`;
     else if (action === "reject") title = `Reject ${ids.length} request(s)?`;
@@ -290,7 +286,6 @@ export default function RequestListDynamic({ request_status }) {
       remarks = value;
     }
 
-    // Encrypt semua IDs
     let encryptedIds;
     try {
       encryptedIds = ids.map((id) => encrypt(String(id)));
@@ -299,7 +294,6 @@ export default function RequestListDynamic({ request_status }) {
       return;
     }
 
-    // Tentukan endpoint
     let endpoint = "";
     if (action === "submit") endpoint = "/requests/submit-to-hod/bulk";
     else if (action === "approve" || action === "reject")
@@ -348,10 +342,29 @@ export default function RequestListDynamic({ request_status }) {
         didOpen: () => Swal.showLoading(),
       });
 
+      const activeFilters = {
+        ...(config.id !== null && { request_status: config.id }),
+      };
+
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          activeFilters[filter.id] = filter.value;
+        }
+      });
+
+      const sort_by = sorting.length > 0 ? sorting[0].id : null;
+      const sort_order =
+        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
+
       const response = await axios.get(`${API_URL}/excel/export-list`, {
         params: {
-          search: JSON.stringify({ request_status: config.id }),
-          status: request_status,
+          search: JSON.stringify(activeFilters),
+          sort_by,
+          sort_order,
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
@@ -368,7 +381,12 @@ export default function RequestListDynamic({ request_status }) {
       link.click();
       Swal.close();
     } catch (err) {
-      Swal.fire("Error", "Export failed", "error");
+      console.error("Export error:", err.response?.data || err.message);
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Export failed",
+        "error",
+      );
     }
   };
 
@@ -569,27 +587,19 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue(),
       },
       {
-        accessorFn: (row) => row.type,
+        accessorFn: (row) => row.type_name,
         id: "type",
         header: "Type",
         enableColumnFilter: true,
-        enableSorting: true,
-        cell: ({ row }) => (row.original.type === 1 ? "External" : "Internal"),
+        cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.category_account,
-        id: "category_account",
+        accessorFn: (row) => row.category_account_name,
+        id: "category_account_name",
         header: "Category Account",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => {
-          const CATEGORY_LABELS = {
-            0: "Create New Account",
-            1: "Request Permission",
-            2: "Request Outside Access",
-          };
-          return CATEGORY_LABELS[row.original.category_account] || "-";
-        },
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.request_status,
@@ -679,11 +689,8 @@ export default function RequestListDynamic({ request_status }) {
 
     if (config?.actions.includes("admin_status")) {
       cols.push({
-        accessorFn: (row) => row.request_admin,
         id: "request_admin",
         header: "IT Action",
-        enableColumnFilter: false,
-        enableSorting: true,
         cell: ({ row }) => (
           <AdminStatusCell
             value={row.original.request_admin}
@@ -714,39 +721,31 @@ export default function RequestListDynamic({ request_status }) {
 
         return (
           <SimpleGrid cols={2} spacing={6}>
-            <Link
-              href={`/user_request/detail_req/${encryptedId}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              fullWidth
+              size="xs"
+              color="blue"
+              leftSection={<IconInfoCircle size={14} />}
+              onClick={() =>
+                router.push(`/user_request/detail_req/${encryptedId}`)
+              }
             >
-              <Button
-                component="a"
-                fullWidth
-                size="xs"
-                color="blue"
-                leftSection={<IconInfoCircle size={14} />}
-              >
-                Details
-              </Button>
-            </Link>
+              Details
+            </Button>
 
             {/* UPDATE */}
             {canEditCancel && (
-              <Link
-                href={`/user_request/edit_req/${encryptedId}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Button
+                fullWidth
+                leftSection={<IconEdit size={16} />}
+                color="yellow"
+                size="xs"
+                onClick={() =>
+                  router.push(`/user_request/edit_req/${encryptedId}`)
+                }
               >
-                <Button
-                  component="a"
-                  fullWidth
-                  leftSection={<IconEdit size={16} />}
-                  color="yellow"
-                  size="xs"
-                >
-                  Update
-                </Button>
-              </Link>
+                Update
+              </Button>
             )}
 
             {/* CANCEL */}
@@ -762,21 +761,15 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            <Link
-              href={`${API_URL}/requests/${encryptedId}/generate-pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              fullWidth
+              leftSection={<IconFileTypePdf size={16} />}
+              color="gray"
+              size="xs"
+              onClick={() => handleDownloadPdf(request.id_request)}
             >
-              <Button
-                component="a"
-                fullWidth
-                leftSection={<IconFileTypePdf size={16} />}
-                color="gray"
-                size="xs"
-              >
-                PDF
-              </Button>
-            </Link>
+              PDF
+            </Button>
 
             {/* RETURN */}
             {canReturn && (
@@ -796,7 +789,18 @@ export default function RequestListDynamic({ request_status }) {
     });
 
     return cols;
-  }, [config?.actions, pagination.pageIndex, pagination.pageSize, API_URL, user.token, encrypt, handleCancel, handleReturn, setData]);
+  }, [
+    config?.actions,
+    pagination.pageIndex,
+    pagination.pageSize,
+    API_URL,
+    user.token,
+    encrypt,
+    router,
+    handleCancel,
+    handleDownloadPdf,
+    handleReturn,
+  ]);
 
   const table = useReactTable({
     data,
@@ -819,6 +823,14 @@ export default function RequestListDynamic({ request_status }) {
     manualFiltering: true,
     manualPagination: true,
   });
+
+  useEffect(() => {
+    table.resetColumnFilters();
+    table.setPageIndex(0);
+    setRowSelection({});
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request_status]);
 
   useEffect(() => {
     getData();

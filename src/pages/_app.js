@@ -7,6 +7,7 @@ import Head from "next/head";
 import "@/styles/globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
+import "@mantine/charts/styles.css";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
@@ -14,20 +15,24 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+      console.log("pathname:", router.pathname);
+  console.log("asPath:", router.asPath);
     const token = Cookies.get("token");
-    const userInfo = Cookies.get("user_info"); // Ambil string user dari cookie
+    const userInfo = Cookies.get("user_info");
 
-    if (!token && router.pathname !== "/login") {
+    if (
+      !token &&
+      router.pathname !== "/login" &&
+      !router.pathname.startsWith("/reset_password")
+    ) {
       router.push("/login");
       return;
     }
 
     if (token && userInfo) {
       try {
-        const parsedUser = JSON.parse(userInfo); // Parse kembali menjadi objek
+        const parsedUser = JSON.parse(userInfo);
 
-        // SYNC KEMBALI KE ZUSTAND
-        // Gunakan properti yang sesuai agar 'name' di Header terisi
         setUser({
           id: parsedUser.id,
           name: parsedUser.full_name || parsedUser.name,
@@ -41,7 +46,7 @@ export default function App({ Component, pageProps }) {
 
     setLoading(false);
   }, [router, setUser]);
-  
+
   return (
     <MantineProvider>
       <Head>

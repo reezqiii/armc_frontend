@@ -37,6 +37,21 @@ body {
   opacity: 1;
 }
 
+/* Sidebar NavLink */
+.mantine-NavLink-root[data-active] {
+  background-color: #0d9488 !important;
+  color: white !important;
+}
+
+.mantine-NavLink-root[data-active]:hover {
+  background-color: #0f766e !important;
+}
+
+.mantine-NavLink-root:hover {
+  background-color: #0f766e !important;
+  color: white !important;
+}
+
 @media (hover: hover) {
   .resizer {
     opacity: 0;
@@ -65,5 +80,21 @@ body {
 
   .mantine-MultiSelect-item {
     @apply text-sm hover:bg-blue-50 cursor-pointer px-2 py-1 rounded;
+  }
+
+  /* TextInput */
+  .mantine-TextInput-input:focus {
+    border-color: #14b8a6 !important;
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
+  }
+
+  .mantine-PasswordInput-input:focus-within {
+    border-color: #14b8a6 !important;
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
+  }
+
+  .mantine-Button-root:focus-visible {
+    outline: 2px solid #14b8a6 !important;
+    outline-offset: 2px !important;
   }
 }

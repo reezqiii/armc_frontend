@@ -1,9 +1,9 @@
 import {
-  IconUserShield,
-  IconUserCheck,
-  IconUserX,
-  IconLock,
   IconUserCog,
+  IconBuildingSkyscraper,
+  IconBriefcase,
+  IconShield,
+  IconKey,
 } from "@tabler/icons-react";
 
 const userList = [
@@ -13,23 +13,35 @@ const userList = [
     icon: <IconUserCog size={18} />,
     child: [
       {
-        title: "Users List",
-        href: "/user_management/user_list/active",
-        active: "Active Users List",
-        icon: <IconUserCheck size={18} />,
+        title: "Account User List",
+        href: "/user_management/user_list/list",
+        active: "User List",
+        icon: <IconUserCog size={18} />,
       },
-      // {
-      //   title: "Inactive Users",
-      //   href: "/user_management/user_list/inactive",
-      //   active: "Inactive Users List",
-      //   icon: <IconUserX size={18} />,
-      // },
-      // {
-      //   title: "Locked Users",
-      //   href: "/user_management/user_list/locked",
-      //   active: "Locked Users List",
-      //   icon: <IconLock size={18} />,
-      // },
+      {
+        title: "Department List",
+        href: "/user_management/department/list",
+        active: "Department",
+        icon: <IconBuildingSkyscraper size={18} />,
+      },
+      {
+        title: "Project List",
+        href: "/user_management/project/list",
+        active: "Project",
+        icon: <IconBriefcase size={18} />,
+      },
+      {
+        title: "Role List",
+        href: "/user_management/role/list",
+        active: "Role",
+        icon: <IconShield size={18} />,
+      },
+      {
+        title: "Permission list",
+        href: "/user_management/permission/list",
+        active: "Permission",
+        icon: <IconKey size={18} />,
+      },
     ],
   },
 ];

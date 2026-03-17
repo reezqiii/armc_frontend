@@ -6,16 +6,27 @@ const useUser = create(
     (set) => ({
       user: {
         id: 0,
-        name: null, // Properti ini yang dipanggil di Header {user.name}
+        name: null,
         token: null,
         permissions: [],
       },
       setUser: (value) => {
+        if (!value) {
+          set({
+            user: {
+              id: 0,
+              name: null,
+              token: null,
+              permissions: [],
+            },
+          });
+          return;
+        }
+
         set({
           user: {
             id: value.id,
-            // AMBIL DARI full_name (Sesuai output Backend kamu)
-            name: value.full_name || value.name, 
+            name: value.full_name || value.name,
             token: value.token,
             permissions: value.permissions ?? [],
           },
@@ -23,7 +34,16 @@ const useUser = create(
       },
     }),
     {
-      name: "user", 
+      name: "user",
+      storage: {
+        getItem: (name) => {
+          const value = localStorage.getItem(name);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: (name, value) =>
+          localStorage.setItem(name, JSON.stringify(value)),
+        removeItem: (name) => localStorage.removeItem(name),
+      },
     }
   )
 );
