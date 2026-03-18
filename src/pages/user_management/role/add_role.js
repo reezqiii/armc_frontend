@@ -36,7 +36,7 @@ function AddRole() {
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       showAlert("Success", "success", "Role successfully added.", "OK");
-      router.push("/user_management/role");
+      router.push("/user_management/role/list");
     } catch {
       showAlert("Error", "error", "Failed to add role.", "OK");
     } finally {

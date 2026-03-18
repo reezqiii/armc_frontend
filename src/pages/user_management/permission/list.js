@@ -32,16 +32,47 @@ export default function PermissionList() {
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
+
+    const searchQuery = {};
+    columnFilters.forEach((filter) => {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
+    });
+
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
+        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+        : "";
+
     try {
-      const { data } = await axios.get(`${API_URL}/portal-permission`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setData(data ?? []);
+      const { data } = await axios.post(
+        `${API_URL}/portal-permission/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+      setData(data.data);
+      setTotalPages(data.total_pages);
     } catch (err) {
       console.error("Error fetching permission:", err);
-      setData([]);
     }
-  }, [user.token, API_URL]);
+  }, [
+    user.token,
+    API_URL,
+    columnFilters,
+    sorting,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -93,14 +124,6 @@ export default function PermissionList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.created_date,
-        id: "created_date",
-        header: "Created Date",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: ({ row }) => formatDate(row.original.created_date),
-      },
-      {
         id: "action",
         header: "Action",
         size: 150,
@@ -146,6 +169,10 @@ export default function PermissionList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true, 
+    manualSorting: true, 
+    manualFiltering: true, 
+    pageCount: totalPages,
   });
 
   return (
@@ -167,7 +194,7 @@ export default function PermissionList() {
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/permission/add`)}
+                onClick={() => router.push(`/user_management/permission/add_permission`)}
               >
                 Add Permission
               </Button>

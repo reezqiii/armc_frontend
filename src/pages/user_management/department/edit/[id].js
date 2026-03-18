@@ -26,7 +26,7 @@ function EditDepartment() {
         const { data } = await axios.get(`${API_URL}/portal-department/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        setName(data.name_department ?? "");
+        setName(data.name_of_department ?? "");
       } catch {
         showAlert("Error", "error", "Failed to fetch department.", "OK");
       }
@@ -51,11 +51,11 @@ function EditDepartment() {
       setLoading(true);
       await axios.patch(
         `${API_URL}/portal-department/${id}`,
-        { name_department: name },
+        { name_of_department: name },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       showAlert("Success", "success", "Department successfully updated.", "OK");
-      router.push("/department");
+      router.push("/user_management/department/list");
     } catch {
       showAlert("Error", "error", "Failed to update department.", "OK");
     } finally {

@@ -4,6 +4,7 @@ import {
   IconBriefcase,
   IconShield,
   IconKey,
+  IconLayoutDashboard,
 } from "@tabler/icons-react";
 
 const userList = [
@@ -12,6 +13,12 @@ const userList = [
     active: "User Management",
     icon: <IconUserCog size={18} />,
     child: [
+      {
+        title: "Dashboard",
+        href: "/user_management/dashboard",
+        active: "Dashboard",
+        icon: <IconLayoutDashboard size={18} />,
+      },
       {
         title: "Account User List",
         href: "/user_management/user_list/list",
@@ -37,7 +44,7 @@ const userList = [
         icon: <IconShield size={18} />,
       },
       {
-        title: "Permission list",
+        title: "Permission List",
         href: "/user_management/permission/list",
         active: "Permission",
         icon: <IconKey size={18} />,

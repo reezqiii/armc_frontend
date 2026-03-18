@@ -46,7 +46,7 @@ export default function Navigation() {
     },
     {
       name: "User Management",
-      url: "/user_management/user_list/list",
+      url: "/user_management/dashboard",
       icon: <IconUserCog size={20} />,
       // permission: 2,
     },

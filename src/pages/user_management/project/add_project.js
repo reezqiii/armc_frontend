@@ -36,7 +36,7 @@ function AddProject() {
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       showAlert("Success", "success", "Project successfully added.", "OK");
-      router.push("/user_management/project");
+      router.push("/user_management/project/list");
     } catch {
       showAlert("Error", "error", "Failed to add project.", "OK");
     } finally {

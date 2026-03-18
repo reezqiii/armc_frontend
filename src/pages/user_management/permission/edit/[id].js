@@ -19,6 +19,7 @@ function EditPermission() {
   const [formData, setFormData] = useState({
     permission_name: "",
     index_key: "",
+    permission_group: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -36,13 +37,14 @@ function EditPermission() {
         setFormData({
           permission_name: data.permission_name ?? "",
           index_key: data.index_key ?? "",
+          permission_group: data.permission_group ?? "",
         });
       } catch {
         showAlert("Error", "error", "Failed to fetch permission.", "OK");
       }
     };
     fetchPermission();
-  }, [id, API_URL, user.token]);
+  }, [id, API_URL, user.token, showAlert]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,6 +95,15 @@ function EditPermission() {
                 value={formData.permission_name}
                 onChange={(e) =>
                   handleChange("permission_name", e.target.value)
+                }
+                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+              />
+              <TextInput
+                label="Permission Group"
+                placeholder="e.g. Administrator, General, Equipment"
+                value={formData.permission_group}
+                onChange={(e) =>
+                  handleChange("permission_group", e.target.value)
                 }
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />

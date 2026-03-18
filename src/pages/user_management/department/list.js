@@ -26,23 +26,54 @@ export default function DepartmentList() {
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([
-    { id: "name_department", desc: false },
+    { id: "name_of_department", desc: false },
   ]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
+
+    const searchQuery = {};
+    columnFilters.forEach((filter) => {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
+    });
+
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
+        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+        : "";
+
     try {
-      const { data } = await axios.get(`${API_URL}/portal-department`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setData(data ?? []);
+      const { data } = await axios.post(
+        `${API_URL}/portal-department/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+      setData(data.data);
+      setTotalPages(data.total_pages);
     } catch (err) {
       console.error("Error fetching department:", err);
-      setData([]);
     }
-  }, [user.token, API_URL]);
+  }, [
+    user.token,
+    API_URL,
+    columnFilters,
+    sorting,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -75,24 +106,17 @@ export default function DepartmentList() {
       {
         id: "no",
         header: "No",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
       },
       {
-        accessorFn: (row) => row.name_department,
-        id: "name_department",
+        accessorFn: (row) => row.name_of_department,
+        id: "name_of_department",
         header: "Department Name",
         enableColumnFilter: true,
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
-      },
-      {
-        accessorFn: (row) => row.created_date,
-        id: "created_date",
-        header: "Created Date",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: ({ row }) => formatDate(row.original.created_date),
       },
       {
         id: "action",
@@ -107,7 +131,9 @@ export default function DepartmentList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() =>
-                  router.push(`/department/edit/${dept.id_department}`)
+                  router.push(
+                    `/user_management/department/edit/${dept.id_department}`,
+                  )
                 }
               >
                 Edit
@@ -138,6 +164,10 @@ export default function DepartmentList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    pageCount: totalPages,
   });
 
   return (
@@ -159,7 +189,9 @@ export default function DepartmentList() {
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/department/add`)}
+                onClick={() =>
+                  router.push(`/user_management/department/add_department`)
+                }
               >
                 Add Department
               </Button>

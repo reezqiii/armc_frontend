@@ -52,7 +52,7 @@ function EditProject() {
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       showAlert("Success", "success", "Project successfully updated.", "OK");
-      router.push("/user_management/project");
+      router.push("/user_management/project/list");
     } catch {
       showAlert("Error", "error", "Failed to update project.", "OK");
     } finally {

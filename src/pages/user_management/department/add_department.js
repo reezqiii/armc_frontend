@@ -35,11 +35,11 @@ function AddDepartment() {
       setLoading(true);
       await axios.post(
         `${API_URL}/portal-department`,
-        { name_department: name },
+        { name_of_department: name },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       showAlert("Success", "success", "Department successfully added.", "OK");
-      router.push("/department");
+      router.push("/user_management/department/list");
     } catch {
       showAlert("Error", "error", "Failed to add department.", "OK");
     } finally {

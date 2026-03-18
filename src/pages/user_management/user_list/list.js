@@ -169,6 +169,30 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
+        accessorFn: (row) => row.project_name,
+        id: "project_name",
+        header: "Project",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.department_name,
+        id: "department_name",
+        header: "Department",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.company_name,
+        id: "company_name",
+        header: "Company",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
         accessorFn: (row) => row.role_name,
         id: "role_name",
         header: "Role",
@@ -193,7 +217,6 @@ export default function UserList() {
             if (!result.isConfirmed) return;
 
             try {
-              // ← Hapus Swal.fire loading, tidak perlu
               const response = await axios.post(
                 `${API_URL}/user/reset-password`,
                 { id_user: userRow.id_user },
@@ -203,7 +226,7 @@ export default function UserList() {
               showAlert(
                 "Success!",
                 "success",
-                `Password for ${userRow.full_name} has been reset. New password: ${response.data.new_password}`,
+                `Password for ${userRow.full_name} has been reset. Reset link has been sent to their email.`,
                 "OK",
               );
             } catch (err) {
@@ -215,7 +238,7 @@ export default function UserList() {
               );
             }
           };
-          
+
           return (
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
@@ -236,7 +259,7 @@ export default function UserList() {
                 leftSection={<IconKey size={14} />}
                 onClick={handleResetPassword}
               >
-                Reset Passw
+                Reset Password
               </Button>
             </Group>
           );

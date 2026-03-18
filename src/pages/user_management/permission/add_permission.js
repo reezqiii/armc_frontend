@@ -18,6 +18,7 @@ function AddPermission() {
   const [formData, setFormData] = useState({
     permission_name: "",
     index_key: "",
+    permission_group: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -80,9 +81,18 @@ function AddPermission() {
               <TextInput
                 required
                 label="Index Key"
-                placeholder="e.g. user.create"
+                placeholder="e.g. 1, 2, 3"
                 value={formData.index_key}
                 onChange={(e) => handleChange("index_key", e.target.value)}
+                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+              />
+              <TextInput
+                label="Permission Group"
+                placeholder="e.g. Administrator, General, Equipment"
+                value={formData.permission_group}
+                onChange={(e) =>
+                  handleChange("permission_group", e.target.value)
+                }
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
             </div>

@@ -15,6 +15,8 @@ const useSwal = () => {
       confirmButtonText: confirmButtonText || "OK",
       showCancelButton: showCancel,
       cancelButtonText: "Cancel",
+      showClass: { popup: "" },
+      hideClass: { popup: "" },
     });
   };
 
@@ -26,8 +28,10 @@ const useSwal = () => {
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: confirmButtonText, // ← sekarang dinamis
+      confirmButtonText: confirmButtonText,
       cancelButtonText: "Cancel",
+      showClass: { popup: "" },
+      hideClass: { popup: "" },
     });
   };
 

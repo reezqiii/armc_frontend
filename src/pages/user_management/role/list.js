@@ -23,7 +23,7 @@ export default function RoleList() {
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
   const [data, setData] = useState([]);
-  const [totalPages, setTotalPages] = useState(1); 
+  const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([{ id: "role_name", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
@@ -71,7 +71,8 @@ export default function RoleList() {
       {
         id: "no",
         header: "No",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
       },
       {
@@ -81,14 +82,6 @@ export default function RoleList() {
         enableColumnFilter: true,
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
-      },
-      {
-        accessorFn: (row) => row.created_date,
-        id: "created_date",
-        header: "Created Date",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: ({ row }) => formatDate(row.original.created_date),
       },
       {
         id: "action",
@@ -155,7 +148,7 @@ export default function RoleList() {
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/role/add`)}
+                onClick={() => router.push(`/user_management/role/add_role`)}
               >
                 Add Role
               </Button>

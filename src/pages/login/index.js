@@ -107,6 +107,9 @@ function LoginPage() {
           <Title order={2} className="text-center text-teal-500 mb-6">
             Sign In To Portal
           </Title>
+          <Text size="sm" className="text-center text-gray-500 mb-6">
+            Enter your username and password to access your account
+          </Text>
 
           <form onSubmit={form.onSubmit(handleSubmit)}>
             <Stack spacing="md">
@@ -130,7 +133,6 @@ function LoginPage() {
 
               <Group position="apart">
                 <Anchor
-                  component="button"
                   size="sm"
                   c="teal"
                   onClick={() => router.push("/reset_password")}
