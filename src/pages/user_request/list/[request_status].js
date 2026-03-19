@@ -6,22 +6,12 @@ import useUser from "@/store/useUser";
 import { useRouter } from "next/router";
 import useEncrypt from "@/hooks/useEncrypt";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Paper,
-  Badge,
-  Button,
-  Group,
-  Text,
-  Checkbox,
-  SimpleGrid,
-} from "@mantine/core";
+import { Paper, Badge, Button, Group, Text, SimpleGrid } from "@mantine/core";
 import {
   IconFileText,
   IconClock,
-  IconUserExclamation,
   IconUserCog,
   IconCircleCheck,
-  IconRefresh,
   IconX,
   IconFileSpreadsheet,
   IconInfoCircle,
@@ -38,12 +28,10 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-import { hasPermission } from "@/lib/permissionHelper";
-import AdminStatusCell from "@/data/status/AdminStatusCell";
+import usePermission from "@/hooks/usePermission";
 import RejectTimelineModal from "@/components/request/RejectTimelineModal";
-import { formatDate } from "@/lib/dateFormat";
-import { getRequestActionPermission } from "@/lib/requestStatus";
 import { getRequestStatus } from "@/lib/requestStatusList";
+import { formatDate } from "@/lib/dateFormat";
 import Head from "next/head";
 
 const STATUS_CONFIG = {
@@ -52,7 +40,7 @@ const STATUS_CONFIG = {
     label: "All User Request",
     icon: IconListLetters,
     color: "blue",
-    actions: ["detail", "admin_status"],
+    actions: ["detail"],
   },
   draft: {
     id: 0,
@@ -66,46 +54,25 @@ const STATUS_CONFIG = {
     label: "Awaiting HOD Approval",
     icon: IconClock,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
-  },
-  "awaiting-lead-it-approval": {
-    id: 3,
-    label: "Awaiting Lead IT Approval",
-    icon: IconUserExclamation,
-    color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
+    actions: ["detail", "update", "cancel", "approve_bulk"],
   },
   "awaiting-it-manager-approval": {
     id: 5,
     label: "Awaiting IT Manager Approval",
     icon: IconUserCog,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk", "admin_status"],
+    actions: ["detail", "update", "cancel", "approve_bulk"],
   },
   completed: {
     id: 7,
     label: "Completed",
     icon: IconCircleCheck,
     color: "green",
-    actions: ["detail", "admin_status"],
-  },
-  returned: {
-    id: 8,
-    label: "Returned",
-    icon: IconRefresh,
-    color: "orange",
-    actions: ["detail", "update", "cancel"],
+    actions: ["detail"],
   },
   "rejected-hod-approval": {
     id: 2,
     label: "Rejected by HOD Approval",
-    icon: IconX,
-    color: "red",
-    actions: ["detail", "view_reason"],
-  },
-  "rejected-lead-it-approval": {
-    id: 4,
-    label: "Rejected by Lead IT Approval",
     icon: IconX,
     color: "red",
     actions: ["detail", "view_reason"],
@@ -124,6 +91,7 @@ export default function RequestListDynamic({ request_status }) {
   const config = STATUS_CONFIG[request_status];
 
   const { user } = useUser();
+  const { can } = usePermission();
   const API = useApi();
   const API_URL = API.API_URL;
   const { encrypt } = useEncrypt();
@@ -138,31 +106,24 @@ export default function RequestListDynamic({ request_status }) {
 
   const canApprove = useMemo(() => {
     if (!config || !user?.id) return false;
-
-    if (config.id === 1) {
+    if (config.id === 1)
       return data.some((item) => item.approval_hod_by?.id === user.id);
-    }
-
-    if (config.id === 3 && hasPermission(0)) return true;
-
-    if (config.id === 5 && hasPermission(1)) return true;
-
+    if (config.id === 5 && can("request.it_approval")) return true;
     return false;
   }, [config, data, user.id]);
 
-  const canExport = hasPermission(3);
+  const canExport = can("request.export");
+  const isAdminOrIT = can("request.view_all");
 
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
-
-    const isSpecialUser = hasPermission(2);
-
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
-
+      // Jika bukan admin/IT, filter berdasarkan dept_id user yang login
+      ...(!isAdminOrIT && { dept_id: user.department }),
       ...(config.id === 0 && {
         status_active: 1,
-        ...(!isSpecialUser && { requestor_id: user.id }),
+        ...(!isAdminOrIT && { requestor_id: user.id }),
       }),
     };
 
@@ -192,7 +153,6 @@ export default function RequestListDynamic({ request_status }) {
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-
       setData(data.data);
       setTotalPages(data.total_pages);
     } catch (err) {
@@ -219,20 +179,15 @@ export default function RequestListDynamic({ request_status }) {
         confirmButtonColor: "#d33",
         confirmButtonText: "Yes, cancel it!",
       });
-
       if (!result.isConfirmed) return;
 
       try {
         await axios.put(
           `${API_URL}/requests/cancel/${encrypt(String(id))}`,
           {},
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          },
+          { headers: { Authorization: `Bearer ${user.token}` } },
         );
-
         setData((prev) => prev.filter((item) => item.id_request !== id));
-
         Swal.fire("Success", "Request canceled", "success");
       } catch (err) {
         Swal.fire("Error", "Failed to cancel", "error");
@@ -271,7 +226,6 @@ export default function RequestListDynamic({ request_status }) {
               : "Yes",
       cancelButtonText: "No, cancel",
     });
-
     if (!confirm.isConfirmed) return;
 
     let remarks = "";
@@ -300,21 +254,13 @@ export default function RequestListDynamic({ request_status }) {
       endpoint =
         config.id === 1
           ? "/requests/hod-approval/bulk"
-          : config.id === 3
-            ? "/requests/lead-it-approval/bulk"
-            : "/requests/it-approval/bulk";
+          : "/requests/it-approval/bulk";
 
     try {
       await axios.put(
         `${API_URL}${endpoint}`,
-        {
-          encryptedIds,
-          action,
-          remarks,
-        },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        },
+        { encryptedIds, action, remarks },
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
       Swal.fire("Success", "Requests processed", "success");
       setRowSelection({});
@@ -334,7 +280,6 @@ export default function RequestListDynamic({ request_status }) {
       );
       return;
     }
-
     try {
       Swal.fire({
         title: "Preparing File...",
@@ -345,7 +290,6 @@ export default function RequestListDynamic({ request_status }) {
       const activeFilters = {
         ...(config.id !== null && { request_status: config.id }),
       };
-
       columnFilters.forEach((filter) => {
         if (
           filter.value !== undefined &&
@@ -361,11 +305,7 @@ export default function RequestListDynamic({ request_status }) {
         sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
 
       const response = await axios.get(`${API_URL}/excel/export-list`, {
-        params: {
-          search: JSON.stringify(activeFilters),
-          sort_by,
-          sort_order,
-        },
+        params: { search: JSON.stringify(activeFilters), sort_by, sort_order },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
       });
@@ -398,9 +338,7 @@ export default function RequestListDynamic({ request_status }) {
           allowOutsideClick: false,
           didOpen: () => Swal.showLoading(),
         });
-
         const encryptedId = encrypt(String(id));
-
         const response = await axios.get(
           `${API_URL}/requests/${encryptedId}/generate-pdf`,
           {
@@ -408,7 +346,6 @@ export default function RequestListDynamic({ request_status }) {
             responseType: "blob",
           },
         );
-
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement("a");
         link.href = url;
@@ -418,7 +355,6 @@ export default function RequestListDynamic({ request_status }) {
         );
         document.body.appendChild(link);
         link.click();
-
         Swal.close();
       } catch (err) {
         console.error(err);
@@ -428,48 +364,9 @@ export default function RequestListDynamic({ request_status }) {
     [API_URL, encrypt, user.token],
   );
 
-  const handleReturn = useCallback(
-    (id) => {
-      Swal.fire({
-        title: "Return for Revision?",
-        text: "This request will be returned to the requestor for revision.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Return",
-      }).then(async (result) => {
-        if (!result.isConfirmed) return;
-
-        try {
-          const encryptedId = encrypt(String(id));
-
-          const res = await axios.post(
-            `${API_URL}/requests/${encryptedId}/return`,
-            {},
-            { headers: { Authorization: `Bearer ${user.token}` } },
-          );
-
-          Swal.fire(
-            "Success",
-            "The request has been returned for revision.",
-            "success",
-          );
-
-          getData();
-        } catch (err) {
-          console.error("Axios Error:", err);
-          Swal.fire(
-            "Error",
-            err.response?.data?.message || "An error occurred.",
-            "error",
-          );
-        }
-      });
-    },
-    [API_URL, encrypt, user.token, getData],
-  );
-
   const columns = useMemo(() => {
     const cols = [];
+
     if (config?.actions.some((a) => a.includes("bulk"))) {
       cols.push({
         id: "select",
@@ -523,12 +420,12 @@ export default function RequestListDynamic({ request_status }) {
         cell: ({ row }) => formatDate(row.original.created_date),
       },
       {
-        accessorFn: (row) => row.requestor_name,
-        id: "requestor_name",
+        accessorFn: (row) => row.created_by_name,
+        id: "created_by_name",
         header: "Requestor",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.badge_no,
@@ -536,7 +433,7 @@ export default function RequestListDynamic({ request_status }) {
         header: "Badge ID",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.full_name,
@@ -544,7 +441,7 @@ export default function RequestListDynamic({ request_status }) {
         header: "Full Name",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.department_name,
@@ -552,15 +449,7 @@ export default function RequestListDynamic({ request_status }) {
         header: "Department",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
-      },
-      {
-        accessorFn: (row) => row.position_name,
-        id: "position_name",
-        header: "Position",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.project_name,
@@ -568,7 +457,7 @@ export default function RequestListDynamic({ request_status }) {
         header: "Project",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.company_name,
@@ -576,7 +465,7 @@ export default function RequestListDynamic({ request_status }) {
         header: "Company",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.email,
@@ -584,13 +473,6 @@ export default function RequestListDynamic({ request_status }) {
         header: "Email",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue(),
-      },
-      {
-        accessorFn: (row) => row.type_name,
-        id: "type",
-        header: "Type",
-        enableColumnFilter: true,
         cell: (info) => info.getValue() || "-",
       },
       {
@@ -609,7 +491,6 @@ export default function RequestListDynamic({ request_status }) {
         enableSorting: true,
         cell: ({ row }) => {
           const rawStatus = row.original.request_status;
-
           const displayStatus =
             rawStatus === 8 && row.original.previous_status !== null
               ? row.original.previous_status
@@ -618,7 +499,6 @@ export default function RequestListDynamic({ request_status }) {
           const status = getRequestStatus(displayStatus);
 
           let rejectField = null;
-
           if (displayStatus === 2) {
             rejectField = {
               by: row.original.approval_hod_by?.full_name,
@@ -626,15 +506,6 @@ export default function RequestListDynamic({ request_status }) {
               reason: row.original.rejected_hod_remarks,
             };
           }
-
-          if (displayStatus === 4) {
-            rejectField = {
-              by: row.original.approval_lead_it_by?.full_name,
-              at: row.original.approval_lead_date_at,
-              reason: row.original.rejected_lead_remarks,
-            };
-          }
-
           if (displayStatus === 6) {
             rejectField = {
               by: row.original.approval_it_hod_by?.full_name,
@@ -645,7 +516,6 @@ export default function RequestListDynamic({ request_status }) {
 
           return (
             <div className="flex flex-col items-center justify-center gap-1 w-full">
-              {/* STATUS BADGE */}
               <Badge
                 radius="sm"
                 px="sm"
@@ -661,8 +531,6 @@ export default function RequestListDynamic({ request_status }) {
               >
                 {status.label}
               </Badge>
-
-              {/* VIEW REASON */}
               {rejectField && (
                 <Button
                   size="compact-xs"
@@ -687,39 +555,17 @@ export default function RequestListDynamic({ request_status }) {
       },
     );
 
-    if (config?.actions.includes("admin_status")) {
-      cols.push({
-        id: "request_admin",
-        header: "IT Action",
-        enableColumnFilter: false,
-        enableSorting: true,
-        cell: ({ row }) => (
-          <AdminStatusCell
-            value={row.original.request_admin}
-            id_request={row.original.id_request}
-            API_URL={API_URL}
-            token={user.token}
-            setData={setData}
-          />
-        ),
-      });
-    }
-
     cols.push({
       id: "action",
       header: "Action",
       enableColumnFilter: false,
-      enableSorting: true,
+      enableSorting: false,
       size: 300,
       cell: ({ row }) => {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
-
-        const status = request.request_status;
-        const hasItPermission = hasPermission(2);
-
-        const { canEditCancel, canReturn, showOnlyDetail } =
-          getRequestActionPermission(status, hasItPermission);
+        // canEditCancel: true hanya jika status draft (0) atau returned (8)
+        const canEditCancel = [0, 8].includes(request.request_status);
 
         return (
           <SimpleGrid cols={2} spacing={6}>
@@ -735,7 +581,6 @@ export default function RequestListDynamic({ request_status }) {
               Details
             </Button>
 
-            {/* UPDATE */}
             {canEditCancel && (
               <Button
                 fullWidth
@@ -750,7 +595,6 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            {/* CANCEL */}
             {canEditCancel && (
               <Button
                 fullWidth
@@ -772,19 +616,6 @@ export default function RequestListDynamic({ request_status }) {
             >
               PDF
             </Button>
-
-            {/* RETURN */}
-            {canReturn && (
-              <Button
-                fullWidth
-                leftSection={<IconRefresh size={16} />}
-                color="orange"
-                size="xs"
-                onClick={() => handleReturn(request.id_request)}
-              >
-                Return
-              </Button>
-            )}
           </SimpleGrid>
         );
       },
@@ -801,19 +632,13 @@ export default function RequestListDynamic({ request_status }) {
     router,
     handleCancel,
     handleDownloadPdf,
-    handleReturn,
   ]);
 
   const table = useReactTable({
     data,
     columns,
     filterFns: {},
-    state: {
-      rowSelection,
-      columnFilters,
-      sorting,
-      pagination,
-    },
+    state: { rowSelection, columnFilters, sorting, pagination },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
@@ -830,7 +655,6 @@ export default function RequestListDynamic({ request_status }) {
     table.resetColumnFilters();
     table.setPageIndex(0);
     setRowSelection({});
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request_status]);
 
@@ -862,11 +686,11 @@ export default function RequestListDynamic({ request_status }) {
             {/* HEADER */}
             <div className="flex items-center justify-between border-b pb-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                <div className="p-2 rounded-lg bg-teal-100 text-teal-600">
                   <config.icon size={22} />
                 </div>
                 <div>
-                  <h1 className="text-md font-extrabold text-blue-600 uppercase">
+                  <h1 className="text-md font-extrabold text-teal-600 uppercase">
                     {config.label} List
                   </h1>
                   <p className="text-xs text-gray-500">
@@ -903,7 +727,6 @@ export default function RequestListDynamic({ request_status }) {
                 <Text size="sm" fw={600}>
                   Selected {Object.keys(rowSelection).length} items
                 </Text>
-
                 <Group>
                   {config.id === 0 && (
                     <Button
@@ -915,7 +738,6 @@ export default function RequestListDynamic({ request_status }) {
                       Submit to HOD Request
                     </Button>
                   )}
-
                   {config.actions.includes("approve_bulk") && canApprove && (
                     <>
                       <Button
@@ -926,7 +748,6 @@ export default function RequestListDynamic({ request_status }) {
                       >
                         Approve
                       </Button>
-
                       <Button
                         size="xs"
                         color="red"

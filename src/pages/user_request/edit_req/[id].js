@@ -18,7 +18,6 @@ import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
-import useSwal from "@/hooks/useSwal";
 import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
 import { useDebouncedValue } from "@mantine/hooks";
@@ -27,59 +26,51 @@ import { formatDate } from "@/lib/dateFormat";
 function EditRequest() {
   const router = useRouter();
   const { id } = router.query;
-  const { showAlert } = useSwal();
   const API = useApi();
   const API_URL = API.API_URL;
   const { user } = useUser();
 
   const [formData, setFormData] = useState({
     created_by_name: null,
+    requestor_name: null,
     full_name: "",
     badge_no: "",
     email: "",
-    project: null,
     department: null,
-    position: null,
+    project: null,
     company: null,
     request_reason: "",
     approval_hod_by: "",
     remarks: "",
     request_status: 0,
-    company_name: "",
     category_account: "",
-    access_yard_company: [],
     access_nav_menu: [],
-    department_name: "",
-    position_name: "",
-    project_name: "",
+    approval_it_hod_by_name: "-",
+    approval_it_date_at: null,
+    updated_at: null,
   });
 
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [badgeOptions, setBadgeOptions] = useState([]);
-  const [badgeLoading, setBadgeLoading] = useState(false);
   const [hodOptions, setHodOptions] = useState([]);
-  const [accessYardOptions, setAccessYardOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
-  const [positionOptions, setPositionOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [companyOptions, setCompanyOptions] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const isReturned = formData.request_status === 8;
 
+  // ── Badge search ──────────────────────────────────────────────
   useEffect(() => {
     if (!debouncedSearch) {
       setBadgeOptions([]);
       return;
     }
     const fetchBadges = async () => {
-      setBadgeLoading(true);
       try {
         const res = await axios.get(
           `${API_URL}/iss_employee/search?badge=${debouncedSearch}`,
@@ -94,36 +85,51 @@ function EditRequest() {
         );
       } catch (err) {
         console.error(err);
-      } finally {
-        setBadgeLoading(false);
       }
     };
     fetchBadges();
   }, [API_URL, debouncedSearch, user.token]);
 
+  // ── Fetch HOD dinamis by department ──────────────────────────
+  const fetchHodsByDept = async (dept_id) => {
+    if (!dept_id) {
+      setHodOptions([]);
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_URL}/user/hods-by-dept/${dept_id}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setHodOptions(
+        res.data.map((u) => ({
+          value: String(u.id_user),
+          label: `${u.badge_no} - ${u.full_name}`,
+        })),
+      );
+    } catch (err) {
+      console.error(err);
+      setHodOptions([]);
+    }
+  };
+
+  // ── Load master data + existing request ───────────────────────
   useEffect(() => {
+    if (!id || !user?.token) return;
+
     const fetchInitialData = async () => {
-      setLoading(true);
       try {
         const [
-          hodRes,
           deptRes,
-          posRes,
           projectRes,
           companyRes,
           navMenuRes,
           categoryRes,
+          requestRes,
         ] = await Promise.all([
-          axios.get(`${API_URL}/requests/hods`, {
+          axios.get(`${API_URL}/portal-department`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
-          axios.get(`${API_URL}/iss_dept`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/position`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/iss_project`, {
+          axios.get(`${API_URL}/portal-project`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
           axios.get(`${API_URL}/portal_company/list`, {
@@ -135,40 +141,29 @@ function EditRequest() {
           axios.get(`${API_URL}/category-account`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
+          axios.get(`${API_URL}/requests/${id}`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }),
         ]);
 
-        setHodOptions(
-          hodRes.data.map((u) => ({
-            value: String(u.id_user),
-            label: `${u.badge_no} - ${u.full_name}`,
-          })),
-        );
         setDeptOptions(
           deptRes.data.map((d) => ({
-            value: String(d.dept_id),
-            label: d.dept,
-          })),
-        );
-        setPositionOptions(
-          posRes.data.map((p) => ({
-            value: String(p.design_id),
-            label: p.design_desc,
+            value: String(d.id_department),
+            label: d.name_of_department,
           })),
         );
         setProjectOptions(
           projectRes.data.map((p) => ({
-            value: String(p.project_id),
-            label: p.project_desc,
+            value: String(p.id),
+            label: p.project_name,
           })),
         );
-
-        const mappedCompany = companyRes.data.map((c) => ({
-          value: String(c.id_company),
-          label: c.company_name,
-        }));
-        setCompanyOptions(mappedCompany);
-        setAccessYardOptions(mappedCompany);
-
+        setCompanyOptions(
+          companyRes.data.map((c) => ({
+            value: String(c.id_company),
+            label: c.company_name,
+          })),
+        );
         setNavMenuOptions(
           navMenuRes.data.map((n) => ({
             value: String(n.id_application),
@@ -176,115 +171,85 @@ function EditRequest() {
           })),
         );
 
+        // Tidak ada access_yard_required / application_required — sama seperti Create
         const mappedCategories = categoryRes.data.map((c) => ({
           value: String(c.id),
           label: c.name,
-          access_yard_required: c.access_yard_required,
-          application_required: c.application_required,
         }));
         setCategoryOptions(mappedCategories);
 
-        if (id) {
-          const res = await axios.get(`${API_URL}/requests/${id}`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          });
-          const data = res.data;
+        // Existing request data
+        const data = requestRes.data;
 
-          const catValue = data.category?.id
+        const catValue =
+          data.category?.id != null
             ? String(data.category.id)
-            : data.category_account
+            : data.category_account != null
               ? String(data.category_account)
               : "";
 
-          setSelectedCategory(
-            mappedCategories.find((c) => c.value === catValue) || null,
-          );
+        const deptId = data.dept_id ? String(data.dept_id) : null;
+        const projectId = data.project_id ? String(data.project_id) : null;
 
-          setFormData((prev) => ({
-            ...prev,
-            requestor_name: data.requestor_name || "-",
-            created_by_name: data.created_by_name,
-            full_name: data.full_name || "",
-            badge_no: data.badge_no || "",
-            email: data.email || "",
-            request_reason: data.request_reason || "",
-            remarks: data.remarks || "",
-            approval_hod_date_at: data.approval_hod_date_at || null,
-            approval_lead_it_by_name:
-              data.approval_lead_it_by?.full_name || "-",
-            approval_lead_date_at: data.approval_lead_date_at || null,
-            approval_it_hod_by_name: data.approval_it_hod_by?.full_name || "-",
-            approval_it_date_at: data.approval_it_date_at || null,
-            company: data.company?.id_company
-              ? String(data.company.id_company)
-              : null,
-            department: data.dept_id ? String(data.dept_id) : null,
-            project: data.project_id ? String(data.project_id) : null,
-            position: data.design_id ? String(data.design_id) : null,
-            request_status: data.request_status,
-            company_name: data.company?.company_name || "",
-            category_account: catValue,
-            approval_hod_by: data.approval_hod_by?.id
-              ? String(data.approval_hod_by.id)
-              : "",
-            access_nav_menu: Array.isArray(data.access_nav_menu)
-              ? data.access_nav_menu.map((item) => String(item.id))
-              : [],
-            access_yard_company: Array.isArray(data.access_yard_company)
-              ? data.access_yard_company.map((item) => String(item.id))
-              : [],
-          }));
-        }
+        setFormData({
+          requestor_name: data.requestor_name || "-",
+          created_by_name: data.created_by_name || null,
+          full_name: data.full_name || "",
+          badge_no: data.badge_no || "",
+          email: data.email || "",
+          request_reason: data.request_reason || "",
+          remarks: data.remarks || "",
+          updated_at: data.updated_at || null,
+          company: data.company?.id_company
+            ? String(data.company.id_company)
+            : null,
+          department: deptId,
+          project: projectId,
+          request_status: data.request_status ?? 0,
+          category_account: catValue,
+          approval_hod_by: data.approval_hod_by?.id
+            ? String(data.approval_hod_by.id)
+            : "",
+          access_nav_menu: Array.isArray(data.access_nav_menu)
+            ? data.access_nav_menu.map((item) => String(item.id))
+            : [],
+          approval_it_hod_by_name: data.approval_it_hod_by?.full_name || "-",
+          approval_it_date_at: data.approval_it_date_at || null,
+        });
+
+        if (deptId) fetchHodsByDept(deptId);
       } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        console.error("Failed to load data:", err);
       }
     };
+
     fetchInitialData();
-  }, [API_URL, id, user.token]);
+  }, [API_URL, id, user?.token]);
 
-  const handleSelectBadge = async (value) => {
-    try {
-      const res = await axios.get(`${API_URL}/iss_employee/employee/${value}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setFormData((prev) => ({
-        ...prev,
-        badge_no: value,
-        full_name: res.data.name ?? "",
-        department: String(res.data.department?.dept_id ?? ""),
-        position: String(res.data.position?.design_id ?? ""),
-        project: String(res.data.project?.project_id ?? ""),
-        company: String(res.data.id_company ?? ""),
-      }));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBadgeLoading(false);
-    }
-  };
-
+  // ── handleChange ──────────────────────────────────────────────
   const handleChange = (field, value) => {
     if (field === "category_account") {
-      const cat = categoryOptions.find((c) => c.value === value);
-      setSelectedCategory(cat || null);
-      setFormData((prev) => ({
-        ...prev,
-        category_account: value,
-        access_yard_company: cat?.access_yard_required
-          ? prev.access_yard_company
-          : [],
-        access_nav_menu: cat?.application_required ? prev.access_nav_menu : [],
-      }));
+      setFormData((prev) => ({ ...prev, category_account: value }));
       if (errors.category_account)
         setErrors((prev) => ({ ...prev, category_account: null }));
       return;
     }
+
+    if (field === "department") {
+      setFormData((prev) => ({
+        ...prev,
+        department: value,
+        approval_hod_by: "",
+      }));
+      fetchHodsByDept(value);
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
+  // ── Submit ────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -293,15 +258,11 @@ function EditRequest() {
       newErrors.category_account = "Category account is required";
     if (!formData.approval_hod_by)
       newErrors.approval_hod_by = "HOD must be selected";
-    if (
-      selectedCategory?.access_yard_required &&
-      !formData.access_yard_company?.length
-    )
-      newErrors.access_yard_company = "Company Yard Access is required";
-    if (
-      selectedCategory?.application_required &&
-      !formData.access_nav_menu?.length
-    )
+    if (!formData.full_name) newErrors.full_name = "Full Name is required";
+    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.request_reason)
+      newErrors.request_reason = "Purpose is required";
+    if (!formData.access_nav_menu?.length)
       newErrors.access_nav_menu = "Application Access is required";
 
     if (Object.keys(newErrors).length > 0) {
@@ -315,7 +276,7 @@ function EditRequest() {
       showCancelButton: true,
       confirmButtonText: "Yes, update!",
       cancelButtonText: "Cancel",
-      confirmButtonColor: "#3085d6",
+      confirmButtonColor: "#0d9488",
       cancelButtonColor: "#d33",
     });
     if (!result.isConfirmed) return;
@@ -324,29 +285,20 @@ function EditRequest() {
 
     const payload = {
       full_name: formData.full_name,
-      badge_no: formData.badge_no,
+      badge_no: formData.badge_no ? String(formData.badge_no).trim() : null,
       email: formData.email,
-      request_type: 1,
       request_reason: formData.request_reason,
       status_active: 1,
       remarks: formData.remarks,
       project_id: formData.project ? Number(formData.project) : undefined,
       dept_id: formData.department ? Number(formData.department) : undefined,
-      design_id: formData.position ? Number(formData.position) : undefined,
       id_company: formData.company ? Number(formData.company) : undefined,
       category_account:
         formData.category_account !== ""
           ? Number(formData.category_account)
           : null,
-      access_yard_company: Array.isArray(formData.access_yard_company)
-        ? formData.access_yard_company.join(",")
-        : formData.access_yard_company || "",
-      access_nav_menu: Array.isArray(formData.access_nav_menu)
-        ? formData.access_nav_menu.join(",")
-        : formData.access_nav_menu || "",
-      approval_hod_by: formData.approval_hod_by
-        ? { id_user: Number(formData.approval_hod_by) }
-        : null,
+      access_nav_menu: formData.access_nav_menu,
+      approval_hod_by: formData.approval_hod_by,
     };
 
     try {
@@ -383,7 +335,7 @@ function EditRequest() {
         >
           {/* Header */}
           <div className="border-b py-6 text-center bg-white">
-            <h1 className="text-2xl font-bold text-blue-600 uppercase tracking-tight">
+            <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
               PCMS Access Login Request Form
             </h1>
           </div>
@@ -419,7 +371,7 @@ function EditRequest() {
 
               {/* 2. Employee Description */}
               <div className="space-y-6">
-                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
+                <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
                   <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                     Employee Description
                   </div>
@@ -443,46 +395,33 @@ function EditRequest() {
                   />
 
                   <Autocomplete
-                    required
                     label="Badge ID"
-                    placeholder="Input Badge Number"
+                    placeholder="Search Badge Number"
                     value={formData.badge_no || ""}
                     onChange={(value) => {
                       handleChange("badge_no", value);
                       setSearch(value);
                     }}
-                    data={badgeOptions.map((b) => ({
-                      value: b.value,
-                      label: b.label,
-                    }))}
-                    onOptionSubmit={(item) => handleSelectBadge(item)}
-                    filter={null}
-                    rightSection={
-                      badgeLoading ? (
-                        <div className="animate-spin h-4 w-4 border-2 border-gray-400 rounded-full" />
-                      ) : null
-                    }
-                    nothingFound="No employees found"
+                    data={badgeOptions.map((b) => b.label)}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",
                     }}
                   />
 
-                  {/* Full Name*/}
                   <TextInput
                     required
                     label="Full Name"
                     placeholder="Input Full Name"
                     value={formData.full_name || ""}
                     onChange={(e) => handleChange("full_name", e.target.value)}
+                    error={errors.full_name}
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
                       input: "h-[40px]",
                     }}
                   />
 
-                  {/* Department */}
                   <Select
                     required
                     label="Department"
@@ -490,23 +429,11 @@ function EditRequest() {
                     data={deptOptions}
                     value={formData.department}
                     onChange={(val) => handleChange("department", val)}
+                    error={errors.department}
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  {/* Position */}
-                  <Select
-                    required
-                    label="Position"
-                    placeholder="Select Position"
-                    data={positionOptions}
-                    value={formData.position}
-                    onChange={(val) => handleChange("position", val)}
-                    searchable
-                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                  />
-
-                  {/* Project */}
                   <Select
                     required
                     label="Project"
@@ -514,11 +441,11 @@ function EditRequest() {
                     data={projectOptions}
                     value={formData.project}
                     onChange={(val) => handleChange("project", val)}
+                    error={errors.project}
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  {/* Company */}
                   <Select
                     required
                     label="Company"
@@ -531,29 +458,7 @@ function EditRequest() {
                   />
 
                   <MultiSelect
-                    required={selectedCategory?.access_yard_required}
-                    label="Company Yard Access"
-                    placeholder="Select Company Yard"
-                    data={accessYardOptions}
-                    value={formData.access_yard_company}
-                    onChange={(val) => {
-                      handleChange("access_yard_company", val);
-                      if (val.length > 0)
-                        setErrors((prev) => ({
-                          ...prev,
-                          access_yard_company: null,
-                        }));
-                    }}
-                    searchable
-                    error={errors.access_yard_company}
-                    classNames={{
-                      label: "font-semibold mb-1 text-gray-700",
-                      input: "min-h-[40px]",
-                    }}
-                  />
-
-                  <MultiSelect
-                    required={selectedCategory?.application_required}
+                    required
                     label="Application Access"
                     placeholder="Select Application Access"
                     data={navMenuOptions}
@@ -588,51 +493,51 @@ function EditRequest() {
                     }}
                   />
                 </div>
+              </div>
 
-                {/* 3. Purpose & Remarks */}
-                <div className="space-y-4">
-                  <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm">
-                    <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                      Purpose & Remarks
-                    </div>
+              {/* 3. Purpose & Remarks */}
+              <div className="space-y-4">
+                <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
+                  <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                    Purpose & Remarks
                   </div>
-                  <Textarea
-                    required
-                    label="Purpose of Request"
-                    placeholder="Explain why you need access..."
-                    value={formData.request_reason}
-                    onChange={(e) =>
-                      handleChange("request_reason", e.target.value)
-                    }
-                    minRows={3}
-                    error={errors.request_reason}
-                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                  />
-                  <Textarea
-                    label="Additional Remarks (Optional)"
-                    placeholder="Input any other information..."
-                    minRows={2}
-                    value={formData.remarks}
-                    onChange={(e) => handleChange("remarks", e.target.value)}
-                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                  />
                 </div>
+                <Textarea
+                  required
+                  label="Purpose of Request"
+                  placeholder="Explain why you need access..."
+                  value={formData.request_reason}
+                  onChange={(e) =>
+                    handleChange("request_reason", e.target.value)
+                  }
+                  minRows={3}
+                  error={errors.request_reason}
+                  classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                />
+                <Textarea
+                  label="Additional Remarks (Optional)"
+                  placeholder="Input any other information..."
+                  minRows={2}
+                  value={formData.remarks}
+                  onChange={(e) => handleChange("remarks", e.target.value)}
+                  classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                />
               </div>
 
               {/* 4. Approval Workflow */}
               <div className="space-y-4">
-                <div className="-mx-6 md:-mx-10 bg-blue-600 shadow-sm mb-8">
+                <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm mb-8">
                   <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                    <div className="grid grid-cols-4 gap-4 text-center">
-                      <div>Requestor Department</div>
-                      <div>Requestor Head of Department</div>
-                      <div>Lead IT Department</div>
-                      <div>IT Manager / Asst. IT Manager</div>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>Requestor</div>
+                      <div>Head of Department</div>
+                      <div>HOD IT</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+                  {/* Col 1 */}
                   <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Requested By
@@ -644,56 +549,55 @@ function EditRequest() {
                     </div>
                   </div>
 
+                  {/* Col 2 - HOD dinamis */}
                   <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Acknowledge By
                     </span>
                     <Select
-                      placeholder="Select HOD Requestor"
+                      error={errors.approval_hod_by}
+                      placeholder={
+                        formData.department
+                          ? "Select HOD"
+                          : "Select department first"
+                      }
+                      disabled={!formData.department || isReturned}
                       searchable
-                      value={String(formData.approval_hod_by || "")}
+                      value={formData.approval_hod_by}
                       onChange={(val) => handleChange("approval_hod_by", val)}
                       data={hodOptions}
-                      disabled={isReturned}
-                      error={errors.approval_hod_by}
                       variant="unstyled"
                       className="border-b border-gray-200"
                       classNames={{
-                        input: "text-sm font-bold text-blue-600 h-auto p-0",
+                        input: "text-sm font-bold text-teal-600 h-auto p-0",
                       }}
                     />
                   </div>
 
-                  <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
-                      Checked By
-                    </span>
-                    <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
-                      {formData.approval_lead_it_by_name || "-"}
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      {formData.approval_lead_date_at
-                        ? formatDate(formData.approval_lead_date_at, {
-                            showTime: true,
-                          })
-                        : "Pending..."}
-                    </div>
-                  </div>
-
+                  {/* Col 3 - HOD IT read-only */}
                   <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                       Approved By
                     </span>
-                    <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
-                      {formData.approval_it_hod_by_name || "-"}
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      {formData.approval_it_date_at
-                        ? formatDate(formData.approval_it_date_at, {
-                            showTime: true,
-                          })
-                        : "Pending..."}
-                    </div>
+                    {formData.approval_it_hod_by_name &&
+                    formData.approval_it_hod_by_name !== "-" ? (
+                      <>
+                        <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
+                          {formData.approval_it_hod_by_name}
+                        </div>
+                        <div className="text-[10px] text-gray-500 mt-1">
+                          {formData.approval_it_date_at
+                            ? formatDate(formData.approval_it_date_at, {
+                                showTime: true,
+                              })
+                            : "Pending..."}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm font-medium text-gray-400 py-2 italic border-b border-dashed border-gray-200">
+                        Waiting HOD IT Approval...
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -711,7 +615,7 @@ function EditRequest() {
                 <Button
                   type="submit"
                   leftSection={<IconDeviceFloppy size={18} />}
-                  color="blue"
+                  color="teal"
                   radius="sm"
                   size="sm"
                   loading={loadingSubmit}

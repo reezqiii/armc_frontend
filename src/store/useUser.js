@@ -8,7 +8,11 @@ const useUser = create(
         id: 0,
         name: null,
         token: null,
-        permissions: [],
+        role: null, // ← role name: "Staff", "Administrator"
+        role_id: null, // ← role id
+        permissions: [], // ← existing (number array sistem lama)
+        permissions_key: [], // ← derived dari role + user-specific
+        department: null,
       },
       setUser: (value) => {
         if (!value) {
@@ -17,7 +21,11 @@ const useUser = create(
               id: 0,
               name: null,
               token: null,
+              role: null,
+              role_id: null,
               permissions: [],
+              permissions_key: [],
+              department: null,
             },
           });
           return;
@@ -28,7 +36,11 @@ const useUser = create(
             id: value.id,
             name: value.full_name || value.name,
             token: value.token,
+            role: value.role ?? null,
+            role_id: value.role_id ?? null,
             permissions: value.permissions ?? [],
+            permissions_key: value.permissions_key ?? [],
+            department: value.department ?? null,
           },
         });
       },
@@ -44,8 +56,8 @@ const useUser = create(
           localStorage.setItem(name, JSON.stringify(value)),
         removeItem: (name) => localStorage.removeItem(name),
       },
-    }
-  )
+    },
+  ),
 );
 
 export default useUser;

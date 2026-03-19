@@ -72,7 +72,11 @@ function LoginPage() {
           id: res.data.user.id,
           name: res.data.user.full_name,
           token: res.data.token,
+          role: res.data.user.role ?? null,
+          role_id: res.data.user.role_id ?? null,
           permissions: res.data.user.permissions ?? [],
+          permissions_key: res.data.user.permissions_key ?? [],
+          department: res.data.user.department ?? null,
         });
 
         router.push("/");

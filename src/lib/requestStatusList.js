@@ -5,7 +5,7 @@ export const REQUEST_STATUS_MAP = {
     text: "#fff",
   },
   1: {
-    label: "Pending Requestor Dept Head",
+    label: "Pending Dept Head",
     bg: "#0dcaf0",
     text: "#fff",
   },
@@ -14,34 +14,19 @@ export const REQUEST_STATUS_MAP = {
     bg: "#dc3545",
     text: "#fff",
   },
-  3: {
-    label: "Pending Lead IT",
+  5: {
+    label: "Pending IT Manager",
     bg: "#0dcaf0",
     text: "#fff",
   },
-  4: {
-    label: "Rejected by Lead IT",
-    bg: "#dc3545",
-    text: "#fff",
-  },
-  5: {
-    label: "Pending IT Manager / Asst. IT Manager",
-    bg: "#0dcaf0", // biru muda / info
-    text: "#fff",
-  },
   6: {
-    label: "Rejected by IT Manager / Asst. IT Manager",
+    label: "Rejected by IT Manager",
     bg: "#dc3545",
     text: "#fff",
   },
   7: {
     label: "Completed",
     bg: "#28a745",
-    text: "#fff",
-  },
-  8: {
-    label: "Returned for Revision",
-    bg: "#fd7e14",
     text: "#fff",
   },
 };

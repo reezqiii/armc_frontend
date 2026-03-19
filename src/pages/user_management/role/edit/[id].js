@@ -137,7 +137,7 @@ function EditRole() {
       );
 
       showAlert("Success", "success", "Role successfully updated.", "OK");
-      router.push("/user_management/role");
+      router.push("/user_management/role/list");
     } catch {
       showAlert("Error", "error", "Failed to update role.", "OK");
     } finally {

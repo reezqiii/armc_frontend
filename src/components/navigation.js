@@ -1,5 +1,5 @@
 import useEncrypt from "@/hooks/useEncrypt";
-import { hasPermission } from "@/lib/permissionHelper";
+import usePermission from "@/hooks/usePermission"; // ← ganti import
 import useCollapseStore from "@/store/useLayout";
 import useUser from "@/store/useUser";
 import { ActionIcon, Collapse, NavLink } from "@mantine/core";
@@ -24,79 +24,84 @@ export default function Navigation() {
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
   const { encrypt } = useEncrypt();
-  const permissions = useUser((state) => state.user?.permissions);
+  const { can } = usePermission(); // ← tambah
 
   const buildJumpLink = useCallback(
     (targetUrl) => {
       if (!targetUrl) return "";
-      return `${process.env.NEXT_PUBLIC_LINK_PORTAL}/jump_url/redirect_v2/${encrypt(
-        targetUrl,
-        )}`;
-      },
-      [encrypt],
-    );
-    
+      return `${process.env.NEXT_PUBLIC_LINK_PORTAL}/jump_url/redirect_v2/${encrypt(targetUrl)}`;
+    },
+    [encrypt],
+  );
+
   const IT_FORM = process.env.NEXT_PUBLIC_IT_FORM;
-  
-  const navigation = [
-    {
-      name: "Home",
-      url: "/dashboard/home",
-      icon: <IconHome size={20} />,
-    },
-    {
-      name: "User Management",
-      url: "/user_management/dashboard",
-      icon: <IconUserCog size={20} />,
-      // permission: 2,
-    },
-    {
-      name: "Computer & Account",
-      target: `${IT_FORM}/computer_account/computer_account_list`,
-      icon: <IconDeviceDesktop size={20} />,
-      external: true,
-    },
-    {
-      name: "Cross Dept. Share Folder Access",
-      target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
-      icon: <IconFolderOpen size={20} />,
-      external: true,
-    },
-    {
-      name: "Wifi Access",
-      target: `${IT_FORM}/Wifi_access/wifi_access`,
-      icon: <IconWifi size={20} />,
-      external: true,
-    },
-    {
-      name: "Software Development",
-      target: `${IT_FORM}/software_request/`,
-      icon: <IconTerminal size={20} />,
-      external: true,
-    },
-    {
-      name: "PCMS Access Request",
-      url: "/user_request/dashboard",
-      icon: <IconUser size={20} />,
-    },
-    {
-      name: "UAT",
-      target: `${IT_FORM}/uat_app/master_app`,
-      icon: <IconDatabase size={20} />,
-      external: true,
-    },
-  ];
 
-  const filteredNavigation = useMemo(() => {
-    return navigation.filter(
-      (item) => !item.permission || hasPermission(item.permission),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [permissions]);
+  const navigation = useMemo(
+    () => [
+      {
+        name: "Home",
+        url: "/dashboard/home",
+        icon: <IconHome size={20} />,
+      },
+      // User Management — hanya yang punya user.manage
+      ...(can("user.manage")
+        ? [
+            {
+              name: "User Management",
+              url: "/user_management/dashboard",
+              icon: <IconUserCog size={20} />,
+            },
+          ]
+        : []),
+      {
+        name: "Computer & Account",
+        target: `${IT_FORM}/computer_account/computer_account_list`,
+        icon: <IconDeviceDesktop size={20} />,
+        external: true,
+      },
+      {
+        name: "Cross Dept. Share Folder Access",
+        target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
+        icon: <IconFolderOpen size={20} />,
+        external: true,
+      },
+      {
+        name: "Wifi Access",
+        target: `${IT_FORM}/Wifi_access/wifi_access`,
+        icon: <IconWifi size={20} />,
+        external: true,
+      },
+      {
+        name: "Software Development",
+        target: `${IT_FORM}/software_request/`,
+        icon: <IconTerminal size={20} />,
+        external: true,
+      },
+      // PCMS Access Request — hanya yang punya request.create atau view
+      ...(can("request.create") ||
+      can("request.view_own_dept") ||
+      can("request.view_all")
+        ? [
+            {
+              name: "PCMS Access Request",
+              url: "/user_request/dashboard",
+              icon: <IconUser size={20} />,
+            },
+          ]
+        : []),
+      {
+        name: "UAT",
+        target: `${IT_FORM}/uat_app/master_app`,
+        icon: <IconDatabase size={20} />,
+        external: true,
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ],
+    [can],
+  );
 
-  const items = filteredNavigation.map((item, index) => {
+  const items = navigation.map((item, index) => {
     const href = item.external ? buildJumpLink(item.target) : item.url;
-
     if (!href) return null;
 
     const isActive =
@@ -123,9 +128,7 @@ export default function Navigation() {
         ) : (
           <Link
             href={href}
-            className={`p-2 ${
-              isActive ? "bg-white bg-opacity-25 text-white" : ""
-            } hover:bg-white hover:text-black rounded-md text-sm flex`}
+            className={`p-2 ${isActive ? "bg-white bg-opacity-25 text-white" : ""} hover:bg-white hover:text-black rounded-md text-sm flex`}
           >
             {content}
           </Link>
@@ -146,18 +149,15 @@ export default function Navigation() {
           >
             <IconMenu2 color="white" />
           </ActionIcon>
-
           <div className="hidden md:flex gap-1 items-center">{items}</div>
         </div>
       </nav>
 
       <Collapse in={opened} className="md:hidden sticky top-10 z-50">
         <nav className="w-full flex flex-col bg-teal-600 px-4 py-1">
-          {filteredNavigation.map((item, index) => {
+          {navigation.map((item, index) => {
             const href = item.external ? buildJumpLink(item.target) : item.url;
-
             if (!href) return null;
-
             return (
               <div key={index} className="text-white">
                 <NavLink

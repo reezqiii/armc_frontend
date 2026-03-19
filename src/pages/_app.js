@@ -15,8 +15,8 @@ export default function App({ Component, pageProps }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      console.log("pathname:", router.pathname);
-  console.log("asPath:", router.asPath);
+    console.log("pathname:", router.pathname);
+    console.log("asPath:", router.asPath);
     const token = Cookies.get("token");
     const userInfo = Cookies.get("user_info");
 
@@ -37,7 +37,11 @@ export default function App({ Component, pageProps }) {
           id: parsedUser.id,
           name: parsedUser.full_name || parsedUser.name,
           token: token,
+          role: parsedUser.role ?? null,
+          role_id: parsedUser.role_id ?? null,
           permissions: parsedUser.permissions ?? [],
+          permissions_key: parsedUser.permissions_key ?? [],
+          department: parsedUser.department ?? null,
         });
       } catch (e) {
         console.error("Error parsing user info", e);
