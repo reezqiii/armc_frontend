@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import useCollapseStore from "@/store/useLayout";
+import useUser from "@/store/useUser";
 import { NavLink } from "@mantine/core";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
@@ -8,6 +9,16 @@ export default function Sidebar({ className, sidebarList }) {
   const { sidebarCollapsed } = useCollapseStore();
   const path = usePathname();
   const router = useRouter();
+  const permissions_key = useUser((s) => s.user.permissions_key);
+
+  // ← 3. filter menu
+  const filteredList = sidebarList.map((item) => ({
+    ...item,
+    child: item.child?.filter(
+      (child) =>
+        !child.permission || permissions_key.includes(child.permission),
+    ),
+  }));
 
   return (
     <aside
@@ -18,7 +29,7 @@ export default function Sidebar({ className, sidebarList }) {
       )}
     >
       {!sidebarCollapsed &&
-        sidebarList.map((item, index) => (
+        filteredList.map((item, index) => (
           <NavLink
             key={index}
             onClick={() =>

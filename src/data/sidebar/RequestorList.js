@@ -32,6 +32,7 @@ const requestorList = [
         title: "Create User Request",
         href: "/user_request/add_request",
         active: "Create User Request",
+        permission: "request.create",
         icon: <IconUserPlus size={18} />,
       },
       {
@@ -50,6 +51,7 @@ const requestorList = [
         title: "Pending IT Mgr / Asst. IT Mgr",
         href: "/user_request/list/awaiting-it-manager-approval",
         active: "Pending IT Manager",
+        permission: "request.approve_it",
         icon: <IconUserCog size={18} />,
       },
       {

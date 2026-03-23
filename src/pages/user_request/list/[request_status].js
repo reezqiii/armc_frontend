@@ -103,7 +103,9 @@ export default function RequestListDynamic({ request_status }) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRejectData, setSelectedRejectData] = useState(null);
-
+  const isHOD = can("request.approve_hod");
+  const isIT = can("request.approve_it");
+  const isApprover = isHOD || isIT;
   const canApprove = useMemo(() => {
     if (!config || !user?.id) return false;
     if (config.id === 1)
@@ -197,6 +199,11 @@ export default function RequestListDynamic({ request_status }) {
   );
 
   const handleBulkProcess = async (action) => {
+    if (!isApprover) {
+      Swal.fire("Access Denied", "You are not allowed", "error");
+      return;
+    }
+
     const selectedRows = table.getSelectedRowModel().rows;
     const ids = selectedRows.map((r) => r.original.id_request);
 
@@ -210,22 +217,15 @@ export default function RequestListDynamic({ request_status }) {
     else if (action === "reject") title = `Reject ${ids.length} request(s)?`;
     else if (action === "submit")
       title = `Submit ${ids.length} request(s) to HOD?`;
-    else title = `${action} ${ids.length} request(s)?`;
 
     const confirm = await Swal.fire({
       title,
       icon: "question",
       showCancelButton: true,
-      confirmButtonText:
-        action === "submit"
-          ? "Yes, Submit"
-          : action === "approve"
-            ? "Yes, Approve"
-            : action === "reject"
-              ? "Yes, Reject"
-              : "Yes",
-      cancelButtonText: "No, cancel",
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
     });
+
     if (!confirm.isConfirmed) return;
 
     let remarks = "";
@@ -233,42 +233,32 @@ export default function RequestListDynamic({ request_status }) {
       const { value } = await Swal.fire({
         title: "Rejection Reason",
         input: "textarea",
-        inputValidator: (value) => !value && "Rejection reason is required",
+        inputValidator: (v) => !v && "Required",
         showCancelButton: true,
       });
       if (!value) return;
       remarks = value;
     }
 
-    let encryptedIds;
-    try {
-      encryptedIds = ids.map((id) => encrypt(String(id)));
-    } catch (err) {
-      Swal.fire("Error", "Failed to encrypt IDs", "error");
-      return;
-    }
+    const encryptedIds = ids.map((id) => encrypt(String(id)));
 
     let endpoint = "";
     if (action === "submit") endpoint = "/requests/submit-to-hod/bulk";
-    else if (action === "approve" || action === "reject")
+    else
       endpoint =
         config.id === 1
           ? "/requests/hod-approval/bulk"
           : "/requests/it-approval/bulk";
 
-    try {
-      await axios.put(
-        `${API_URL}${endpoint}`,
-        { encryptedIds, action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-      Swal.fire("Success", "Requests processed", "success");
-      setRowSelection({});
-      getData();
-    } catch (err) {
-      Swal.fire("Error", "Failed to process bulk action", "error");
-      console.error(err);
-    }
+    await axios.put(
+      `${API_URL}${endpoint}`,
+      { encryptedIds, action, remarks },
+      { headers: { Authorization: `Bearer ${user.token}` } },
+    );
+
+    Swal.fire("Success", "Done", "success");
+    setRowSelection({});
+    getData();
   };
 
   const handleExportExcel = async () => {
@@ -367,7 +357,9 @@ export default function RequestListDynamic({ request_status }) {
   const columns = useMemo(() => {
     const cols = [];
 
-    if (config?.actions.some((a) => a.includes("bulk"))) {
+    const showBulk =
+      config?.actions?.some((a) => a.includes("bulk")) && isApprover;
+    if (showBulk) {
       cols.push({
         id: "select",
         header: ({ table }) => (
@@ -564,8 +556,9 @@ export default function RequestListDynamic({ request_status }) {
       cell: ({ row }) => {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
-        // canEditCancel: true hanya jika status draft (0) atau returned (8)
-        const canEditCancel = [0, 8].includes(request.request_status);
+
+        const isDraft = request.request_status === 0;
+        const canEditCancel = isDraft && !isApprover;
 
         return (
           <SimpleGrid cols={2} spacing={6}>

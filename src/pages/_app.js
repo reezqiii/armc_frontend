@@ -8,48 +8,64 @@ import "@/styles/globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/charts/styles.css";
+import axios from "axios";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  const { setUser } = useUser();
+  const { setUser, user } = useUser();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("pathname:", router.pathname);
-    console.log("asPath:", router.asPath);
-    const token = Cookies.get("token");
-    const userInfo = Cookies.get("user_info");
+    const init = async () => {
+      const token = Cookies.get("token");
 
-    if (
-      !token &&
-      router.pathname !== "/login" &&
-      !router.pathname.startsWith("/reset_password")
-    ) {
-      router.push("/login");
-      return;
-    }
-
-    if (token && userInfo) {
-      try {
-        const parsedUser = JSON.parse(userInfo);
-
-        setUser({
-          id: parsedUser.id,
-          name: parsedUser.full_name || parsedUser.name,
-          token: token,
-          role: parsedUser.role ?? null,
-          role_id: parsedUser.role_id ?? null,
-          permissions: parsedUser.permissions ?? [],
-          permissions_key: parsedUser.permissions_key ?? [],
-          department: parsedUser.department ?? null,
-        });
-      } catch (e) {
-        console.error("Error parsing user info", e);
+      if (
+        !token &&
+        router.pathname !== "/login" &&
+        !router.pathname.startsWith("/reset_password")
+      ) {
+        router.push("/login");
+        setLoading(false);
+        return;
       }
-    }
 
-    setLoading(false);
-  }, [router, setUser]);
+      if (user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      if (token) {
+        try {
+          const res = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_PORTAL}/auth/me`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          const userData = res.data;
+
+          setUser({
+            id: userData.id_user,
+            name: userData.full_name,
+            token: token,
+            permissions_key: userData.permissions_key ?? [],
+            department: userData.department ?? null,
+          });
+        } catch (err) {
+          console.error("Failed get user", err);
+          Cookies.remove("token");
+          router.push("/login");
+        }
+      }
+
+      setLoading(false);
+    };
+
+    init();
+  }, [router.pathname]);
 
   return (
     <MantineProvider>
