@@ -2,22 +2,21 @@ import React from "react";
 import Header from "../header";
 import Navigation from "../navigation";
 import Footer from "../footer";
-import Sidebar from "@/components/sidebar";
+import Sidebar from "../sidebar";
 import { cn } from "@/lib/utils";
 
 export default function AuthLayout({ children, sidebarList }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="bg-white border-b border-teal-100">
-        <Header />
-      </div>
+      <Header />
 
       <Navigation />
 
       <div className="relative flex flex-grow">
         {sidebarList && sidebarList.length > 0 && (
           <Sidebar
-            className={cn(`relative w-64 overflow-y-auto`)}
+            className={cn(`absolute md:relative overflow-y-auto`)}
+            // className="absolute md:relative overflow-y-auto"
             sidebarList={sidebarList}
           />
         )}

@@ -2,7 +2,7 @@ import useEncrypt from "@/hooks/useEncrypt";
 import usePermission from "@/hooks/usePermission"; // ← ganti import
 import useCollapseStore from "@/store/useLayout";
 import useUser from "@/store/useUser";
-import { ActionIcon, Collapse, NavLink } from "@mantine/core";
+import { ActionIcon, Collapse, Menu, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconUser,
@@ -14,6 +14,7 @@ import {
   IconWifi,
   IconTerminal,
   IconDatabase,
+  IconCaretRight,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -23,18 +24,8 @@ export default function Navigation() {
   const router = useRouter();
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
-  const { encrypt } = useEncrypt();
-  const { can } = usePermission(); // ← tambah
-
-  const buildJumpLink = useCallback(
-    (targetUrl) => {
-      if (!targetUrl) return "";
-      return `${process.env.NEXT_PUBLIC_LINK_PORTAL}/jump_url/redirect_v2/${encrypt(targetUrl)}`;
-    },
-    [encrypt],
-  );
-
-  const IT_FORM = process.env.NEXT_PUBLIC_IT_FORM;
+  const { user } = useUser();
+  const { can } = usePermission();
 
   const navigation = useMemo(
     () => [
@@ -43,7 +34,6 @@ export default function Navigation() {
         url: "/dashboard/home",
         icon: <IconHome size={20} />,
       },
-      // User Management — hanya yang punya user.manage
       ...(can("user.manage")
         ? [
             {
@@ -55,29 +45,28 @@ export default function Navigation() {
         : []),
       {
         name: "Computer & Account",
-        target: `${IT_FORM}/computer_account/computer_account_list`,
+        url: "/dashboard/home",
         icon: <IconDeviceDesktop size={20} />,
         external: true,
       },
       {
         name: "Cross Dept. Share Folder Access",
-        target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
+        url: "/dashboard/home",
         icon: <IconFolderOpen size={20} />,
         external: true,
       },
       {
         name: "Wifi Access",
-        target: `${IT_FORM}/Wifi_access/wifi_access`,
+        url: "/dashboard/home",
         icon: <IconWifi size={20} />,
         external: true,
       },
       {
         name: "Software Development",
-        target: `${IT_FORM}/software_request/`,
+        url: "/dashboard/home",
         icon: <IconTerminal size={20} />,
         external: true,
       },
-      // PCMS Access Request — hanya yang punya request.create atau view
       ...(can("request.create") ||
       can("request.view_own_dept") ||
       can("request.view_all")
@@ -91,7 +80,7 @@ export default function Navigation() {
         : []),
       {
         name: "UAT",
-        target: `${IT_FORM}/uat_app/master_app`,
+        url: "/dashboard/home",
         icon: <IconDatabase size={20} />,
         external: true,
       },
@@ -100,46 +89,61 @@ export default function Navigation() {
     [can],
   );
 
-  const items = navigation.map((item, index) => {
-    const href = item.external ? buildJumpLink(item.target) : item.url;
-    if (!href) return null;
-
-    const isActive =
-      !item.external &&
-      ((href === "/" && router.asPath === "/") ||
-        (href !== "/" && router.asPath.startsWith(href)));
-
-    const content = (
-      <>
-        <div className="mr-2">{item.icon}</div>
+  const items = navigation.map((link, index) => {
+    const menuItems = link.child?.map((item, indexItem) => (
+      <Menu.Item key={indexItem} leftSection={<IconCaretRight size={20} />}>
         {item.name}
-      </>
-    );
+      </Menu.Item>
+    ));
+
+    if (menuItems) {
+      return (
+        <Menu key={index} shadow="md" position="bottom-start">
+          <Menu.Target>
+            <div className="w-fit text-white">
+              <Link
+                href={link.url}
+                className={`p-2 ${
+                  (link.url === "/" && router.asPath === "/") ||
+                  (link.url !== "/" && router.asPath.startsWith(link.url))
+                    ? "bg-white bg-opacity-25 text-white"
+                    : ""
+                } hover:bg-white hover:text-black rounded-md text-sm flex`}
+                data-active={true}
+              >
+                <div className="mr-2">{link.icon}</div>
+                {link.name}
+              </Link>
+            </div>
+          </Menu.Target>
+
+          <Menu.Dropdown>{menuItems}</Menu.Dropdown>
+        </Menu>
+      );
+    }
 
     return (
       <div key={index} className="w-fit text-white">
-        {item.external ? (
-          <a
-            href={href}
-            className="p-2 hover:bg-white hover:text-black rounded-md text-sm flex"
-          >
-            {content}
-          </a>
-        ) : (
-          <Link
-            href={href}
-            className={`p-2 ${isActive ? "bg-white bg-opacity-25 text-white" : ""} hover:bg-white hover:text-black rounded-md text-sm flex`}
-          >
-            {content}
-          </Link>
-        )}
+        <Link
+          href={link.url}
+          className={`p-2 ${
+            (link.url === "/" && router.asPath === "/") ||
+            (link.url !== "/" && router.asPath.startsWith(link.url))
+              ? "bg-white bg-opacity-25 text-white"
+              : ""
+          } hover:bg-white hover:text-black rounded-md text-sm flex`}
+          data-active={true}
+        >
+          <div className="mr-2">{link.icon}</div>
+          {link.name}
+        </Link>
       </div>
     );
   });
 
   return (
     <>
-      <nav className="w-full sticky md:relative top-0 z-50 flex items-center justify-between bg-teal-600 px-4">
+      <nav className="w-full sticky md:relative top-0 z-50 md:z-1 flex items-center justify-between bg-teal-600 px-4 ">
         <div className="flex">
           <ActionIcon
             variant="subtle"
@@ -149,27 +153,58 @@ export default function Navigation() {
           >
             <IconMenu2 color="white" />
           </ActionIcon>
-          <div className="hidden md:flex gap-1 items-center">{items}</div>
+
+          <div className="hidden md:flex relative md:gap-1 md:items-center">
+            {items}
+          </div>
+        </div>
+
+        <div className="md:hidden">
+          <ActionIcon
+            variant="subtle"
+            size="xl"
+            className="mr-2"
+            onClick={toggle}
+          >
+            <IconMenu2 color="white" />
+          </ActionIcon>
         </div>
       </nav>
 
       <Collapse in={opened} className="md:hidden sticky top-10 z-50">
         <nav className="w-full flex flex-col bg-teal-600 px-4 py-1">
-          {navigation.map((item, index) => {
-            const href = item.external ? buildJumpLink(item.target) : item.url;
-            if (!href) return null;
-            return (
-              <div key={index} className="text-white">
-                <NavLink
-                  component={item.external ? "a" : Link}
-                  href={href}
-                  label={item.name}
-                  leftSection={item.icon}
-                  variant="subtle"
-                />
-              </div>
-            );
-          })}
+          {navigation.map((item, index) => (
+            <div key={index} className="text-white">
+              <NavLink
+                component={Link}
+                href={item.url}
+                // onClick={() => (item.child ? item.url : router.push(item.url))}
+                label={item.name}
+                leftSection={item.icon}
+                variant="subtle"
+                childrenOffset={40}
+                onClick={(event) =>
+                  (event.currentTarget.style.backgroundColor = "#2563eb")
+                }
+              >
+                {item.child &&
+                  item.child.length > 0 &&
+                  item.child.map((child, index) => (
+                    <NavLink
+                      key={index}
+                      component={Link}
+                      href={child.url}
+                      // onClick={() => router.push(child.url)}
+                      label={child.name}
+                      variant="subtle"
+                      onClick={(event) =>
+                        (event.currentTarget.style.backgroundColor = "#2563eb")
+                      }
+                    />
+                  ))}
+              </NavLink>
+            </div>
+          ))}
         </nav>
       </Collapse>
     </>
