@@ -11,7 +11,7 @@ import {
 
 const requestorList = [
   {
-    title: "PCMS Access Request",
+    title: "Access Request",
     href: "/",
     active: "User Request",
     icon: <IconListDetails size={18} />,

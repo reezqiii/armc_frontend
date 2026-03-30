@@ -19,20 +19,19 @@ import {
   Badge,
   ThemeIcon,
   ActionIcon,
-  Progress,
+  Divider,
 } from "@mantine/core";
 import {
   IconClock,
   IconLoader2,
   IconSearch,
   IconLayoutGrid,
-  IconBuildingCommunity,
   IconCheck,
-  IconTrendingUp,
   IconLayoutList,
   IconChartBar,
   IconChevronLeft,
   IconChevronRight,
+  IconCalendar,
 } from "@tabler/icons-react";
 import {
   BarChart,
@@ -47,31 +46,42 @@ import {
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 
+// ─── Teal palette ────────────────────────────────────────────────────────────
+const T = {
+  900: "#0d4f47",
+  700: "#0f766e",
+  600: "#0d9488",
+  500: "#14b8a6",
+  400: "#2dd4bf",
+  300: "#5eead4",
+  100: "#ccfbf1",
+  50: "#f0fdfa",
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <Paper
         p="sm"
-        withBorder
         shadow="md"
         radius="md"
         bg="white"
-        style={{ minWidth: 160 }}
+        style={{ minWidth: 160, border: `1px solid ${T[100]}` }}
       >
-        <Text fw={600} size="sm" c="blue.7" mb={4}>
+        <Text fw={600} size="sm" style={{ color: T[700] }} mb={6}>
           {label}
         </Text>
         {payload.map((p) => (
-          <Group key={p.name} gap="xs">
+          <Group key={p.name} gap="xs" mb={2}>
             <Box
-              w={10}
-              h={10}
-              style={{ borderRadius: 2, background: p.fill }}
+              w={8}
+              h={8}
+              style={{ borderRadius: 2, background: p.fill, flexShrink: 0 }}
             />
-            <Text size="sm" c="dimmed">
+            <Text size="xs" c="dimmed">
               {p.name}:
             </Text>
-            <Text size="sm" fw={600}>
+            <Text size="xs" fw={700} c="dark">
               {p.value}
             </Text>
           </Group>
@@ -111,31 +121,21 @@ function Dashboard() {
     { value: "all", label: "All Months" },
     ...monthNames.map((m, i) => ({ value: i.toString(), label: m })),
   ];
+
+  // Dept color palette — teal-adjacent palette
   const DEPT_COLORS = [
-    "#3b82f6",
-    "#f59f00",
-    "#20c997",
-    "#f03e3e",
-    "#7950f2",
-    "#fd7014",
-    "#1c7ed6",
-    "#37b24d",
+    "#14b8a6",
+    "#0d9488",
+    "#2dd4bf",
+    "#0f766e",
+    "#5eead4",
+    "#0891b2",
+    "#06b6d4",
+    "#67e8f9",
   ];
-  const COMPANY_COLORS = [
-    "#3b82f6",
-    "#f59f00",
-    "#20c997",
-    "#f03e3e",
-    "#7950f2",
-    "#fd7014",
-    "#1c7ed6",
-    "#37b24d",
-  ];
+
   const isSummaryEmpty =
-    !summary ||
-    ((summary.deptStats?.length === 0 || !summary.deptStats) &&
-      (summary.total === 0 || !summary.total) &&
-      (summary.companyStats?.length === 0 || !summary.companyStats));
+    !summary || summary.deptStats?.length === 0 || !summary.deptStats;
 
   useEffect(() => {
     const fetchLatestPeriod = async () => {
@@ -177,13 +177,6 @@ function Dashboard() {
     }))
     .sort((a, b) => b.onQueue + b.onProgress - (a.onQueue + a.onProgress));
 
-  const companyStats = (summary?.companyStats || []).filter(
-    (c) => c.name && c.name.trim() !== "" && c.name !== "No Company",
-  );
-
-  const maxValue =
-    companyStats.length > 0 ? Math.max(...companyStats.map((c) => c.value)) : 1;
-
   if (loading) {
     return (
       <AuthLayout sidebarList={requestorList}>
@@ -194,8 +187,8 @@ function Dashboard() {
           direction="column"
           gap="md"
         >
-          <Loader size="lg" type="dots" color="blue" />
-          <Text fw={500} c="dimmed" size="md">
+          <Loader size="lg" type="dots" color="teal" />
+          <Text fw={500} c="dimmed" size="sm">
             Preparing analytics...
           </Text>
         </Flex>
@@ -203,109 +196,207 @@ function Dashboard() {
     );
   }
 
+  const periodLabel =
+    month === "all"
+      ? `All Months · ${year}`
+      : `${monthNames[Number(month)]} ${year}`;
+
   return (
     <AuthLayout sidebarList={requestorList}>
-      <Box p="xl" bg="#f0f4ff" style={{ minHeight: "100vh" }}>
-        {/* HEADER */}
-        <Group justify="space-between" mb="lg">
-          <Box>
-            <Title order={2} fw={700} lts={-0.5} c="blue" tt="uppercase">
-              Monthly Request Dashboard
-            </Title>
-            <Text size="md" fw={500} mt={4} style={{ color: "#495057" }}>
-              Request summary for{" "}
-              <Text span fw={600} style={{ color: "#1c7ed6" }}>
-                {month === "all" ? "All Months" : monthNames[Number(month)]}{" "}
-                {year}
-              </Text>
-            </Text>
-          </Box>
-          <Paper radius="md" p="4px 12px" withBorder shadow="xs" bg="white">
-            <Group gap="xs">
-              <Select
-                variant="unstyled"
-                data={monthOptions}
-                value={month?.toString()}
-                onChange={(val) => setMonth(val)}
-                w={140}
-                size="sm"
-              />
-              <Select
-                variant="unstyled"
-                data={Array.from({ length: 10 }, (_, i) => {
-                  const y = new Date().getFullYear() - i;
-                  return { value: y.toString(), label: y.toString() };
-                })}
-                value={year?.toString()}
-                onChange={(val) => setYear(Number(val))}
-                w={80}
-                size="sm"
-              />
-            </Group>
-          </Paper>
-        </Group>
+      <Box
+        style={{
+          minHeight: "100vh",
+          background: "#f0fdf9",
+          padding: "16px",
+        }}
+      >
+        {/* ── HEADER ── */}
+        <Paper
+          radius="xl"
+          mb="md"
+          style={{
+            background: "white",
+            border: `1px solid ${T[100]}`,
+            overflow: "hidden",
+          }}
+        >
+          {/* Teal accent stripe */}
+          <Box
+            style={{
+              height: 3,
+              background: `linear-gradient(90deg, ${T[700]}, ${T[500]}, ${T[300]})`,
+            }}
+          />
+          <Group
+            justify="space-between"
+            align="center"
+            px="xl"
+            py="md"
+            wrap="wrap"
+            gap="sm"
+          >
+            <Box>
+              <Group gap={6} mb={2}>
+                <Box
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: T[500],
+                  }}
+                />
+                <Text
+                  size="xs"
+                  fw={700}
+                  tt="uppercase"
+                  lts={1}
+                  style={{ color: T[500] }}
+                >
+                  Analytics
+                </Text>
+              </Group>
+              <Title
+                order={3}
+                fw={800}
+                c="#0f172a"
+                style={{ letterSpacing: -0.5 }}
+              >
+                Request Dashboard
+              </Title>
+              <Group gap={5} mt={2}>
+                <IconCalendar size={12} color="#94a3b8" />
+                <Text size="xs" c="dimmed" fw={500}>
+                  {periodLabel}
+                </Text>
+              </Group>
+            </Box>
+
+            {/* Period selector */}
+            <Paper
+              radius="lg"
+              px="sm"
+              py={6}
+              style={{ border: `1px solid ${T[100]}`, background: T[50] }}
+            >
+              <Group gap={0} align="center">
+                <Select
+                  variant="unstyled"
+                  data={monthOptions}
+                  value={month?.toString()}
+                  onChange={(val) => setMonth(val)}
+                  w={130}
+                  size="xs"
+                  styles={{
+                    input: { fontWeight: 600, color: "#374151", fontSize: 13 },
+                  }}
+                />
+                <Divider orientation="vertical" mx={4} color={T[100]} />
+                <Select
+                  variant="unstyled"
+                  data={Array.from({ length: 10 }, (_, i) => {
+                    const y = new Date().getFullYear() - i;
+                    return { value: y.toString(), label: y.toString() };
+                  })}
+                  value={year?.toString()}
+                  onChange={(val) => setYear(Number(val))}
+                  w={72}
+                  size="xs"
+                  styles={{
+                    input: { fontWeight: 600, color: "#374151", fontSize: 13 },
+                  }}
+                />
+              </Group>
+            </Paper>
+          </Group>
+        </Paper>
 
         {isSummaryEmpty ? (
           <Paper
-            withBorder
-            radius="lg"
+            radius="xl"
             p="xl"
-            mt="xl"
+            mt="md"
             style={{
               textAlign: "center",
-              backgroundColor: "#f8f9fa",
-              borderStyle: "dashed",
-              borderWidth: 2,
-              borderColor: "#dee2e6",
+              background: "white",
+              border: `2px dashed ${T[100]}`,
             }}
           >
-            <Stack align="center" gap="sm">
-              <ThemeIcon size={70} radius="xl" variant="light" color="blue">
-                <IconSearch size={36} stroke={1.8} />
+            <Stack align="center" gap="sm" py="xl">
+              <ThemeIcon size={64} radius="xl" variant="light" color="teal">
+                <IconSearch size={30} stroke={1.5} />
               </ThemeIcon>
-              <Title order={4} fw={600}>
+              <Title order={4} fw={700} c="#0f172a">
                 No Requests Found
               </Title>
-              <Text size="md" c="dimmed" maw={420}>
-                There is currently no request data available for{" "}
+              <Text size="sm" c="dimmed" maw={380}>
+                No data for{" "}
                 <Text span fw={600} c="dark">
-                  {monthNames[month]} {year}
+                  {month === "all" ? "All Months" : monthNames[Number(month)]}{" "}
+                  {year}
                 </Text>
-                . Please select another period or check again later.
+                . Try a different period.
               </Text>
             </Stack>
           </Paper>
         ) : (
-          <>
-            {/* BY DEPARTMENT */}
+          <Stack gap="md">
+            {/* ── ROW 1: Status Cards — 2 cols mobile / 4 cols desktop ── */}
+            <SimpleGrid cols={{ base: 2, sm: 2, md: 4 }} spacing="md">
+              <StatusCard
+                label="All Request"
+                value={summary?.total}
+                icon={<IconLayoutList />}
+              />
+              <StatusCard
+                label="On Queue"
+                value={summary?.onQueue}
+                statusCode={0}
+                icon={<IconClock />}
+              />
+              <StatusCard
+                label="On Progress"
+                value={summary?.onProgress}
+                statusCode={1}
+                icon={<IconLoader2 />}
+              />
+              <StatusCard
+                label="Completed"
+                value={summary?.completed ?? 0}
+                statusCode={2}
+                icon={<IconCheck />}
+              />
+            </SimpleGrid>
+
+            {/* ── ROW 2: Department Carousel ── */}
             <Paper
-              p="xl"
-              mb="xl"
-              withBorder
-              shadow="sm"
-              bg="white"
-              style={{ border: "none" }}
+              radius="xl"
+              p="lg"
+              style={{ background: "white", border: `1px solid ${T[100]}` }}
             >
-              <Group mb="lg" px="xs" justify="space-between">
-                <Group gap="sm">
-                  <ThemeIcon
-                    variant="light"
-                    color="blue.6"
-                    size="md"
-                    radius="md"
-                  >
-                    <IconLayoutGrid size={18} />
+              <Group mb="md" justify="space-between" wrap="wrap" gap="xs">
+                <Group gap="xs">
+                  <ThemeIcon size={28} radius="md" color="teal" variant="light">
+                    <IconLayoutGrid size={15} />
                   </ThemeIcon>
-                  <Text fw={700} size="md" c="blue.6" lts={0.5}>
-                    BY DEPARTMENT
-                  </Text>
+                  <Box>
+                    <Text fw={700} size="sm" c="#0f172a">
+                      By Department
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Request count per department
+                    </Text>
+                  </Box>
                 </Group>
-                <Badge size="lg" radius="sm" variant="light" color="black">
-                  {summary?.deptStats?.length || 0} Departments
+                <Badge
+                  size="sm"
+                  radius="xl"
+                  fw={600}
+                  style={{ background: T[100], color: T[700], border: "none" }}
+                >
+                  {summary?.deptStats?.length || 0} dept
                 </Badge>
               </Group>
 
-              {/* Carousel wrapper */}
               {(() => {
                 const itemsPerPage = 7;
                 const deptStats = summary?.deptStats || [];
@@ -318,19 +409,19 @@ function Dashboard() {
                 );
 
                 return (
-                  <Group align="center" gap="xs" wrap="nowrap">
+                  <Group align="stretch" gap="xs" wrap="nowrap">
                     <ActionIcon
-                      variant="filled"
-                      color="blue"
+                      variant="subtle"
+                      color="teal"
                       radius="xl"
                       size="lg"
                       disabled={deptPage === 0}
                       onClick={() => setDeptPage((p) => p - 1)}
                     >
-                      <IconChevronLeft size={18} />
+                      <IconChevronLeft size={16} />
                     </ActionIcon>
 
-                    <Flex gap="lg" style={{ flex: 1, overflow: "hidden" }}>
+                    <Flex gap="sm" style={{ flex: 1, overflow: "hidden" }}>
                       {visible.map((item, idx) => {
                         const color =
                           DEPT_COLORS[
@@ -339,40 +430,50 @@ function Dashboard() {
                         return (
                           <Paper
                             key={item.name}
-                            withBorder
-                            p="lg"
+                            p="md"
                             radius="lg"
                             style={{
-                              width: `calc((100% - ${(itemsPerPage - 1) * 16}px) / ${itemsPerPage})`,
+                              width: `calc((100% - ${(itemsPerPage - 1) * 8}px) / ${itemsPerPage})`,
                               flexShrink: 0,
-                              background: "#fff",
-                              borderColor: "#f1f3f5",
-                              borderBottom: `4px solid ${color}`, // ← warna per item
-                              transition: "all 0.2s ease",
+                              background: T[50],
+                              border: `1px solid ${T[100]}`,
+                              borderTop: `3px solid ${color}`,
+                              transition: "all 0.18s ease",
                               cursor: "default",
                               display: "flex",
                               flexDirection: "column",
                               alignItems: "center",
                               textAlign: "center",
+                              gap: 4,
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.transform =
-                                "translateY(-4px)";
-                              e.currentTarget.style.boxShadow =
-                                "var(--mantine-shadow-md)";
+                                "translateY(-3px)";
+                              e.currentTarget.style.boxShadow = `0 8px 24px ${color}33`;
+                              e.currentTarget.style.background = "white";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.transform = "translateY(0)";
                               e.currentTarget.style.boxShadow = "none";
+                              e.currentTarget.style.background = T[50];
                             }}
                           >
+                            <Box
+                              style={{
+                                width: 7,
+                                height: 7,
+                                borderRadius: "50%",
+                                background: color,
+                                marginBottom: 2,
+                              }}
+                            />
                             <Text
-                              size="md"
+                              size="10px"
                               fw={700}
                               tt="uppercase"
-                              lts={0.5}
+                              lts={0.3}
                               style={{
-                                color, // ← warna teks ikut border
+                                color,
                                 lineHeight: 1.2,
                                 minHeight: "2.4em",
                                 display: "-webkit-box",
@@ -384,16 +485,14 @@ function Dashboard() {
                               {item.name}
                             </Text>
                             <Text
-                              size="32px"
-                              fw={700}
-                              c="dark.4"
-                              mt="md"
-                              style={{ lineHeight: 1 }}
+                              fw={800}
+                              c="#0f172a"
+                              style={{ fontSize: "1.5rem", lineHeight: 1 }}
                             >
                               {item.count}
                             </Text>
-                            <Text size="md" c="dimmed" mt={4} fw={600}>
-                              Total
+                            <Text size="10px" c="dimmed" fw={500}>
+                              total
                             </Text>
                           </Paper>
                         );
@@ -401,97 +500,117 @@ function Dashboard() {
                     </Flex>
 
                     <ActionIcon
-                      variant="filled"
-                      color="blue"
+                      variant="subtle"
+                      color="teal"
                       radius="xl"
                       size="lg"
                       disabled={deptPage >= totalDeptPages - 1}
                       onClick={() => setDeptPage((p) => p + 1)}
                     >
-                      <IconChevronRight size={18} />
+                      <IconChevronRight size={16} />
                     </ActionIcon>
                   </Group>
                 );
               })()}
             </Paper>
 
-            {/* ON QUEUE & ON PROGRESS — Horizontal Bar Chart */}
+            {/* ── ROW 3: Bar Chart ── */}
             {chartData.length > 0 && (
               <Paper
-                p="xl"
-                mb="xl"
-                withBorder
-                shadow="sm"
-                bg="white"
-                style={{ border: "none" }}
+                radius="xl"
+                p="lg"
+                style={{ background: "white", border: `1px solid ${T[100]}` }}
               >
-                <Group mb="lg" px="xs" justify="space-between">
-                  <Group gap="sm">
+                <Group
+                  mb="md"
+                  justify="space-between"
+                  align="flex-start"
+                  wrap="wrap"
+                  gap="xs"
+                >
+                  <Group gap="xs">
                     <ThemeIcon
-                      variant="light"
-                      color="blue.6"
-                      size="md"
+                      size={28}
                       radius="md"
+                      color="teal"
+                      variant="light"
                     >
-                      <IconChartBar size={18} />
+                      <IconChartBar size={15} />
                     </ThemeIcon>
-                    <Text fw={700} size="md" c="blue.6" lts={0.5}>
-                      ON QUEUE &amp; ON PROGRESS REQUEST
-                    </Text>
+                    <Box>
+                      <Text fw={700} size="sm" c="#0f172a">
+                        Queue &amp; Progress
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Active requests by department
+                      </Text>
+                    </Box>
                   </Group>
-                  <Group gap="lg">
-                    <Group gap={6}>
+                  <Group gap="md">
+                    <Group gap={5}>
                       <Box
-                        w={12}
-                        h={12}
-                        style={{ borderRadius: 2, background: "#3b82f6" }}
+                        w={10}
+                        h={10}
+                        style={{
+                          borderRadius: 3,
+                          background: T[600],
+                          flexShrink: 0,
+                        }}
                       />
-                      <Text size="md" c="dimmed" fw={500}>
+                      <Text size="xs" c="dimmed" fw={500}>
                         On Queue
                       </Text>
                     </Group>
-                    <Group gap={6}>
+                    <Group gap={5}>
                       <Box
-                        w={12}
-                        h={12}
-                        style={{ borderRadius: 2, background: "#93c5fd" }}
+                        w={10}
+                        h={10}
+                        style={{
+                          borderRadius: 3,
+                          background: T[300],
+                          flexShrink: 0,
+                        }}
                       />
-                      <Text size="md" c="dimmed" fw={500}>
+                      <Text size="xs" c="dimmed" fw={500}>
                         On Progress
                       </Text>
                     </Group>
                   </Group>
                 </Group>
 
-                <ScrollArea h={400} offsetScrollbars scrollbarSize={6}>
+                <ScrollArea
+                  h={Math.min(chartData.length * 44 + 60, 360)}
+                  offsetScrollbars
+                  scrollbarSize={4}
+                >
                   <Box
                     style={{
-                      height: Math.max(chartData.length * 44 + 40, 300),
+                      height: Math.max(chartData.length * 44 + 40, 240),
                     }}
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={chartData}
                         layout="vertical"
-                        margin={{ top: 4, right: 56, left: 16, bottom: 4 }}
-                        barCategoryGap="25%"
+                        margin={{ top: 4, right: 56, left: 8, bottom: 4 }}
+                        barCategoryGap="28%"
                         barGap={3}
                       >
-                        <CartesianGrid horizontal={false} stroke="#f1f3f5" />
+                        <CartesianGrid horizontal={false} stroke={T[50]} />
                         <XAxis
                           type="number"
                           allowDecimals={false}
-                          tick={{ fontSize: 13, fill: "#adb5bd" }}
+                          tick={{ fontSize: 11, fill: "#94a3b8" }}
                           axisLine={false}
                           tickLine={false}
                         />
                         <YAxis
                           type="category"
                           dataKey="name"
-                          width={200}
+                          width={185}
                           tick={{
-                            fontSize: 13,
-                            fill: "#495057",
+                            fontSize: 12,
+                            fill: "#475569",
                             fontWeight: 500,
                           }}
                           tickLine={false}
@@ -499,22 +618,22 @@ function Dashboard() {
                         />
                         <Tooltip
                           content={<CustomTooltip />}
-                          cursor={{ fill: "#f8f9fa" }}
+                          cursor={{ fill: T[50] }}
                         />
                         <Bar
                           dataKey="onQueue"
                           name="On Queue"
-                          fill="#3b82f6"
-                          barSize={14}
-                          radius={[0, 2, 2, 0]}
+                          fill={T[600]}
+                          barSize={11}
+                          radius={[0, 3, 3, 0]}
                         >
                           <LabelList
                             dataKey="onQueue"
                             position="right"
                             style={{
-                              fontSize: 13,
-                              fontWeight: 600,
-                              fill: "#495057",
+                              fontSize: 11,
+                              fontWeight: 700,
+                              fill: "#475569",
                             }}
                             formatter={(v) => (v > 0 ? v : "")}
                           />
@@ -522,17 +641,17 @@ function Dashboard() {
                         <Bar
                           dataKey="onProgress"
                           name="On Progress"
-                          fill="#93c5fd"
-                          barSize={14}
-                          radius={[0, 2, 2, 0]}
+                          fill={T[300]}
+                          barSize={11}
+                          radius={[0, 3, 3, 0]}
                         >
                           <LabelList
                             dataKey="onProgress"
                             position="right"
                             style={{
-                              fontSize: 13,
-                              fontWeight: 600,
-                              fill: "#495057",
+                              fontSize: 11,
+                              fontWeight: 700,
+                              fill: "#475569",
                             }}
                             formatter={(v) => (v > 0 ? v : "")}
                           />
@@ -543,163 +662,60 @@ function Dashboard() {
                 </ScrollArea>
               </Paper>
             )}
-
-            {/* STATUS + BY COMPANY */}
-            <SimpleGrid cols={{ base: 1, md: 3 }} spacing="xl">
-              <Paper
-                p="xl"
-                withBorder
-                shadow="sm"
-                bg="white"
-                style={{ border: "none" }}
-              >
-                <Group mb="lg" px="xs" justify="space-between">
-                  <Group gap="sm">
-                    <ThemeIcon
-                      variant="light"
-                      color="blue.6"
-                      size="md"
-                      radius="md"
-                    >
-                      <IconTrendingUp size={18} />
-                    </ThemeIcon>
-                    <Text
-                      fw={700}
-                      size="md"
-                      c="blue.6"
-                      lts={0.5}
-                      tt="uppercase"
-                    >
-                      STATUS REQUEST
-                    </Text>
-                  </Group>
-                </Group>
-                <Stack gap="lg">
-                  <StatusCard
-                    label="All Request"
-                    value={summary?.total}
-                    color="gray"
-                    icon={<IconLayoutList />}
-                  />
-                  <StatusCard
-                    label="On Queue"
-                    value={summary?.onQueue}
-                    statusCode={0}
-                    icon={<IconClock />}
-                  />
-                  <StatusCard
-                    label="On Progress"
-                    value={summary?.onProgress}
-                    statusCode={1}
-                    icon={<IconLoader2 />}
-                  />
-                  <StatusCard
-                    label="Completed"
-                    value={summary?.completed ?? 0}
-                    statusCode={2}
-                    icon={<IconCheck />}
-                  />
-                </Stack>
-              </Paper>
-
-              <Box style={{ gridColumn: "span 2" }}>
-                <Paper
-                  p="xl"
-                  withBorder
-                  shadow="sm"
-                  h="100%"
-                  bg="white"
-                  style={{ border: "none", overflow: "hidden" }}
-                >
-                  <Group mb="lg" px="xs" justify="space-between">
-                    <Group gap="sm">
-                      <ThemeIcon
-                        variant="light"
-                        color="blue.6"
-                        size="md"
-                        radius="md"
-                      >
-                        <IconBuildingCommunity size={18} />
-                      </ThemeIcon>
-                      <Text
-                        fw={700}
-                        size="md"
-                        c="blue.6"
-                        lts={0.5}
-                        tt="uppercase"
-                      >
-                        BY COMPANY
-                      </Text>
-                    </Group>
-                    <Badge size="lg" radius="sm" variant="light" color="black">
-                      {companyStats.length} Companies
-                    </Badge>
-                  </Group>
-
-                  <ScrollArea h={800} offsetScrollbars scrollbarSize={6}>
-                    <Stack gap="xs" pr="md">
-                      {companyStats.map((comp, index) => {
-                        const pct = Math.round((comp.value / maxValue) * 100);
-                        const appPct = Math.round(
-                          (comp.approved / comp.value) * 100,
-                        );
-
-                        return (
-                          <Paper key={comp.name} p="md" radius="md" withBorder>
-                            <Group justify="space-between" mb={6}>
-                              <Group gap="xs">
-                                <Text size="xs" c="dimmed">
-                                  #{index + 1}
-                                </Text>
-                                <Text fw={500} size="sm">
-                                  {comp.name}
-                                </Text>
-                              </Group>
-                              <Text fw={500} size="lg">
-                                {comp.value}
-                              </Text>
-                            </Group>
-                            <Progress
-                              value={pct}
-                              color="blue"
-                              size="sm"
-                              radius="xl"
-                            />
-                          </Paper>
-                        );
-                      })}
-                    </Stack>
-                  </ScrollArea>
-                </Paper>
-              </Box>
-            </SimpleGrid>
-          </>
+          </Stack>
         )}
       </Box>
     </AuthLayout>
   );
 }
 
+// ─── Status Card ──────────────────────────────────────────────────────────────
 function StatusCard({ label, value, statusCode, color, icon }) {
-  const STATUS_COLORS = {
-    "All Request": { bg: "#5c7cfa", text: "#fff" },
-    "On Queue": { bg: "#f59f00", text: "#fff" },
-    "On Progress": { bg: "#20c997", text: "#fff" },
-    Completed: { bg: "#51cf66", text: "#fff" },
+  const STATUS_META = {
+    "All Request": {
+      bar: T[600],
+      lightBg: T[50],
+      iconColor: T[600],
+      accent: T[700],
+      desc: "Total Requests",
+    },
+    "On Queue": {
+      bar: "#f59f00",
+      lightBg: "#fffbeb",
+      iconColor: "#f59f00",
+      accent: "#b45309",
+      desc: "Awaiting Action",
+    },
+    "On Progress": {
+      bar: T[400],
+      lightBg: T[50],
+      iconColor: T[500],
+      accent: T[700],
+      desc: "Being Processed",
+    },
+    Completed: {
+      bar: "#22c55e",
+      lightBg: "#f0fdf4",
+      iconColor: "#22c55e",
+      accent: "#15803d",
+      desc: "Done",
+    },
   };
 
-  const statusInfo =
-    STATUS_COLORS[label] ??
-    (statusCode !== undefined
-      ? getAdminStatus(statusCode)
-      : { bg: color || "#34495e", text: "#fff" });
+  const meta = STATUS_META[label] ?? {
+    bar: color || T[600],
+    lightBg: T[50],
+    iconColor: T[600],
+    accent: T[700],
+    desc: label,
+  };
 
   const getIconAnimation = () => {
     switch (label) {
       case "On Queue":
         return {
-          animate: { scale: [1, 1.15, 1] },
-          transition: { repeat: Infinity, duration: 1.5 },
+          animate: { scale: [1, 1.18, 1] },
+          transition: { repeat: Infinity, duration: 1.6 },
         };
       case "On Progress":
         return {
@@ -708,14 +724,14 @@ function StatusCard({ label, value, statusCode, color, icon }) {
         };
       case "Completed":
         return {
-          initial: { scale: 0 },
-          animate: { scale: 1 },
-          transition: { type: "spring", stiffness: 200 },
+          initial: { scale: 0.7, opacity: 0 },
+          animate: { scale: 1, opacity: 1 },
+          transition: { type: "spring", stiffness: 260, damping: 16 },
         };
       case "All Request":
         return {
-          animate: { y: [0, -3, 0] },
-          transition: { repeat: Infinity, duration: 2 },
+          animate: { y: [0, -2, 0] },
+          transition: { repeat: Infinity, duration: 2.2 },
         };
       default:
         return {};
@@ -724,56 +740,78 @@ function StatusCard({ label, value, statusCode, color, icon }) {
 
   return (
     <Paper
-      withBorder
-      radius="md"
-      shadow="sm"
+      radius="xl"
       style={{
         overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        border: "none",
+        border: `1px solid ${T[100]}`,
+        background: "white",
       }}
     >
-      <Box
-        bg={statusInfo.bg}
-        p="xs"
-        style={{ display: "flex", alignItems: "center", gap: "8px" }}
-      >
-        {icon && React.isValidElement(icon) && (
-          <motion.div {...getIconAnimation()}>
-            {React.cloneElement(icon, {
-              color: statusInfo.text,
-              size: 18,
-              stroke: 2.5,
-            })}
-          </motion.div>
-        )}
-        <Text c={statusInfo.text} fw={700} size="sm" tt="uppercase" lts={0.5}>
-          {label}
-        </Text>
-      </Box>
-      <Stack
-        align="center"
-        justify="center"
-        p="xl"
-        gap={0}
-        style={{ flex: 1, minHeight: "140px", backgroundColor: "#ffffff" }}
-      >
+      {/* Accent bar */}
+      <Box style={{ height: 3, background: meta.bar }} />
+
+      <Box p="md">
+        {/* Icon + badge row */}
+        <Group justify="space-between" align="center" mb="sm">
+          <Box
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: meta.lightBg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {icon && React.isValidElement(icon) && (
+              <motion.div {...getIconAnimation()}>
+                {React.cloneElement(icon, {
+                  color: meta.iconColor,
+                  size: 18,
+                  stroke: 2.2,
+                })}
+              </motion.div>
+            )}
+          </Box>
+          <Badge
+            size="xs"
+            radius="xl"
+            style={{
+              background: meta.lightBg,
+              color: meta.accent,
+              fontWeight: 700,
+              border: "none",
+              fontSize: 10,
+              maxWidth: "60%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label}
+          </Badge>
+        </Group>
+
+        {/* Big number */}
         <Text
           style={{
-            fontSize: "2.5rem",
-            fontWeight: 700,
+            fontSize: "2rem",
+            fontWeight: 800,
             lineHeight: 1,
-            color: "#2C2E33",
+            color: "#0f172a",
+            letterSpacing: -1,
           }}
         >
           {value ?? 0}
         </Text>
-        <Text c="dimmed" fw={500} size="md" mt="sm">
-          Total {label}
+
+        {/* Description */}
+        <Text size="xs" c="dimmed" mt={4} fw={500}>
+          {meta.desc}
         </Text>
-      </Stack>
+      </Box>
     </Paper>
   );
 }

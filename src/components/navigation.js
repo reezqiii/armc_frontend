@@ -9,11 +9,9 @@ import {
   IconUserCog,
   IconHome,
   IconMenu2,
-  IconDeviceDesktop,
-  IconFolderOpen,
-  IconWifi,
-  IconTerminal,
-  IconDatabase,
+  IconBuildingFactory,
+  IconTool,
+  IconBox,
   IconCaretRight,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -43,46 +41,33 @@ export default function Navigation() {
             },
           ]
         : []),
-      {
-        name: "Computer & Account",
-        url: "/dashboard/home",
-        icon: <IconDeviceDesktop size={20} />,
-        external: true,
-      },
-      {
-        name: "Cross Dept. Share Folder Access",
-        url: "/dashboard/home",
-        icon: <IconFolderOpen size={20} />,
-        external: true,
-      },
-      {
-        name: "Wifi Access",
-        url: "/dashboard/home",
-        icon: <IconWifi size={20} />,
-        external: true,
-      },
-      {
-        name: "Software Development",
-        url: "/dashboard/home",
-        icon: <IconTerminal size={20} />,
-        external: true,
-      },
       ...(can("request.create") ||
       can("request.view_own_dept") ||
       can("request.view_all")
         ? [
             {
-              name: "PCMS Access Request",
+              name: "Access Request",
               url: "/user_request/dashboard",
               icon: <IconUser size={20} />,
             },
           ]
         : []),
       {
-        name: "UAT",
-        url: "/dashboard/home",
-        icon: <IconDatabase size={20} />,
-        external: true,
+
+        name: "Production & Quality",
+        url: "/production_quality", // atau sesuaikan URL jika diperlukan
+        icon: <IconBuildingFactory size={20} />,
+      },
+      {
+        name: "Engineering",
+        url: "/engineering", // atau sesuaikan URL jika diperlukan
+        icon: <IconTool size={20} />,
+      },
+      {
+        name: "Warehouse",
+        url: "/warehouse", // atau sesuaikan URL jika diperlukan
+        icon: <IconBox size={20} />,
+
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
