@@ -21,7 +21,6 @@ function EditUser() {
   const [loadingData, setLoadingData] = useState(true);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -32,7 +31,6 @@ function EditUser() {
     project_id: null,
     project_ids: [],
     department: null,
-    company_id: null,
     id_role: null,
   });
 
@@ -47,18 +45,12 @@ function EditUser() {
     const fetchMasterData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        const [companyRes, deptRes, projectRes, roleRes] = await Promise.all([
-          axios.get(`${API_URL}/portal_company/list`, { headers }),
+        const [deptRes, projectRes, roleRes] = await Promise.all([
           axios.get(`${API_URL}/portal-department`, { headers }),
           axios.get(`${API_URL}/portal-project`, { headers }),
           axios.get(`${API_URL}/role`, { headers }),
         ]);
 
-        setCompanyOptions(
-          companyRes.data
-            .filter((c) => c.id_company && c.company_name)
-            .map((c) => ({ value: String(c.id_company), label: c.company_name })),
-        );
         setDeptOptions(
           deptRes.data
             .filter((d) => d.id_department && d.name_of_department)
@@ -100,7 +92,6 @@ function EditUser() {
           project_id: data.project_id ? String(data.project_id) : null,
           project_ids: data.project_ids?.map(String) ?? [],
           department: data.dept_id ? String(data.dept_id) : null,
-          company_id: data.company_id ? String(data.company_id) : null,
           id_role: data.id_role ? String(data.id_role) : null,
         });
       } catch (err) {
@@ -122,7 +113,6 @@ function EditUser() {
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.company_id) newErrors.company_id = "Company is required";
     if (!formData.project_id) newErrors.project_id = "Project is required";
     if (!formData.id_role) newErrors.id_role = "Role is required";
     setErrors(newErrors);
@@ -145,7 +135,6 @@ function EditUser() {
       department: Number(formData.department),
       project_id: Number(formData.project_id),
       project_ids: formData.project_ids?.map(Number) ?? [],
-      company_id: Number(formData.company_id),
       id_role: Number(formData.id_role),
     };
 
@@ -267,17 +256,6 @@ function EditUser() {
                       value={formData.department}
                       onChange={(v) => handleChange("department", v)}
                       error={errors.department}
-                      classNames={inputClass}
-                    />
-                    <Select
-                      required
-                      searchable
-                      label="Company"
-                      placeholder="Select Company"
-                      data={companyOptions}
-                      value={formData.company_id}
-                      onChange={(v) => handleChange("company_id", v)}
-                      error={errors.company_id}
                       classNames={inputClass}
                     />
                     <Select

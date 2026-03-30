@@ -26,7 +26,6 @@ function CreateUser() {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -40,9 +39,7 @@ function CreateUser() {
     project_id: null,
     project_ids: [],
     department: null,
-    company_id: null,
     id_role: null,
-    access_yard_company: [],
   });
 
   const [errors, setErrors] = useState({});
@@ -56,21 +53,11 @@ function CreateUser() {
     const fetchMasterData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        const [companyRes, deptRes, projectRes, roleRes] = await Promise.all([
-          axios.get(`${API_URL}/portal_company/list`, { headers }),
+        const [deptRes, projectRes, roleRes] = await Promise.all([
           axios.get(`${API_URL}/portal-department`, { headers }),
           axios.get(`${API_URL}/portal-project`, { headers }),
           axios.get(`${API_URL}/role`, { headers }),
         ]);
-
-        // Company → id_company, company_name ✅
-        setCompanyOptions(
-          companyRes.data.map((c) => ({
-            value: String(c.id_company),
-            label: c.company_name,
-          })),
-        );
-
         // Department → id_department, name_department ✅ (bukan temp_iss_id & name_of_department)
         setDeptOptions(
           deptRes.data
@@ -112,7 +99,6 @@ function CreateUser() {
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.company_id) newErrors.company_id = "Company is required";
     if (!formData.project_id) newErrors.project_id = "Project is required";
     if (!formData.id_role) newErrors.id_role = "Role is required";
     setErrors(newErrors);
@@ -135,12 +121,10 @@ function CreateUser() {
       department: Number(formData.department),
       project_id: Number(formData.project_id),
       project_ids: formData.project_ids?.map(Number) ?? [],
-      company_id: Number(formData.company_id),
       id_role: Number(formData.id_role),
       outside_access: Number(formData.outside_access),
       portal_type: Number(formData.portal_type),
       status_user: Number(formData.status_user),
-      access_yard_company: formData.access_yard_company?.map(Number) ?? [],
       created_by: user.id,
     };
 
@@ -163,9 +147,7 @@ function CreateUser() {
         project_id: null,
         project_ids: [],
         department: null,
-        company_id: null,
         id_role: null,
-        access_yard_company: [],
       });
       setErrors({});
     } catch (err) {
@@ -273,17 +255,6 @@ function CreateUser() {
                       value={formData.department}
                       onChange={(v) => handleChange("department", v)}
                       error={errors.department}
-                      classNames={inputClass}
-                    />
-                    <Select
-                      required
-                      searchable
-                      label="Company"
-                      placeholder="Select Company"
-                      data={companyOptions}
-                      value={formData.company_id}
-                      onChange={(v) => handleChange("company_id", v)}
-                      error={errors.company_id}
                       classNames={inputClass}
                     />
                     <Select

@@ -36,7 +36,6 @@ function CreateRequest() {
     email: "",
     department: null,
     project: null,
-    company: null,
     request_reason: "",
     approval_hod_by: "",
     remarks: "",
@@ -62,7 +61,6 @@ function CreateRequest() {
   const [search, setSearch] = useState("");
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -148,15 +146,12 @@ function CreateRequest() {
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        const [deptRes, projectRes, companyRes, navMenuRes, categoryRes] =
+        const [deptRes, projectRes, navMenuRes, categoryRes] =
           await Promise.all([
             axios.get(`${API_URL}/portal-department`, {
               headers: { Authorization: `Bearer ${user.token}` },
             }),
             axios.get(`${API_URL}/portal-project`, {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }),
-            axios.get(`${API_URL}/portal_company/list`, {
               headers: { Authorization: `Bearer ${user.token}` },
             }),
             axios.get(`${API_URL}/portal_nav_menu/list`, {
@@ -177,12 +172,6 @@ function CreateRequest() {
           projectRes.data.map((p) => ({
             value: String(p.id),
             label: p.project_name,
-          })),
-        );
-        setCompanyOptions(
-          companyRes.data.map((c) => ({
-            value: String(c.id_company),
-            label: c.company_name,
           })),
         );
         setNavMenuOptions(
@@ -250,7 +239,6 @@ function CreateRequest() {
       status_active: 1,
       project_id: formData.project ? Number(formData.project) : undefined,
       dept_id: formData.department ? Number(formData.department) : undefined,
-      id_company: formData.company ? Number(formData.company) : undefined,
       approval_hod_by: formData.approval_hod_by,
       access_nav_menu: formData.access_nav_menu,
       category_account: Number(formData.category_account),
@@ -280,7 +268,6 @@ function CreateRequest() {
           request_reason: "",
           approval_hod_by: "",
           remarks: "",
-          company: null,
           category_account: null,
           access_nav_menu: [],
         });
@@ -412,17 +399,6 @@ function CreateRequest() {
                     value={formData.project}
                     onChange={(val) => handleChange("project", val)}
                     error={errors.project}
-                    searchable
-                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                  />
-
-                  <Select
-                    required
-                    label="Company"
-                    placeholder="Select Company"
-                    data={companyOptions}
-                    value={formData.company}
-                    onChange={(val) => handleChange("company", val)}
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />

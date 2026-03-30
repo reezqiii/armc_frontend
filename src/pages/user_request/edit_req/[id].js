@@ -38,7 +38,6 @@ function EditRequest() {
     email: "",
     department: null,
     project: null,
-    company: null,
     request_reason: "",
     approval_hod_by: "",
     remarks: "",
@@ -60,7 +59,6 @@ function EditRequest() {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
-  const [companyOptions, setCompanyOptions] = useState([]);
 
   const isReturned = formData.request_status === 8;
 
@@ -121,7 +119,6 @@ function EditRequest() {
         const [
           deptRes,
           projectRes,
-          companyRes,
           navMenuRes,
           categoryRes,
           requestRes,
@@ -130,9 +127,6 @@ function EditRequest() {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
           axios.get(`${API_URL}/portal-project`, {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }),
-          axios.get(`${API_URL}/portal_company/list`, {
             headers: { Authorization: `Bearer ${user.token}` },
           }),
           axios.get(`${API_URL}/portal_nav_menu/list`, {
@@ -156,12 +150,6 @@ function EditRequest() {
           projectRes.data.map((p) => ({
             value: String(p.id),
             label: p.project_name,
-          })),
-        );
-        setCompanyOptions(
-          companyRes.data.map((c) => ({
-            value: String(c.id_company),
-            label: c.company_name,
           })),
         );
         setNavMenuOptions(
@@ -200,9 +188,6 @@ function EditRequest() {
           request_reason: data.request_reason || "",
           remarks: data.remarks || "",
           updated_at: data.updated_at || null,
-          company: data.company?.id_company
-            ? String(data.company.id_company)
-            : null,
           department: deptId,
           project: projectId,
           request_status: data.request_status ?? 0,
@@ -292,7 +277,6 @@ function EditRequest() {
       remarks: formData.remarks,
       project_id: formData.project ? Number(formData.project) : undefined,
       dept_id: formData.department ? Number(formData.department) : undefined,
-      id_company: formData.company ? Number(formData.company) : undefined,
       category_account:
         formData.category_account !== ""
           ? Number(formData.category_account)
@@ -442,17 +426,6 @@ function EditRequest() {
                     value={formData.project}
                     onChange={(val) => handleChange("project", val)}
                     error={errors.project}
-                    searchable
-                    classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-                  />
-
-                  <Select
-                    required
-                    label="Company"
-                    placeholder="Select Company"
-                    data={companyOptions}
-                    value={formData.company}
-                    onChange={(val) => handleChange("company", val)}
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />

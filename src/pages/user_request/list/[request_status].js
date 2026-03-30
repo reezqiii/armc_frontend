@@ -452,14 +452,6 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.company_name,
-        id: "company_name",
-        header: "Company",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => info.getValue() || "-",
-      },
-      {
         accessorFn: (row) => row.email,
         id: "email",
         header: "Email",

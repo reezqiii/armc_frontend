@@ -9,11 +9,10 @@ import {
   IconUserCog,
   IconHome,
   IconMenu2,
-  IconDeviceDesktop,
-  IconFolderOpen,
-  IconWifi,
-  IconTerminal,
   IconDatabase,
+  IconBuildingFactory,
+  IconTool,
+  IconBox,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -53,47 +52,32 @@ export default function Navigation() {
             },
           ]
         : []),
-      {
-        name: "Computer & Account",
-        target: `${IT_FORM}/computer_account/computer_account_list`,
-        icon: <IconDeviceDesktop size={20} />,
-        external: true,
-      },
-      {
-        name: "Cross Dept. Share Folder Access",
-        target: `${IT_FORM}/access_multi_share_folder/access_multi_share_folder`,
-        icon: <IconFolderOpen size={20} />,
-        external: true,
-      },
-      {
-        name: "Wifi Access",
-        target: `${IT_FORM}/Wifi_access/wifi_access`,
-        icon: <IconWifi size={20} />,
-        external: true,
-      },
-      {
-        name: "Software Development",
-        target: `${IT_FORM}/software_request/`,
-        icon: <IconTerminal size={20} />,
-        external: true,
-      },
       // PCMS Access Request — hanya yang punya request.create atau view
       ...(can("request.create") ||
       can("request.view_own_dept") ||
       can("request.view_all")
         ? [
             {
-              name: "PCMS Access Request",
+              name: "Access Request",
               url: "/user_request/dashboard",
               icon: <IconUser size={20} />,
             },
           ]
         : []),
       {
-        name: "UAT",
-        target: `${IT_FORM}/uat_app/master_app`,
-        icon: <IconDatabase size={20} />,
-        external: true,
+        name: "Production & Quality",
+        url: "/production_quality", // atau sesuaikan URL jika diperlukan
+        icon: <IconBuildingFactory size={20} />,
+      },
+      {
+        name: "Engineering",
+        url: "/engineering", // atau sesuaikan URL jika diperlukan
+        icon: <IconTool size={20} />,
+      },
+      {
+        name: "Warehouse",
+        url: "/warehouse", // atau sesuaikan URL jika diperlukan
+        icon: <IconBox size={20} />,
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
