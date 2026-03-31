@@ -91,7 +91,6 @@ function RequestDetail() {
       confirmButtonColor: "#0d9488",
     });
     if (!confirm.isConfirmed) return;
-
     try {
       await axios.put(
         `${API_URL}/requests/${id}/submit-to-hod`,
@@ -161,7 +160,6 @@ function RequestDetail() {
 
   const status = getRequestStatus(data.request_status);
 
-  // Helper: avatar initials
   const getInitials = (name) =>
     (name || "-")
       .split(" ")
@@ -178,7 +176,7 @@ function RequestDetail() {
           shadow="md"
           className="bg-white p-0 w-full overflow-hidden border border-gray-200"
         >
-          {/* Header */}
+          {/* Header — sama persis dengan create */}
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
               PCMS Access Login Request Form
@@ -187,6 +185,7 @@ function RequestDetail() {
             </h1>
           </div>
 
+          {/* ── Semua konten dalam satu div p-6 md:p-10 space-y-10 ── */}
           <div className="p-6 md:p-10 space-y-10">
             {/* 1. Date & Requestor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -217,6 +216,7 @@ function RequestDetail() {
                 </div>
               </div>
 
+              {/* Baris 1: Category | Badge | Full Name */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
@@ -242,6 +242,10 @@ function RequestDetail() {
                     {data.full_name || "-"}
                   </div>
                 </div>
+              </div>
+
+              {/* Baris 2: Dept | Project | Application Access */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
                     Department <span className="text-red-500">*</span>
@@ -258,227 +262,197 @@ function RequestDetail() {
                     {data.project_name || data.project || "-"}
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-gray-700 text-sm">
+                    Application Access <span className="text-red-500">*</span>
+                  </label>
+                  <div className="min-h-[40px] px-3 py-2 bg-gray-50 border border-gray-300 rounded-md flex flex-wrap items-center gap-1.5">
+                    {data.access_nav_menu?.length ? (
+                      data.access_nav_menu.map((n, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-teal-50 border border-teal-100 text-teal-700 text-xs font-medium"
+                        >
+                          {n.application_name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-600">-</span>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Baris 3: Email — 1 kolom saja */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <label className="font-semibold text-gray-700 text-sm">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                    {data.email || "-"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Purpose & Remarks */}
+            <div className="space-y-4">
+              <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
+                <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                  Purpose &amp; Remarks
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="font-semibold text-gray-700 text-sm">
-                  Application Access <span className="text-red-500">*</span>
+                  Purpose of Request <span className="text-red-500">*</span>
                 </label>
-                <div className="min-h-[40px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md flex items-start text-sm text-gray-600">
-                  {data.access_nav_menu?.length
-                    ? data.access_nav_menu
-                        .map((n) => n.application_name)
-                        .join(", ")
-                    : "-"}
+                <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
+                  {data.request_reason || "-"}
                 </div>
               </div>
+
               <div className="space-y-1">
                 <label className="font-semibold text-gray-700 text-sm">
-                  Email Address <span className="text-red-500">*</span>
+                  Additional Remarks (Optional)
                 </label>
-                <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
-                  {data.email || "-"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Purpose & Remarks */}
-          <div className="space-y-4">
-            <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-              <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                Purpose & Remarks
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm">
-                Purpose of Request <span className="text-red-500">*</span>
-              </label>
-              <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600">
-                {data.request_reason || "-"}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-gray-700 text-sm">
-                Additional Remarks (Optional)
-              </label>
-              <div className="min-h-[60px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
-                {data.remarks || "-"}
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Approval Workflow */}
-          <div className="space-y-4">
-            <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-              <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  {["Requestor", "Head of Department", "HOD IT"].map(
-                    (label) => (
-                      <span key={label}>{label}</span>
-                    ),
-                  )}
+                <div className="min-h-[60px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
+                  {data.remarks || "-"}
                 </div>
               </div>
             </div>
 
-            {/* Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-200 border-t-0 rounded-b-lg overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-200">
-              {/* Col 1 — Requestor */}
-              <div className="p-5 bg-white">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0" />
-                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+            {/* 4. Approval Workflow */}
+            <div className="space-y-4">
+              <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
+                <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    {["Requestor", "Head of Department", "HOD IT"].map(
+                      (label) => (
+                        <span key={label}>{label}</span>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cards — sama struktur border dengan create form */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+                {/* Col 1 — Requestor */}
+                <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                     Requested By
                   </span>
-                </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[13px] font-semibold text-teal-700 flex-shrink-0">
-                    {getInitials(data?.created_by_name)}
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[12px] font-semibold text-teal-700 flex-shrink-0">
+                      {getInitials(data?.created_by_name)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 leading-tight border-b border-gray-100 pb-1">
+                        {data?.created_by_name || "-"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {formatDate(data?.created_date, { showTime: true })}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800 leading-tight">
-                      {data?.created_by_name || "-"}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Requestor</p>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-md">
-                  <IconCalendar
-                    size={12}
-                    className="text-gray-400 flex-shrink-0"
-                  />
-                  <span className="text-xs text-gray-500">
-                    {formatDate(data?.created_date, { showTime: true })}
-                  </span>
-                </div>
-              </div>
 
-              {/* Col 2 — HOD */}
-              <div className="p-5 bg-white">
-                <div className="flex items-center gap-2 mb-4">
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${data?.approval_hod_date_at ? "bg-teal-500" : "bg-amber-400"}`}
-                  />
-                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                {/* Col 2 — HOD */}
+                <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                     Acknowledge By
                   </span>
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[12px] font-semibold text-teal-700 flex-shrink-0">
+                      {getInitials(data?.approval_hod_by?.full_name)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-teal-600 leading-tight border-b border-gray-100 pb-1">
+                        {data?.approval_hod_by?.full_name || "-"}
+                      </p>
+                      {data?.approval_hod_date_at ? (
+                        <p className="text-xs text-teal-500 mt-0.5">
+                          {formatDate(data.approval_hod_date_at, {
+                            showTime: true,
+                          })}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
+                          <IconClock size={10} /> Pending approval
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {canApproveHod && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="teal"
+                        leftSection={<IconCheck size={12} />}
+                        onClick={() =>
+                          handleApproval("hod-approval", "approve")
+                        }
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftSection={<IconX size={12} />}
+                        onClick={() => handleApproval("hod-approval", "reject")}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+
+                  {data?.rejected_hod_remarks && (
+                    <div className="mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
+                      <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
+                        Rejection Reason
+                      </p>
+                      <p className="text-xs text-red-700">
+                        {data.rejected_hod_remarks}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[13px] font-semibold text-teal-700 flex-shrink-0">
-                    {getInitials(data?.approval_hod_by?.full_name)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-teal-600 leading-tight">
-                      {data?.approval_hod_by?.full_name || "-"}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">Dept. Head</p>
-                  </div>
-                </div>
 
-                {data?.approval_hod_date_at ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-md mb-4">
-                    <IconCalendar
-                      size={12}
-                      className="text-teal-600 flex-shrink-0"
-                    />
-                    <span className="text-xs text-teal-700 font-medium">
-                      {formatDate(data.approval_hod_date_at, {
-                        showTime: true,
-                      })}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-100 rounded-md mb-4">
-                    <IconClock
-                      size={12}
-                      className="text-amber-600 flex-shrink-0"
-                    />
-                    <span className="text-xs text-amber-700 font-medium">
-                      Pending approval
-                    </span>
-                  </div>
-                )}
-
-                {canApproveHod && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="teal"
-                      leftSection={<IconCheck size={12} />}
-                      onClick={() => handleApproval("hod-approval", "approve")}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="red"
-                      leftSection={<IconX size={12} />}
-                      onClick={() => handleApproval("hod-approval", "reject")}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                )}
-
-                {data?.rejected_hod_remarks && (
-                  <div className="mt-3 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
-                    <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
-                      Rejection Reason
-                    </p>
-                    <p className="text-xs text-red-700">
-                      {data.rejected_hod_remarks}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Col 3 — HOD IT */}
-              <div className="p-5 bg-gray-50/60">
-                <div className="flex items-center gap-2 mb-4">
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${data?.approval_it_date_at ? "bg-teal-500" : "bg-gray-300"}`}
-                  />
-                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                {/* Col 3 — HOD IT */}
+                <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
                     Approved By
                   </span>
-                </div>
 
-                {data?.approval_it_hod_by?.full_name ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[13px] font-semibold text-teal-700 flex-shrink-0">
+                  {data?.approval_it_hod_by?.full_name ? (
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[12px] font-semibold text-teal-700 flex-shrink-0">
                         {getInitials(data.approval_it_hod_by.full_name)}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-teal-600 leading-tight">
+                        <p className="text-sm font-bold text-teal-600 leading-tight border-b border-gray-100 pb-1">
                           {data.approval_it_hod_by.full_name}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">HOD IT</p>
+                        <p className="text-xs text-teal-500 mt-0.5">
+                          {data.approval_it_date_at
+                            ? formatDate(data.approval_it_date_at, {
+                                showTime: true,
+                              })
+                            : "-"}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-md mb-4">
-                      <IconCalendar
-                        size={12}
-                        className="text-teal-600 flex-shrink-0"
-                      />
-                      <span className="text-xs text-teal-700 font-medium">
-                        {data.approval_it_date_at
-                          ? formatDate(data.approval_it_date_at, {
-                              showTime: true,
-                            })
-                          : "-"}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                  ) : (
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
                         <svg
-                          width="16"
-                          height="16"
+                          width="15"
+                          height="15"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="#9ca3af"
@@ -489,96 +463,90 @@ function RequestDetail() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">—</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Waiting HOD IT
+                        <p className="text-sm font-medium text-gray-400 italic border-b border-dashed border-gray-200 pb-1">
+                          Waiting HOD IT Approval...
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                          <IconClock size={10} /> Waiting approval...
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border border-dashed border-gray-200 rounded-md mb-4">
-                      <IconClock
-                        size={12}
-                        className="text-gray-400 flex-shrink-0"
-                      />
-                      <span className="text-xs text-gray-400">
-                        Waiting approval...
-                      </span>
+                  )}
+
+                  {canApproveItHod && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="teal"
+                        leftSection={<IconCheck size={12} />}
+                        onClick={() => handleApproval("it-approval", "approve")}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftSection={<IconX size={12} />}
+                        onClick={() => handleApproval("it-approval", "reject")}
+                      >
+                        Reject
+                      </Button>
                     </div>
-                  </>
-                )}
+                  )}
 
-                {canApproveItHod && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="teal"
-                      leftSection={<IconCheck size={12} />}
-                      onClick={() => handleApproval("it-approval", "approve")}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="red"
-                      leftSection={<IconX size={12} />}
-                      onClick={() => handleApproval("it-approval", "reject")}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                )}
+                  {data?.rejected_it_remarks && (
+                    <div className="mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
+                      <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
+                        Rejection Reason
+                      </p>
+                      <p className="text-xs text-red-700">
+                        {data.rejected_it_remarks}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                {data?.rejected_it_remarks && (
-                  <div className="mt-3 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
-                    <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
-                      Rejection Reason
-                    </p>
-                    <p className="text-xs text-red-700">
-                      {data.rejected_it_remarks}
-                    </p>
-                  </div>
+            {/* Action Buttons */}
+            <div className="flex justify-between pt-2">
+              <Button
+                leftSection={<IconArrowLeft size={18} />}
+                color="gray"
+                size="sm"
+                onClick={() => router.back()}
+              >
+                Back
+              </Button>
+
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-500">
+                    Status:
+                  </span>
+                  <span
+                    style={{ backgroundColor: status.bg, color: status.text }}
+                    className="px-3 py-0.5 rounded text-xs font-semibold"
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                {data.request_status === 0 && (
+                  <Button
+                    leftSection={<IconSend size={16} />}
+                    color="teal"
+                    size="sm"
+                    onClick={handleSubmitToHOD}
+                  >
+                    Submit to HOD Request
+                  </Button>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between pt-6">
-            <Button
-              leftSection={<IconArrowLeft size={18} />}
-              color="gray"
-              size="sm"
-              onClick={() => router.back()}
-            >
-              Back
-            </Button>
-
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500">
-                  Status:
-                </span>
-                <span
-                  style={{ backgroundColor: status.bg, color: status.text }}
-                  className="px-3 py-0.5 rounded text-xs font-semibold"
-                >
-                  {status.label}
-                </span>
-              </div>
-              {data.request_status === 0 && (
-                <Button
-                  leftSection={<IconSend size={16} />}
-                  color="teal"
-                  size="sm"
-                  onClick={handleSubmitToHOD}
-                >
-                  Submit to HOD Request
-                </Button>
-              )}
-            </div>
-          </div>
+          {/* end p-6 md:p-10 */}
         </Paper>
       </div>
     </AuthLayout>
