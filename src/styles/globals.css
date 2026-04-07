@@ -33,11 +33,10 @@ body {
 }
 
 .resizer.isResizing {
-  background: #2563eb;
+  background: #0d9488;
   opacity: 1;
 }
 
-/* Sidebar NavLink */
 .mantine-NavLink-root[data-active] {
   background-color: #0d9488 !important;
   color: white !important;
@@ -53,17 +52,8 @@ body {
 }
 
 @media (hover: hover) {
-  .resizer {
-    opacity: 0;
-  }
-
   *:hover > .resizer {
     opacity: 1;
-  }
-
-  .mantine-multiselect-input {
-    @apply bg-gray-100 border border-gray-300 text-sm rounded-md px-3 py-2 min-h-[42px]
-    focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all;
   }
 
   .mantine-multiselect-label {
@@ -74,27 +64,32 @@ body {
     @apply bg-gray-200 text-gray-800 text-sm rounded-md px-2 py-1 mr-1 mb-1;
   }
 
-  .mantine-MultiSelect-dropdown {
-    @apply text-sm shadow-md border border-gray-200 rounded-md bg-white;
-  }
-
-  .mantine-MultiSelect-item {
-    @apply text-sm hover:bg-blue-50 cursor-pointer px-2 py-1 rounded;
-  }
-
-  /* TextInput */
-  .mantine-TextInput-input:focus {
-    border-color: #14b8a6 !important;
-    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
+  .mantine-TextInput-input:focus,
+  .mantine-Select-input:focus,
+  .mantine-Autocomplete-input:focus,
+  .mantine-MultiSelect-input:focus,
+  .mantine-Textarea-input:focus,
+  .mantine-multiselect-input:focus,
+  .mantine-multiselect-input:focus-within {
+    border-color: #0d9488 !important;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2) !important;
+    outline: none !important;
   }
 
   .mantine-PasswordInput-input:focus-within {
-    border-color: #14b8a6 !important;
-    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
+    border-color: #0d9488 !important;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2) !important;
+  }
+
+  .mantine-MultiSelect-item[data-hovered],
+  .mantine-Select-item[data-hovered],
+  .mantine-Autocomplete-item[data-hovered] {
+    background-color: #f0fdfa !important;
+    color: #0d9488 !important;
   }
 
   .mantine-Button-root:focus-visible {
-    outline: 2px solid #14b8a6 !important;
+    outline: 2px solid #0d9488 !important;
     outline-offset: 2px !important;
   }
 }

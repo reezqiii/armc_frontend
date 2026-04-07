@@ -6,7 +6,7 @@ export default function Document() {
       <Head>
         <link
           rel="icon"
-          href={`${process.env.NEXT_PUBLIC_BASE_PATH}/armc.jpg`}
+          href={`${process.env.NEXT_PUBLIC_BASE_PATH}/images/login.jpg`} 
           type="image/jpeg"
         />
       </Head>

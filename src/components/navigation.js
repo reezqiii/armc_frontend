@@ -23,7 +23,7 @@ export default function Navigation() {
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
   const { user } = useUser();
-  const { can } = usePermission();
+  const { can, canAny } = usePermission();
 
   const navigation = useMemo(
     () => [
@@ -41,9 +41,13 @@ export default function Navigation() {
             },
           ]
         : []),
-      ...(can("request.create") ||
-      can("request.view_own_dept") ||
-      can("request.view_all")
+      ...(canAny(
+        "request.create",
+        "request.view_own_dept",
+        "request.view_all",
+        "request.approve_hod",
+        "request.approve_it",
+      )
         ? [
             {
               name: "Access Request",
@@ -53,21 +57,19 @@ export default function Navigation() {
           ]
         : []),
       {
-
         name: "Production & Quality",
-        url: "/production_quality", // atau sesuaikan URL jika diperlukan
+        url: "/production_quality",
         icon: <IconBuildingFactory size={20} />,
       },
       {
         name: "Engineering",
-        url: "/engineering", // atau sesuaikan URL jika diperlukan
+        url: "/engineering",
         icon: <IconTool size={20} />,
       },
       {
         name: "Warehouse",
-        url: "/warehouse", // atau sesuaikan URL jika diperlukan
+        url: "/warehouse",
         icon: <IconBox size={20} />,
-
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
     ],

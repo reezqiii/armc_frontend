@@ -36,12 +36,6 @@ const requestorList = [
         icon: <IconUserPlus size={18} />,
       },
       {
-        title: "Draft",
-        href: "/user_request/list/draft",
-        active: "Draft",
-        icon: <IconFileText size={18} />,
-      },
-      {
         title: "Pending HOD Request",
         href: "/user_request/list/awaiting-hod-approval",
         active: "Pending HOD Request",

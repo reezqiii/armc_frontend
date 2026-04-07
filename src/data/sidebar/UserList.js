@@ -5,6 +5,7 @@ import {
   IconShield,
   IconKey,
   IconLayoutDashboard,
+  IconUserCheck,
 } from "@tabler/icons-react";
 
 const userList = [

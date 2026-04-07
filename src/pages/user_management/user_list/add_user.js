@@ -130,7 +130,7 @@ function CreateUser() {
 
     try {
       setLoadingSubmit(true);
-      await axios.post(`${API_URL}/api/user/create`, payload, {
+      await axios.post(`${API_URL}user/create`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       await showAlert("Success", "success", "User successfully created", "OK");

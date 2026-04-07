@@ -36,8 +36,8 @@ function EditRole() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
-  const [permissions, setPermissions] = useState([]); // all permissions with assigned flag
-  const [selectedIds, setSelectedIds] = useState([]); // selected id_permission[]
+  const [permissions, setPermissions] = useState([]); 
+  const [selectedIds, setSelectedIds] = useState([]); 
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
   // Fetch role data
