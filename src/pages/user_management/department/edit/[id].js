@@ -49,15 +49,48 @@ function EditDepartment() {
 
     try {
       setLoading(true);
-      await axios.patch(
+      const response = await axios.patch(
         `${API_URL}/portal-department/${id}`,
         { name_of_department: name },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
       );
-      showAlert("Success", "success", "Department successfully updated.", "OK");
-      router.push("/user_management/department/list");
-    } catch {
-      showAlert("Error", "error", "Failed to update department.", "OK");
+
+      if (response.status === 409) {
+        return showAlert(
+          "Duplicate Department",
+          "warning",
+          response.data.message || "This department name already exists.",
+          "Try Another Department Name",
+        );
+      }
+
+      if (response.status === 200) {
+        showAlert(
+          "Success",
+          "success",
+          "Department successfully updated.",
+          "OK",
+        );
+        router.push("/user_management/department/list");
+      } else {
+        showAlert(
+          "Error",
+          "error",
+          response.data.message || "Failed to update.",
+          "OK",
+        );
+      }
+    } catch (error) {
+      console.error("Update Error:", error);
+      showAlert(
+        "Error",
+        "error",
+        "An unexpected error occurred. Please try again.",
+        "OK",
+      );
     } finally {
       setLoading(false);
     }

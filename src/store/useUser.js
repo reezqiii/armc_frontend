@@ -8,10 +8,10 @@ const useUser = create(
         id: 0,
         name: null,
         token: null,
-        role: null, // ← role name: "Staff", "Administrator"
-        role_id: null, // ← role id
-        permissions: [], // ← existing (number array sistem lama)
-        permissions_key: [], // ← derived dari role + user-specific
+        role: null, 
+        role_id: null, 
+        permissions: [],
+        permissions_key: [],
         department: null,
       },
       setUser: (value) => {

@@ -27,6 +27,7 @@ function CreateUser() {
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
+  const [positionOptions, setPositionOptions] = useState([]);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -39,6 +40,7 @@ function CreateUser() {
     project_id: null,
     project_ids: [],
     department: null,
+    id_position: null,
     id_role: null,
   });
 
@@ -53,35 +55,42 @@ function CreateUser() {
     const fetchMasterData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        const [deptRes, projectRes, roleRes] = await Promise.all([
+        const [deptRes, projectRes, roleRes, posRes] = await Promise.all([
           axios.get(`${API_URL}/portal-department`, { headers }),
           axios.get(`${API_URL}/portal-project`, { headers }),
           axios.get(`${API_URL}/role`, { headers }),
+          axios.get(`${API_URL}/portal-position`, { headers }),
         ]);
-        // Department → id_department, name_department ✅ (bukan temp_iss_id & name_of_department)
+
         setDeptOptions(
           deptRes.data
             .filter((d) => d.id_department && d.name_of_department)
             .map((d) => ({
               value: String(d.id_department),
-              label: d.name_of_department, // ← pakai name_of_department
+              label: d.name_of_department,
             })),
         );
-        // Project → id_project, project_name ✅ (bukan p.id)
+
         setProjectOptions(
           projectRes.data
             .filter((p) => p.id && p.project_name)
             .map((p) => ({
-              value: String(p.id), // ← pakai p.id bukan p.id_project
+              value: String(p.id),
               label: p.project_name,
             })),
         );
 
-        // Role → id_role, role_name ✅
         setRoleOptions(
           roleRes.data.map((r) => ({
             value: String(r.id_role),
             label: r.role_name,
+          })),
+        );
+
+        setPositionOptions(
+          posRes.data.map((p) => ({
+            value: String(p.id),
+            label: p.position_name,
           })),
         );
       } catch (err) {
@@ -99,6 +108,7 @@ function CreateUser() {
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.department) newErrors.department = "Department is required";
+    if (!formData.id_position) newErrors.id_position = "Position is required";
     if (!formData.project_id) newErrors.project_id = "Project is required";
     if (!formData.id_role) newErrors.id_role = "Role is required";
     setErrors(newErrors);
@@ -112,13 +122,14 @@ function CreateUser() {
     const confirm = await showConfirm(
       "Create User?",
       "Are you sure you want to create this user account?",
-      "Yes, Create!", // ← tambahkan parameter ke-3
+      "Yes, Create!",
     );
     if (!confirm.isConfirmed) return;
 
     const payload = {
       ...formData,
       department: Number(formData.department),
+      id_position: Number(formData.id_position),
       project_id: Number(formData.project_id),
       project_ids: formData.project_ids?.map(Number) ?? [],
       id_role: Number(formData.id_role),
@@ -130,32 +141,59 @@ function CreateUser() {
 
     try {
       setLoadingSubmit(true);
-      await axios.post(`${API_URL}user/create`, payload, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      await showAlert("Success", "success", "User successfully created", "OK");
 
-      // Reset form
-      setFormData({
-        full_name: "",
-        badge_no: "",
-        username: "",
-        email: "",
-        outside_access: "1",
-        portal_type: "0",
-        status_user: "1",
-        project_id: null,
-        project_ids: [],
-        department: null,
-        id_role: null,
+      const response = await axios.post(`${API_URL}/user/create`, payload, {
+        headers: { Authorization: `Bearer ${user.token}` },
+        validateStatus: (status) => status < 500,
       });
-      setErrors({});
+
+      if (response.status === 409) {
+        return showAlert(
+          "Username Taken",
+          "warning",
+          response.data.message ||
+            "This username is already used by another user.",
+          "Try Another Username",
+        );
+      }
+
+      if (response.status === 201 || response.status === 200) {
+        await showAlert(
+          "Success",
+          "success",
+          "User successfully created",
+          "OK",
+        );
+
+        setFormData({
+          full_name: "",
+          badge_no: "",
+          username: "",
+          email: "",
+          outside_access: "1",
+          portal_type: "0",
+          status_user: "1",
+          project_id: null,
+          project_ids: [],
+          department: null,
+          id_position: null,
+          id_role: null,
+        });
+        setErrors({});
+      } else {
+        showAlert(
+          "Error",
+          "error",
+          response.data.message || "Failed to create user",
+          "OK",
+        );
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Technical Error:", err);
       showAlert(
-        "Error",
+        "System Error",
         "error",
-        err.response?.data?.message || "Failed to create user",
+        "An unexpected error occurred. Please contact IT support.",
         "OK",
       );
     } finally {
@@ -255,6 +293,17 @@ function CreateUser() {
                       value={formData.department}
                       onChange={(v) => handleChange("department", v)}
                       error={errors.department}
+                      classNames={inputClass}
+                    />
+                    <Select
+                      required
+                      searchable
+                      label="Position"
+                      placeholder="Select Position"
+                      data={positionOptions}
+                      value={formData.id_position}
+                      onChange={(v) => handleChange("id_position", v)}
+                      error={errors.id_position}
                       classNames={inputClass}
                     />
                     <Select

@@ -1,21 +1,12 @@
 import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
 import { Button, Paper, Loader } from "@mantine/core";
-import {
-  IconArrowLeft,
-  IconCalendar,
-  IconSend,
-  IconX,
-  IconCheck,
-  IconClock,
-} from "@tabler/icons-react";
+import { IconArrowLeft, IconCalendar, IconClock } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
-import usePermission from "@/hooks/usePermission";
-import Swal from "sweetalert2";
 import { formatDate } from "@/lib/dateFormat";
 import { getRequestStatus } from "@/lib/requestStatusList";
 
@@ -25,21 +16,9 @@ function RequestDetail() {
   const API = useApi();
   const API_URL = API.API_URL;
   const { user } = useUser();
-  const { can } = usePermission();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const isApprover = (approverId) => {
-    if (!approverId) return false;
-    return String(user?.id) === String(approverId);
-  };
-
-  const canApproveHod =
-    data?.request_status === 1 && isApprover(data?.approval_hod_by?.id);
-
-  const canApproveItHod =
-    data?.request_status === 5 && can("request.it_approval");
 
   const fetchData = useCallback(async () => {
     if (!id || !user?.token) return;
@@ -81,83 +60,6 @@ function RequestDetail() {
     );
   }
 
-  const handleSubmitToHOD = async () => {
-    const confirm = await Swal.fire({
-      title: "Submit this request to HOD?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, submit",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#0d9488",
-    });
-    if (!confirm.isConfirmed) return;
-    try {
-      await axios.put(
-        `${API_URL}/requests/${id}/submit-to-hod`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Request submitted to HOD.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-      fetchData();
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to submit request.",
-      });
-    }
-  };
-
-  const handleApproval = async (endpoint, action) => {
-    const confirm = await Swal.fire({
-      title: `Are you sure you want to ${action}?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: `Yes, ${action}`,
-      confirmButtonColor: action === "approve" ? "#0d9488" : "#d33",
-    });
-    if (!confirm.isConfirmed) return;
-
-    let remarks = "";
-    if (action === "reject") {
-      const { value } = await Swal.fire({
-        title: "Reason for Rejection",
-        input: "textarea",
-        inputPlaceholder: "Enter your reason...",
-        showCancelButton: true,
-      });
-      if (!value) {
-        Swal.fire("Cancelled", "You must provide a reason.", "info");
-        return;
-      }
-      remarks = value;
-    }
-
-    try {
-      await axios.put(
-        `${API_URL}/requests/${id}/${endpoint}`,
-        { action, remarks },
-        { headers: { Authorization: `Bearer ${user.token}` } },
-      );
-      Swal.fire({
-        icon: "success",
-        title: "Success!",
-        text: `Request has been ${action}ed.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-      fetchData();
-    } catch (err) {
-      Swal.fire("Error", "Failed to update request.", "error");
-    }
-  };
-
   const status = getRequestStatus(data.request_status);
 
   const getInitials = (name) =>
@@ -176,22 +78,21 @@ function RequestDetail() {
           shadow="md"
           className="bg-white p-0 w-full overflow-hidden border border-gray-200"
         >
-          {/* Header — sama persis dengan create */}
+          {/* Header */}
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
-              PCMS Access Login Request Form
+              Portal Access Request Form
               {data?.id_request &&
-                ` — ITF14-${String(data.id_request).padStart(6, "0")}`}
+                ` — REQ-${String(data.id_request).padStart(6, "0")}`}
             </h1>
           </div>
 
-          {/* ── Semua konten dalam satu div p-6 md:p-10 space-y-10 ── */}
           <div className="p-6 md:p-10 space-y-10">
             {/* 1. Date & Requestor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <label className="block font-semibold text-gray-700 text-sm">
-                  Request Date <span className="text-red-500">*</span>
+                  Request Date
                 </label>
                 <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
                   {formatDate(data.created_date)}
@@ -200,35 +101,32 @@ function RequestDetail() {
               </div>
               <div className="space-y-1">
                 <label className="block font-semibold text-gray-700 text-sm">
-                  Requestor <span className="text-red-500">*</span>
+                  Requestor
                 </label>
                 <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600 font-medium">
-                  {data?.created_by_name || data?.requestor_name || "-"}
+                  {data?.created_by_name || "-"}
                 </div>
               </div>
             </div>
 
             {/* 2. Employee Description */}
             <div className="space-y-6">
-              <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-                <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                  Employee Description
-                </div>
+              <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                Employee Description
               </div>
 
-              {/* Baris 1: Category | Badge | Full Name */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Category Account <span className="text-red-500">*</span>
+                    Category Account
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
-                    {data.category_account_name || data.category?.name || "-"}
+                    {data.category_account_name || "-"}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Badge ID <span className="text-red-500">*</span>
+                    Badge ID
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
                     {data.badge_no || "-"}
@@ -236,19 +134,23 @@ function RequestDetail() {
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Full Name <span className="text-red-500">*</span>
+                    Full Name
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
                     {data.full_name || "-"}
                   </div>
                 </div>
-              </div>
-
-              {/* Baris 2: Dept | Project | Application Access */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Department <span className="text-red-500">*</span>
+                    Position
+                  </label>
+                  <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
+                    {data.position_name || "-"}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-gray-700 text-sm">
+                    Department
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
                     {data.department_name || "-"}
@@ -256,15 +158,15 @@ function RequestDetail() {
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Project <span className="text-red-500">*</span>
+                    Project
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
-                    {data.project_name || data.project || "-"}
+                    {data.project_name || "-"}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Application Access <span className="text-red-500">*</span>
+                    Application Access
                   </label>
                   <div className="min-h-[40px] px-3 py-2 bg-gray-50 border border-gray-300 rounded-md flex flex-wrap items-center gap-1.5">
                     {data.access_nav_menu?.length ? (
@@ -281,13 +183,9 @@ function RequestDetail() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Baris 3: Email — 1 kolom saja */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <label className="font-semibold text-gray-700 text-sm">
-                    Email Address <span className="text-red-500">*</span>
+                    Email Address
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
                     {data.email || "-"}
@@ -296,52 +194,35 @@ function RequestDetail() {
               </div>
             </div>
 
-            {/* 3. Purpose & Remarks */}
+            {/* 3. Purpose of Access Request */}
             <div className="space-y-4">
-              <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-                <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                  Purpose &amp; Remarks
-                </div>
+              <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                Purpose of Access Request
               </div>
-
               <div className="space-y-1">
                 <label className="font-semibold text-gray-700 text-sm">
-                  Purpose of Request <span className="text-red-500">*</span>
+                  Purpose of Request
                 </label>
                 <div className="min-h-[80px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
                   {data.request_reason || "-"}
                 </div>
               </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-gray-700 text-sm">
-                  Additional Remarks (Optional)
-                </label>
-                <div className="min-h-[60px] py-2 px-3 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600 leading-relaxed">
-                  {data.remarks || "-"}
-                </div>
-              </div>
             </div>
 
-            {/* 4. Approval Workflow */}
+            {/* 4. Approval History */}
             <div className="space-y-4">
-              <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-                <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    {["Requestor", "Head of Department", "HOD IT"].map(
-                      (label) => (
-                        <span key={label}>{label}</span>
-                      ),
-                    )}
-                  </div>
+              <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>Requestor</div>
+                  <div>Dept Head Approval</div>
+                  <div>IT Head Approval</div>
                 </div>
               </div>
 
-              {/* Cards — sama struktur border dengan create form */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden">
                 {/* Col 1 — Requestor */}
                 <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">
                     Requested By
                   </span>
                   <div className="flex items-center gap-3 py-2">
@@ -361,7 +242,7 @@ function RequestDetail() {
 
                 {/* Col 2 — HOD */}
                 <div className="p-4 bg-white flex flex-col justify-between min-h-[120px]">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">
                     Acknowledge By
                   </span>
                   <div className="flex items-center gap-3 py-2">
@@ -385,32 +266,6 @@ function RequestDetail() {
                       )}
                     </div>
                   </div>
-
-                  {canApproveHod && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="teal"
-                        leftSection={<IconCheck size={12} />}
-                        onClick={() =>
-                          handleApproval("hod-approval", "approve")
-                        }
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="red"
-                        leftSection={<IconX size={12} />}
-                        onClick={() => handleApproval("hod-approval", "reject")}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-
                   {data?.rejected_hod_remarks && (
                     <div className="mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
                       <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
@@ -425,10 +280,9 @@ function RequestDetail() {
 
                 {/* Col 3 — HOD IT */}
                 <div className="p-4 bg-gray-50/50 flex flex-col justify-between min-h-[120px]">
-                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">
                     Approved By
                   </span>
-
                   {data?.approval_it_hod_by?.full_name ? (
                     <div className="flex items-center gap-3 py-2">
                       <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[12px] font-semibold text-teal-700 flex-shrink-0">
@@ -472,30 +326,6 @@ function RequestDetail() {
                       </div>
                     </div>
                   )}
-
-                  {canApproveItHod && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="teal"
-                        leftSection={<IconCheck size={12} />}
-                        onClick={() => handleApproval("it-approval", "approve")}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="red"
-                        leftSection={<IconX size={12} />}
-                        onClick={() => handleApproval("it-approval", "reject")}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-
                   {data?.rejected_it_remarks && (
                     <div className="mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-md">
                       <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-1">
@@ -520,33 +350,19 @@ function RequestDetail() {
               >
                 Back
               </Button>
-
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-500">
-                    Status:
-                  </span>
-                  <span
-                    style={{ backgroundColor: status.bg, color: status.text }}
-                    className="px-3 py-0.5 rounded text-xs font-semibold"
-                  >
-                    {status.label}
-                  </span>
-                </div>
-                {data.request_status === 0 && (
-                  <Button
-                    leftSection={<IconSend size={16} />}
-                    color="teal"
-                    size="sm"
-                    onClick={handleSubmitToHOD}
-                  >
-                    Submit to HOD Request
-                  </Button>
-                )}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500">
+                  Status:
+                </span>
+                <span
+                  style={{ backgroundColor: status.bg, color: status.text }}
+                  className="px-3 py-0.5 rounded text-xs font-semibold"
+                >
+                  {status.label}
+                </span>
               </div>
             </div>
           </div>
-          {/* end p-6 md:p-10 */}
         </Paper>
       </div>
     </AuthLayout>

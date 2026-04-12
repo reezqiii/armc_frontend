@@ -8,7 +8,6 @@ import {
   Select,
   Text,
 } from "@mantine/core";
-// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
 import Datatables from "@/components/custom/Datatables";
@@ -27,8 +26,6 @@ export default function Index() {
   const { encrypt } = useEncrypt();
   const API = useApi();
   const API_URL = API.API_URL;
-
-  // MASTER LIST
   const [projectList, setProjectList] = useState([]);
   const [disciplineList, setDisciplineList] = useState([]);
 
@@ -96,8 +93,6 @@ export default function Index() {
         enableColumnFilter: false,
         enableSorting: true,
         cell: (info) => {
-          // return certData[info.getValue()].cert_id
-          // return certData[info.getValue()]?.cert_id
           return info.getValue();
         },
       },
@@ -233,13 +228,6 @@ export default function Index() {
         }
       );
 
-      // let arr_cert = {}
-      // data.form_list.map((v, i) => {
-      //   arr_cert[v.id] = v
-      // })
-
-      // setCertData(arr_cert)
-
       let arr_project = [];
       data.project_active_list.map((v, i) => {
         const _project = {
@@ -326,24 +314,6 @@ export default function Index() {
           }, {})
         : {}),
     }));
-    // if (Object.keys(valueOption).length > 0) {
-    //   // setLoadingData(true)
-    //   setLoadingOpt(true)
-    //   setCheckedId([])
-    //   for (let key in valueOption) {
-    //     setColumnFilters((prev) => {
-    //       const index = prev.findIndex(filter => filter.id === key);
-
-    //       if (index !== -1) {
-    //         const updatedFilters = [...prev];
-    //         updatedFilters[index] = { id: key, value: valueOption[key] };
-    //         return updatedFilters;
-    //       } else {
-    //         return [...prev, { id: key, value: valueOption[key] }];
-    //       }
-    //     });
-    //   }
-    // }
   };
 
   const deleteTag = async () => {

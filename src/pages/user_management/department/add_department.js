@@ -33,15 +33,43 @@ function AddDepartment() {
 
     try {
       setLoading(true);
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/portal-department`,
         { name_of_department: name },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
       );
-      showAlert("Success", "success", "Department successfully added.", "OK");
-      router.push("/user_management/department/list");
-    } catch {
-      showAlert("Error", "error", "Failed to add department.", "OK");
+
+      if (response.status === 409) {
+        return showAlert(
+          "Duplicate Department",
+          "warning",
+          response.data.message || "Department already exists.",
+          "Try Another Department Name",
+        );
+      }
+
+      if (response.status === 201 || response.status === 200) {
+        showAlert("Success", "success", "Department successfully added.", "OK");
+        router.push("/user_management/department/list");
+      } else {
+        showAlert(
+          "Error",
+          "error",
+          response.data.message || "Failed to add department.",
+          "OK",
+        );
+      }
+    } catch (error) {
+      console.error("Technical Error:", error);
+      showAlert(
+        "Error",
+        "error",
+        "Connection failed. Please check your network.",
+        "OK",
+      );
     } finally {
       setLoading(false);
     }

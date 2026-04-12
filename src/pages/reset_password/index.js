@@ -79,7 +79,6 @@ export default function ResetPasswordPage() {
       >
         <Paper radius="md" p="xl" shadow="lg" withBorder>
           {!token ? (
-            // FORGOT PASSWORD FORM
             <>
               <Title order={2} className="text-center text-teal-600 mb-2">
                 Forgot Password
@@ -130,7 +129,6 @@ export default function ResetPasswordPage() {
               </form>
             </>
           ) : (
-            // NEW PASSWORD FORM
             <>
               <Title order={2} className="text-center text-teal-600 mb-2">
                 Create New Password

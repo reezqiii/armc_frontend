@@ -32,8 +32,6 @@ function LoginPage() {
       password: (value) => (value.length < 1 ? "Password is required" : null),
     },
   });
-
-  // PWA Logic (show text prompt only)
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();

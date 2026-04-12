@@ -39,6 +39,12 @@ const userList = [
         icon: <IconBriefcase size={18} />,
       },
       {
+        title: "Position List", 
+        href: "/user_management/position/list",
+        active: "Position",
+        icon: <IconUserCheck size={18} />,
+      },
+      {
         title: "Role List",
         href: "/user_management/role/list",
         active: "Role",

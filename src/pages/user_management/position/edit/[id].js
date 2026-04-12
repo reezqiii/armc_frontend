@@ -10,7 +10,7 @@ import useSwal from "@/hooks/useSwal";
 import Head from "next/head";
 import userList from "@/data/sidebar/UserList";
 
-function EditProject() {
+function EditPosition() {
   const router = useRouter();
   const { id } = router.query;
   const API_URL = useApi().API_URL;
@@ -18,76 +18,75 @@ function EditProject() {
   const { showAlert } = useSwal();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-
   useEffect(() => {
-    if (!id) return;
-    const fetch = async () => {
+    if (!id || !user?.token) return;
+
+    const fetchPosition = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/portal-project/${id}`, {
+        const { data } = await axios.get(`${API_URL}/portal-position/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        setName(data.project_name ?? "");
-      } catch {
-        showAlert("Error", "error", "Failed to fetch project.", "OK");
+        setName(data.position_name ?? "");
+      } catch (error) {
+        console.error("Error fetching position:", error);
+        showAlert("Error", "error", "Failed to fetch position data.", "OK");
       }
     };
-    fetch();
+
+    fetchPosition();
   }, [id, API_URL, user.token]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const result = await showAlert(
-      "Update Project",
-      "question",
-      "Are you sure you want to update this project?",
-      "Yes, Update",
-      true,
+  e.preventDefault();
+
+  const result = await showAlert(
+    "Update Position",
+    "question",
+    "Are you sure you want to update this position?",
+    "Yes, Update",
+    true,
+  );
+
+  if (!result.isConfirmed) return;
+
+  try {
+    setLoading(true);
+    const response = await axios.patch(
+      `${API_URL}/portal-position/${id}`,
+      { position_name: name },
+      { 
+        headers: { Authorization: `Bearer ${user.token}` },
+        validateStatus: (status) => status < 500 
+      },
     );
-    if (!result.isConfirmed) return;
 
-    try {
-      setLoading(true);
-      const response = await axios.patch(
-        `${API_URL}/portal-project/${id}`,
-        { project_name: name },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-          validateStatus: (status) => status < 500,
-        },
+    if (response.status === 409) {
+      return showAlert(
+        "Duplicate Data",
+        "warning",
+        response.data.message || "Position name already exists.",
+        "Try Another Position Name"
       );
-
-      if (response.status === 409) {
-        return showAlert(
-          "Duplicate Project",
-          "warning",
-          response.data.message || "This project name is already used.",
-          "OK",
-        );
-      }
-
-      if (response.status === 200) {
-        showAlert("Success", "success", "Project successfully updated.", "OK");
-        router.push("/user_management/project/list");
-      } else {
-        showAlert(
-          "Error",
-          "error",
-          response.data.message || "Failed to update project.",
-          "OK",
-        );
-      }
-    } catch (error) {
-      console.error("Update Error:", error);
-      showAlert("Error", "error", "An unexpected error occurred.", "OK");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    if (response.status === 200) {
+      showAlert("Success", "success", "Position successfully updated.", "OK");
+      router.push("/user_management/position/list");
+    } else {
+      showAlert("Error", "error", response.data.message || "Failed to update.", "OK");
+    }
+  } catch (error) {
+    console.error("Error updating position:", error);
+    showAlert("Error", "error", "Failed to update position. Check your connection.", "OK");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <AuthLayout sidebarList={userList}>
       <Head>
-        <title>Edit Project | ARMC</title>
+        <title>Edit Position | ARMC</title>
       </Head>
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8">
         <Paper
@@ -97,15 +96,15 @@ function EditProject() {
         >
           <div className="border-b py-6 text-center">
             <h1 className="text-2xl font-bold text-teal-600 uppercase">
-              Edit Project
+              Edit Position
             </h1>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="p-6">
               <TextInput
                 required
-                label="Project Name"
-                placeholder="Input project name"
+                label="Position Name"
+                placeholder="Input position name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
@@ -115,6 +114,7 @@ function EditProject() {
               <Button
                 leftSection={<IconArrowLeft size={18} />}
                 color="gray"
+                variant="subtle"
                 onClick={() => router.back()}
               >
                 Back
@@ -125,7 +125,7 @@ function EditProject() {
                 color="teal"
                 loading={loading}
               >
-                Update
+                Update Position
               </Button>
             </div>
           </form>
@@ -135,5 +135,5 @@ function EditProject() {
   );
 }
 
-EditProject.title = "Edit Project";
-export default EditProject;
+EditPosition.title = "Edit Position";
+export default EditPosition;

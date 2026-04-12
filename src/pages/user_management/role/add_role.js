@@ -23,22 +23,38 @@ function AddRole() {
     const result = await showAlert(
       "Add Role",
       "question",
-      "Are you sure?",
+      "Are you sure you want to add this role?",
       "Yes, Add",
       true,
     );
     if (!result.isConfirmed) return;
+
     try {
       setLoading(true);
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/role`,
         { role_name: name },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
       );
-      showAlert("Success", "success", "Role successfully added.", "OK");
-      router.push("/user_management/role/list");
-    } catch {
-      showAlert("Error", "error", "Failed to add role.", "OK");
+
+      if (response.status === 409) {
+        return showAlert(
+          "Duplicate Role",
+          "warning",
+          response.data.message || "This role name already exists.",
+          "Try Another Role Name",
+        );
+      }
+
+      if (response.status === 201 || response.status === 200) {
+        showAlert("Success", "success", "Role successfully added.", "OK");
+        router.push("/user_management/role/list");
+      }
+    } catch (error) {
+      showAlert("Error", "error", "Failed to connect to server.", "OK");
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import useEncrypt from "@/hooks/useEncrypt";
-import usePermission from "@/hooks/usePermission"; // ← ganti import
+import usePermission from "@/hooks/usePermission"; 
 import useCollapseStore from "@/store/useLayout";
 import useUser from "@/store/useUser";
 import { ActionIcon, Collapse, Menu, NavLink } from "@mantine/core";
@@ -58,20 +58,19 @@ export default function Navigation() {
         : []),
       {
         name: "Production & Quality",
-        url: "/production_quality",
+        url: "/production/dashboard",
         icon: <IconBuildingFactory size={20} />,
       },
       {
         name: "Engineering",
-        url: "/engineering",
+        url: "/engineering/dashboard",
         icon: <IconTool size={20} />,
       },
       {
         name: "Warehouse",
-        url: "/warehouse",
+        url: "/warehouse/dashboard",
         icon: <IconBox size={20} />,
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
     [can],
   );
@@ -165,7 +164,6 @@ export default function Navigation() {
               <NavLink
                 component={Link}
                 href={item.url}
-                // onClick={() => (item.child ? item.url : router.push(item.url))}
                 label={item.name}
                 leftSection={item.icon}
                 variant="subtle"
@@ -181,7 +179,6 @@ export default function Navigation() {
                       key={index}
                       component={Link}
                       href={child.url}
-                      // onClick={() => router.push(child.url)}
                       label={child.name}
                       variant="subtle"
                       onClick={(event) =>

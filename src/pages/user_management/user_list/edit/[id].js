@@ -34,17 +34,14 @@ function EditUser() {
   const { user } = useUser();
   const { showAlert, showConfirm } = useSwal();
   const { decrypt } = useDecrypt();
-
-  // id dari URL adalah encrypted — decrypt dulu untuk dapat integer user ID
   const userId = id ? decrypt(id) : null;
 
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [rolePermissionIds, setRolePermissionIds] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
-
-  // ─── Direct Permission States ───────────────────────────────────────────────
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
@@ -67,8 +64,30 @@ function EditUser() {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
+  useEffect(() => {
+    if (!formData.id_role) {
+      setRolePermissionIds([]);
+      return;
+    }
 
-  // ─── Fetch master data (dept, project, role) ────────────────────────────────
+    const fetchRolePermissions = async () => {
+      try {
+        const { data } = await axios.get(
+          `${API_URL}/role-permission/${formData.id_role}`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          },
+        );
+        setRolePermissionIds(
+          data.filter((p) => p.assigned).map((p) => p.id_permission),
+        );
+      } catch (err) {
+        console.error("Failed to fetch role permissions", err);
+      }
+    };
+
+    fetchRolePermissions();
+  }, [formData.id_role, API_URL, user.token]);
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
@@ -104,8 +123,6 @@ function EditUser() {
 
     fetchMasterData();
   }, [API_URL, user.token]);
-
-  // ─── Fetch user data ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
 
@@ -135,12 +152,7 @@ function EditUser() {
     };
 
     fetchUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, API_URL, user.token]);
-
-  // ─── Fetch direct permissions for this user ─────────────────────────────────
-  // GET /portal_user_permission/user/:userId
-  // Response: [{ id_permission, permission_name, permission_group, index_key, assigned }]
   useEffect(() => {
     if (!id || !userId) return;
 
@@ -164,10 +176,7 @@ function EditUser() {
     };
 
     fetchPermissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  // ─── Permission helpers ─────────────────────────────────────────────────────
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
     if (!acc[group]) acc[group] = [];
@@ -202,8 +211,6 @@ function EditUser() {
         : [...prev, id_permission],
     );
   };
-
-  // ─── Validation ─────────────────────────────────────────────────────────────
   const validate = () => {
     const newErrors = {};
     if (!formData.full_name) newErrors.full_name = "Full Name is required";
@@ -216,8 +223,6 @@ function EditUser() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // ─── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -239,15 +244,9 @@ function EditUser() {
 
     try {
       setLoadingSubmit(true);
-
-      // 1. Update user data
       await axios.put(`${API_URL}/user/update/${id}`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-
-      // 2. Sync direct permissions
-      // POST /portal_user_permission/user/:userId/sync
-      // Body: { permission_ids: number[] }
       await axios.post(
         `${API_URL}/portal_user_permission/user/${userId}/sync`,
         { permission_ids: selectedPermissionIds },
@@ -289,7 +288,6 @@ function EditUser() {
         <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
           <form onSubmit={handleSubmit}>
             <div className="max-w-5xl mx-auto space-y-4">
-
               {/* ── User Info Card ── */}
               <Paper
                 radius="md"
@@ -307,7 +305,6 @@ function EditUser() {
                 </div>
 
                 <div className="p-6 md:p-10 space-y-10">
-
                   {/* BASIC INFORMATION */}
                   <div className="space-y-4">
                     <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
@@ -415,7 +412,6 @@ function EditUser() {
                       />
                     </div>
                   </div>
-
                 </div>
               </Paper>
 
@@ -455,16 +451,35 @@ function EditUser() {
                       const groupPerms = grouped[group];
                       const isCollapsed = collapsedGroups[group];
                       const groupIds = groupPerms.map((p) => p.id_permission);
-                      const allChecked = groupIds.every((gid) =>
-                        selectedPermissionIds.includes(gid),
-                      );
-                      const someChecked =
-                        groupIds.some((gid) =>
-                          selectedPermissionIds.includes(gid),
-                        ) && !allChecked;
-                      const checkedCount = groupIds.filter((gid) =>
-                        selectedPermissionIds.includes(gid),
+                      const checkedCount = groupIds.filter(
+                        (gid) =>
+                          selectedPermissionIds.includes(gid) ||
+                          rolePermissionIds.includes(gid),
                       ).length;
+
+                      const allChecked = checkedCount === groupPerms.length;
+                      const someChecked = checkedCount > 0 && !allChecked;
+                      const handleToggleGroup = (e) => {
+                        e.stopPropagation();
+                        const availableIds = groupIds.filter(
+                          (id) => !rolePermissionIds.includes(id),
+                        );
+                        if (availableIds.length === 0) return; // Jika semua permission dari role, abaikan
+
+                        const allAvailableSelected = availableIds.every((id) =>
+                          selectedPermissionIds.includes(id),
+                        );
+
+                        if (allAvailableSelected) {
+                          setSelectedPermissionIds((prev) =>
+                            prev.filter((id) => !availableIds.includes(id)),
+                          );
+                        } else {
+                          setSelectedPermissionIds((prev) => [
+                            ...new Set([...prev, ...availableIds]),
+                          ]);
+                        }
+                      };
 
                       return (
                         <div
@@ -480,7 +495,7 @@ function EditUser() {
                               <Checkbox
                                 checked={allChecked}
                                 indeterminate={someChecked}
-                                onChange={() => toggleAll(groupPerms)}
+                                onChange={handleToggleGroup} // Gunakan fungsi yang baru dibuat di atas
                                 onClick={(e) => e.stopPropagation()}
                                 color="teal"
                                 size="sm"
@@ -512,43 +527,70 @@ function EditUser() {
                           {/* Permission Items */}
                           {!isCollapsed && (
                             <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {groupPerms.map((p) => (
-                                <div
-                                  key={p.id_permission}
-                                  className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                                    selectedPermissionIds.includes(
-                                      p.id_permission,
-                                    )
-                                      ? "bg-teal-50 border border-teal-200"
-                                      : "hover:bg-gray-50 border border-transparent"
-                                  }`}
-                                  onClick={() =>
-                                    togglePermission(p.id_permission)
-                                  }
-                                >
-                                  <Checkbox
-                                    checked={selectedPermissionIds.includes(
-                                      p.id_permission,
-                                    )}
-                                    onChange={() =>
-                                      togglePermission(p.id_permission)
-                                    }
-                                    onClick={(e) => e.stopPropagation()}
-                                    color="teal"
-                                    size="sm"
-                                  />
-                                  <div>
-                                    <p className="text-sm text-gray-700 font-medium">
-                                      {p.permission_name}
-                                    </p>
-                                    {p.index_key && (
-                                      <p className="text-xs text-gray-400 font-mono">
-                                        {p.index_key}
-                                      </p>
-                                    )}
+                              {groupPerms.map((p) => {
+                                const isRolePerm = rolePermissionIds.includes(
+                                  p.id_permission,
+                                );
+                                const isDirectPerm =
+                                  selectedPermissionIds.includes(
+                                    p.id_permission,
+                                  );
+                                const isChecked = isRolePerm || isDirectPerm;
+
+                                return (
+                                  <div
+                                    key={p.id_permission}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                                      isChecked
+                                        ? "bg-teal-50 border border-teal-200"
+                                        : "hover:bg-gray-50 border border-transparent"
+                                    } ${
+                                      isRolePerm
+                                        ? "opacity-70 cursor-not-allowed"
+                                        : "cursor-pointer"
+                                    }`}
+                                    onClick={() => {
+                                      if (!isRolePerm)
+                                        togglePermission(p.id_permission);
+                                    }}
+                                  >
+                                    <Checkbox
+                                      checked={isChecked}
+                                      disabled={isRolePerm} // 4. Disable checkbox bawaan role
+                                      onChange={() => {
+                                        if (!isRolePerm)
+                                          togglePermission(p.id_permission);
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      color="teal"
+                                      size="sm"
+                                    />
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm text-gray-700 font-medium">
+                                          {p.permission_name}
+                                        </p>
+                                        {/* 5. Tampilkan indikator visual bahwa ini milik Role */}
+                                        {isRolePerm && (
+                                          <Badge
+                                            color="gray"
+                                            variant="outline"
+                                            size="xs"
+                                            style={{ textTransform: "none" }}
+                                          >
+                                            Role
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {p.index_key && (
+                                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+                                          {p.index_key}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -584,7 +626,6 @@ function EditUser() {
                   Update User
                 </Button>
               </div>
-
             </div>
           </form>
         </div>

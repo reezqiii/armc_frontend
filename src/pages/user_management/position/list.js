@@ -5,7 +5,12 @@ import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
 import { Button, Group, Paper } from "@mantine/core";
-import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  IconEdit,
+  IconPlus,
+  IconTrash,
+  IconUserCheck,
+} from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
   useReactTable,
@@ -13,11 +18,10 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
 
-export default function PermissionList() {
+export default function PositionList() {
   const router = useRouter();
   const { user } = useUser();
   const API_URL = useApi().API_URL;
@@ -25,7 +29,7 @@ export default function PermissionList() {
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([
-    { id: "permission_name", desc: false },
+    { id: "position_name", desc: false },
   ]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
@@ -56,14 +60,14 @@ export default function PermissionList() {
 
     try {
       const { data } = await axios.post(
-        `${API_URL}/portal-permission/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        `${API_URL}/portal-position/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
       setData(data.data);
       setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error fetching permission:", err);
+      console.error("Error fetching position:", err);
     }
   }, [
     user.token,
@@ -80,7 +84,7 @@ export default function PermissionList() {
 
   const handleDelete = async (id) => {
     const result = await showAlert(
-      "Delete Permission",
+      "Delete Position",
       "question",
       "Are you sure?",
       "Yes, Delete",
@@ -88,13 +92,13 @@ export default function PermissionList() {
     );
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_URL}/portal-permission/${id}`, {
+        await axios.delete(`${API_URL}/portal-position/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        showAlert("Deleted!", "success", "Permission has been deleted.", "OK");
+        showAlert("Deleted!", "success", "Position has been deleted.", "OK");
         fetchData();
       } catch {
-        showAlert("Error", "error", "Failed to delete permission.", "OK");
+        showAlert("Error", "error", "Failed to delete position.", "OK");
       }
     }
   };
@@ -104,33 +108,16 @@ export default function PermissionList() {
       {
         id: "no",
         header: "No",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
       },
       {
-        accessorFn: (row) => row.permission_name,
-        id: "permission_name",
-        header: "Permission Name",
+        accessorFn: (row) => row.position_name,
+        id: "position_name",
+        header: "Position Name",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue() ?? "-",
-      },
-     {
-        accessorFn: (row) => row.permission_key, 
-        id: "permission_key",
-        header: "Permission Key",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => (
-          <code className="bg-gray-100 text-teal-600 px-2 py-0.5 rounded text-xs font-mono">
-            {info.getValue() ?? "-"}
-          </code>
-        ),
-      },
-      {
-        accessorFn: (row) => row.permission_group,
-        id: "permission_group",
-        header: "Group",
         cell: (info) => info.getValue() ?? "-",
       },
       {
@@ -138,7 +125,7 @@ export default function PermissionList() {
         header: "Action",
         size: 150,
         cell: ({ row }) => {
-          const permission = row.original;
+          const position = row.original;
           return (
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
@@ -146,9 +133,7 @@ export default function PermissionList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() =>
-                  router.push(
-                    `/user_management/permission/edit/${permission.id_permission}`,
-                  )
+                  router.push(`/user_management/position/edit/${position.id}`)
                 }
               >
                 Edit
@@ -157,7 +142,7 @@ export default function PermissionList() {
                 size="xs"
                 color="red"
                 leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(permission.id_permission)}
+                onClick={() => handleDelete(position.id)}
               >
                 Delete
               </Button>
@@ -166,7 +151,7 @@ export default function PermissionList() {
         },
       },
     ],
-    [API_URL, user.token, router],
+    [API_URL, user.token, router, pagination.pageIndex, pagination.pageSize],
   );
 
   const table = useReactTable({
@@ -179,34 +164,39 @@ export default function PermissionList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: true, 
-    manualSorting: true, 
-    manualFiltering: true, 
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
     pageCount: totalPages,
   });
 
   return (
     <>
       <Head>
-        <title>Permission Management | ARMC</title>
+        <title>Position Management | ARMC</title>
       </Head>
       <AuthLayout sidebarList={userList}>
         <div className="py-6 px-4">
           <Paper radius="md" p="md" withBorder shadow="sm">
             <div className="flex justify-between border-b pb-4 mb-4">
               <div>
-                <h1 className="text-md font-extrabold text-teal-600 uppercase">
-                  Permission Management
-                </h1>
-                <p className="text-xs text-gray-500">Manage permissions</p>
+                <Group gap="xs">
+                  <IconUserCheck size={24} className="text-teal-600" />
+                  <h1 className="text-md font-extrabold text-teal-600 uppercase">
+                    Position Management
+                  </h1>
+                </Group>
+                <p className="text-xs text-gray-500">Manage positions</p>
               </div>
               <Button
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/permission/add_permission`)}
+                onClick={() =>
+                  router.push(`/user_management/position/add_position`)
+                }
               >
-                Add Permission
+                Add Position
               </Button>
             </div>
             <Datatables table={table} totalPages={totalPages} />

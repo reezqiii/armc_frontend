@@ -2,7 +2,6 @@ import CryptoJS from "crypto-js";
 import { useCallback } from "react";
 
 const useEncrypt = () => {
-  // Parse the Base64-encoded secret key once
   const secretKeyBase64 = "ZWRlYmEzMzI4ZWM2YzFhM2JkODc1YjU2YmIxMjJlM2M=";
   const secretKey       = CryptoJS.enc.Base64.parse(secretKeyBase64);
 

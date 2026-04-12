@@ -19,7 +19,6 @@ import {
   IconSend,
   IconCheck,
   IconListLetters,
-  IconFileTypePdf,
 } from "@tabler/icons-react";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -42,47 +41,47 @@ const STATUS_CONFIG = {
     color: "blue",
     actions: ["detail"],
   },
-  draft: {
+  canceled: {
     id: 0,
-    label: "Draft",
+    label: "Canceled",
     icon: IconFileText,
     color: "gray",
-    actions: ["detail", "update", "cancel", "submit_bulk"],
+    actions: ["detail"],
   },
   "awaiting-hod-approval": {
     id: 1,
-    label: "Awaiting HOD Approval",
+    label: "Pending Dept Head Approval",
     icon: IconClock,
     color: "yellow",
     actions: ["detail", "update", "cancel", "approve_bulk"],
   },
+  "rejected-hod-approval": {
+    id: 2,
+    label: "Rejected by Dept Head Approval",
+    icon: IconX,
+    color: "red",
+    actions: ["detail", "view_reason"],
+  },
   "awaiting-it-manager-approval": {
-    id: 5,
-    label: "Awaiting IT Manager Approval",
+    id: 3,
+    label: "Pending IT Head Approval",
     icon: IconUserCog,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk"],
+    actions: ["detail", "approve_bulk"],
+  },
+  "rejected-it-manager-approval": {
+    id: 4,
+    label: "Rejected by IT Head Approval",
+    icon: IconX,
+    color: "red",
+    actions: ["detail", "view_reason"],
   },
   completed: {
-    id: 7,
+    id: 5,
     label: "Completed",
     icon: IconCircleCheck,
     color: "green",
     actions: ["detail"],
-  },
-  "rejected-hod-approval": {
-    id: 2,
-    label: "Rejected by HOD Approval",
-    icon: IconX,
-    color: "red",
-    actions: ["detail", "view_reason"],
-  },
-  "rejected-it-manager-approval": {
-    id: 6,
-    label: "Rejected by IT Manager Approval",
-    icon: IconX,
-    color: "red",
-    actions: ["detail", "view_reason"],
   },
 };
 
@@ -105,23 +104,27 @@ export default function RequestListDynamic({ request_status }) {
   const [selectedRejectData, setSelectedRejectData] = useState(null);
   const isHOD = can("request.approve_hod");
   const isIT = can("request.approve_it");
-  const isApprover = isHOD || isIT;
+  const isAdminOrIT = can("request.view_all");
+  const canExport = can("request.export");
+  const isApprover = isHOD || isIT || isAdminOrIT;
   const canApprove = useMemo(() => {
     if (!config || !user?.id) return false;
-    if (config.id === 1)
-      return data.some((item) => item.approval_hod_by?.id === user.id);
-    if (config.id === 5 && can("request.it_approval")) return true;
-    return false;
-  }, [config, data, user.id]);
 
-  const canExport = can("request.export");
-  const isAdminOrIT = can("request.view_all");
+    if (isAdminOrIT) return true;
+
+    if (config.id === 1 && isHOD) {
+      return data.some((item) => item.approval_hod_by?.id === user.id);
+    }
+
+    if (config.id === 3 && isIT) return true;
+
+    return false;
+  }, [config, data, user.id, isAdminOrIT, isHOD, isIT]);
 
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
-      // Jika bukan admin/IT, filter berdasarkan dept_id user yang login
       ...(!isAdminOrIT && { dept_id: user.department }),
       ...(config.id === 0 && {
         status_active: 1,
@@ -320,40 +323,6 @@ export default function RequestListDynamic({ request_status }) {
     }
   };
 
-  const handleDownloadPdf = useCallback(
-    async (id) => {
-      try {
-        Swal.fire({
-          title: "Generating PDF...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading(),
-        });
-        const encryptedId = encrypt(String(id));
-        const response = await axios.get(
-          `${API_URL}/requests/${encryptedId}/generate-pdf`,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-            responseType: "blob",
-          },
-        );
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute(
-          "download",
-          `Request_ITF14_${String(id).padStart(6, "0")}.pdf`,
-        );
-        document.body.appendChild(link);
-        link.click();
-        Swal.close();
-      } catch (err) {
-        console.error(err);
-        Swal.fire("Error", "Failed to generate PDF", "error");
-      }
-    },
-    [API_URL, encrypt, user.token],
-  );
-
   const columns = useMemo(() => {
     const cols = [];
 
@@ -397,19 +366,22 @@ export default function RequestListDynamic({ request_status }) {
       {
         accessorFn: (row) => row.id_request,
         id: "id_request",
-        header: "No Request",
+        header: "Request Info",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) =>
-          `ITF14-${String(row.original.id_request).padStart(6, "0")}`,
-      },
-      {
-        accessorFn: (row) => row.created_date,
-        id: "created_date",
-        header: "Request Date",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: ({ row }) => formatDate(row.original.created_date),
+        cell: ({ row }) => {
+          const requestNumber = `REQ-${String(row.original.id_request).padStart(6, "0")}`;
+          return (
+            <div className="flex flex-col">
+              <Text fw={700} color="teal" size="sm">
+                {requestNumber}
+              </Text>
+              <Text size="sm" color="dimmed">
+                {formatDate(row.original.created_date)}
+              </Text>
+            </div>
+          );
+        },
       },
       {
         accessorFn: (row) => row.created_by_name,
@@ -417,15 +389,16 @@ export default function RequestListDynamic({ request_status }) {
         header: "Requestor",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue() || "-",
-      },
-      {
-        accessorFn: (row) => row.badge_no,
-        id: "badge_no",
-        header: "Badge ID",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => info.getValue() || "-",
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Text fw={600} size="sm">
+              {row.original.created_by_name || "-"}
+            </Text>
+            <Text size="sm" color="dimmed">
+              {row.original.badge_no || "-"}
+            </Text>
+          </div>
+        ),
       },
       {
         accessorFn: (row) => row.full_name,
@@ -490,7 +463,7 @@ export default function RequestListDynamic({ request_status }) {
               reason: row.original.rejected_hod_remarks,
             };
           }
-          if (displayStatus === 6) {
+          if (displayStatus === 4) {
             rejectField = {
               by: row.original.approval_it_hod_by?.full_name,
               at: row.original.approval_it_date_at,
@@ -542,20 +515,18 @@ export default function RequestListDynamic({ request_status }) {
     cols.push({
       id: "action",
       header: "Action",
+      size: 250,
       enableColumnFilter: false,
       enableSorting: false,
-      size: 300,
       cell: ({ row }) => {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
-
-        const isDraft = request.request_status === 0;
-        const canEditCancel = isDraft && !isApprover;
+        const canEditCancel =
+          request.request_status === 1 && request.created_by === user.id;
 
         return (
-          <SimpleGrid cols={2} spacing={6}>
+          <div className="flex justify-center gap-1 flex-wrap">
             <Button
-              fullWidth
               size="xs"
               color="blue"
               leftSection={<IconInfoCircle size={14} />}
@@ -568,7 +539,6 @@ export default function RequestListDynamic({ request_status }) {
 
             {canEditCancel && (
               <Button
-                fullWidth
                 leftSection={<IconEdit size={16} />}
                 color="yellow"
                 size="xs"
@@ -576,13 +546,12 @@ export default function RequestListDynamic({ request_status }) {
                   router.push(`/user_request/edit_req/${encryptedId}`)
                 }
               >
-                Update
+                Edit
               </Button>
             )}
 
             {canEditCancel && (
               <Button
-                fullWidth
                 leftSection={<IconX size={16} />}
                 color="red"
                 size="xs"
@@ -591,17 +560,7 @@ export default function RequestListDynamic({ request_status }) {
                 Cancel
               </Button>
             )}
-
-            <Button
-              fullWidth
-              leftSection={<IconFileTypePdf size={16} />}
-              color="gray"
-              size="xs"
-              onClick={() => handleDownloadPdf(request.id_request)}
-            >
-              PDF
-            </Button>
-          </SimpleGrid>
+          </div>
         );
       },
     });
@@ -616,7 +575,9 @@ export default function RequestListDynamic({ request_status }) {
     encrypt,
     router,
     handleCancel,
-    handleDownloadPdf,
+    isApprover,
+    canApprove,
+    isAdminOrIT,
   ]);
 
   const table = useReactTable({
@@ -640,7 +601,6 @@ export default function RequestListDynamic({ request_status }) {
     table.resetColumnFilters();
     table.setPageIndex(0);
     setRowSelection({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request_status]);
 
   useEffect(() => {
@@ -678,9 +638,7 @@ export default function RequestListDynamic({ request_status }) {
                   <h1 className="text-md font-extrabold text-teal-600 uppercase">
                     {config.label} List
                   </h1>
-                  <p className="text-xs text-gray-500">
-                    ITF14 - {config.label}
-                  </p>
+                  <p className="text-xs text-gray-500">{config.label}</p>
                 </div>
               </div>
 

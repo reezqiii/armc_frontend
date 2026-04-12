@@ -6,7 +6,6 @@ import {
   TextInput,
   Textarea,
   Select,
-  Autocomplete,
   MultiSelect,
 } from "@mantine/core";
 import {
@@ -42,18 +41,14 @@ function CreateRequest() {
     category_account: "",
     access_nav_menu: [],
   });
-
   const [errors, setErrors] = React.useState({});
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [hodOptions, setHodOptions] = useState([]);
-  const [badgeOptions, setBadgeOptions] = useState([]);
-  const [search, setSearch] = useState("");
   const [deptOptions, setDeptOptions] = useState([]);
   const [positionOptions, setPositionOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
-  const [debouncedSearch] = useDebouncedValue(search, 500);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -85,33 +80,7 @@ function CreateRequest() {
       setHodOptions([]);
     }
   };
-
-  // Server-side Search Badge
-  useEffect(() => {
-    if (debouncedSearch.length < 3) return setBadgeOptions([]);
-    const fetchBadges = async () => {
-      try {
-        const res = await axios.get(
-          `${API_URL}/iss_employee/search?badge=${debouncedSearch}`,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          },
-        );
-        const employees = Array.isArray(res.data) ? res.data : [res.data];
-        setBadgeOptions(
-          employees.map((e) => ({
-            value: String(e.badge_no || e.badge),
-            label: `${e.badge_no || e.badge} - ${e.full_name || e.name}`,
-          })),
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchBadges();
-  }, [debouncedSearch, API_URL, user.token]);
-
-  // Load Master Data
+  
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -161,8 +130,6 @@ function CreateRequest() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validasi
     const newErrors = {};
     if (!formData.category_account) newErrors.category_account = "Required";
     if (!formData.approval_hod_by) newErrors.approval_hod_by = "Required";
@@ -172,7 +139,6 @@ function CreateRequest() {
     if (!formData.access_nav_menu.length)
       newErrors.access_nav_menu = "Required";
     if (!formData.position) newErrors.position = "Required";
-
 
     if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
 
@@ -191,9 +157,9 @@ function CreateRequest() {
     const payload = {
       ...formData,
       badge_no: formData.badge_no?.trim() || null,
-      request_status: 1, 
+      request_status: 1,
       status_active: 1,
-      position_id: Number(formData.position),
+      position: formData.position,
       project_id: Number(formData.project),
       dept_id: Number(formData.department),
       category_account: Number(formData.category_account),
@@ -222,7 +188,7 @@ function CreateRequest() {
         >
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
-              PCMS Access Request Form
+              Portal Access Request Form
             </h1>
           </div>
 
@@ -262,16 +228,15 @@ function CreateRequest() {
                     onChange={(v) => handleChange("category_account", v)}
                     error={errors.category_account}
                   />
-                  <Autocomplete
-                    required
+                  <TextInput
                     label="Badge ID"
                     placeholder="Input Badge ID"
                     value={formData.badge_no}
-                    onChange={(v) => {
-                      handleChange("badge_no", v);
-                      setSearch(v);
+                    onChange={(e) => handleChange("badge_no", e.target.value)}
+                    classNames={{
+                      label: "font-semibold mb-1 text-gray-700",
+                      input: "h-[40px]",
                     }}
-                    data={badgeOptions.map((b) => b.label)}
                   />
                   <TextInput
                     required

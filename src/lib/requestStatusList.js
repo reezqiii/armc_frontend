@@ -1,11 +1,11 @@
 export const REQUEST_STATUS_MAP = {
   0: {
-    label: "Canceled", // Mengganti Draft menjadi Canceled sesuai Registry 
+    label: "Canceled", 
     bg: "#6c757d",
     text: "#fff",
   },
   1: {
-    label: "Pending Dept Head Approval", // Tahap 1 
+    label: "Pending Dept Head Approval",
     bg: "#0dcaf0",
     text: "#fff",
   },
@@ -15,7 +15,7 @@ export const REQUEST_STATUS_MAP = {
     text: "#fff",
   },
   3: {
-    label: "Pending IT Head Approval", // Tahap 2 
+    label: "Pending IT Head Approval", 
     bg: "#0dcaf0",
     text: "#fff",
   },
@@ -25,7 +25,7 @@ export const REQUEST_STATUS_MAP = {
     text: "#fff",
   },
   5: {
-    label: "Completed", // Selesai 
+    label: "Completed", 
     bg: "#28a745",
     text: "#fff",
   },

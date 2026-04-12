@@ -10,8 +10,6 @@ export default function Sidebar({ className, sidebarList }) {
   const path = usePathname();
   const router = useRouter();
   const permissions_key = useUser((s) => s.user.permissions_key);
-
-  // ← 3. filter menu
   const filteredList = sidebarList.map((item) => ({
     ...item,
     child: item.child?.filter(

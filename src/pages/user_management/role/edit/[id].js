@@ -39,8 +39,6 @@ function EditRole() {
   const [permissions, setPermissions] = useState([]); 
   const [selectedIds, setSelectedIds] = useState([]); 
   const [collapsedGroups, setCollapsedGroups] = useState({});
-
-  // Fetch role data
   useEffect(() => {
     if (!id) return;
     const fetchRole = async () => {
@@ -55,8 +53,6 @@ function EditRole() {
     };
     fetchRole();
   }, [id]);
-
-  // Fetch permissions for this role
   useEffect(() => {
     if (!id) return;
     const fetchPermissions = async () => {
@@ -77,8 +73,6 @@ function EditRole() {
     };
     fetchPermissions();
   }, [id]);
-
-  // Group permissions by permission_group
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
     if (!acc[group]) acc[group] = [];
@@ -121,15 +115,11 @@ function EditRole() {
 
     try {
       setLoading(true);
-
-      // Update role name
       await axios.patch(
         `${API_URL}/role/${id}`,
         { role_name: name },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-
-      // Sync permissions
       await axios.post(
         `${API_URL}/role-permission/${id}/sync`,
         { permission_ids: selectedIds },

@@ -43,7 +43,6 @@ export default function ExampleTable({
             <ActionIcon
               variant="subtle"
               color="red"
-              // onClick={() => router.push(`/example/${item.id}`)}
             >
               <IconTrash
                 style={{ width: rem(16), height: rem(16) }}

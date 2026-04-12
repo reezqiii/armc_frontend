@@ -1,7 +1,6 @@
 import AuthLayout from "@/components/layout/authLayout";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, LoadingOverlay, Paper, Table, Text } from "@mantine/core";
-// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
 import { IconArrowLeft, IconCheck, IconFileSpreadsheet, IconUpload, IconX } from "@tabler/icons-react";
@@ -26,7 +25,6 @@ export default function Index() {
   const [type_of_module, setToM] = useState([])
   const [dwg, setDwg] = useState([])
   const [tag, setTag] = useState([])
-  // const [disabledAll, setDisabledAll] = useState(false)
   const [loading, setLoading] = useState(false)
   const API         = useApi()
   const API_URL     = API.API_URL
@@ -147,13 +145,6 @@ export default function Index() {
 
     setPreview(true)
 
-    // const arr_cert_id = {}
-    // data.form_list.map((v, i) => {
-    //   arr_cert_id[v.cert_id] = v
-    // })
-
-    // setCertId(arr_cert_id)
-
 
 
   }
@@ -205,7 +196,6 @@ export default function Index() {
   }
 
   const handleSubmit = async (form_data) => {
-    // form_data['id_user'] = user.id;
     const { data } = await axios.post(API_URL + '/api/template/submit_import', {
       data: {
         form_data   : form_data,

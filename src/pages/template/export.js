@@ -1,7 +1,6 @@
 import AuthLayout from "@/components/layout/authLayout";
 import React from "react";
 import { Paper } from "@mantine/core";
-// import { templateSidebarList } from "../../data/sidebar/exampleList";
 import useUser from "@/store/useUser";
 import { useRouter } from "next/navigation";
 

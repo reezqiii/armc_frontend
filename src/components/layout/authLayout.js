@@ -16,7 +16,6 @@ export default function AuthLayout({ children, sidebarList }) {
         {sidebarList && sidebarList.length > 0 && (
           <Sidebar
             className={cn(`absolute md:relative overflow-y-auto`)}
-            // className="absolute md:relative overflow-y-auto"
             sidebarList={sidebarList}
           />
         )}

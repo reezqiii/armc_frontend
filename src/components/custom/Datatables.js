@@ -1,6 +1,10 @@
 import { cn } from "@/lib/utils";
 import { Pagination, Select, Table, Text, TextInput } from "@mantine/core";
-import { IconSortAscending, IconSortDescending, IconX } from "@tabler/icons-react";
+import {
+  IconSortAscending,
+  IconSortDescending,
+  IconX,
+} from "@tabler/icons-react";
 import { flexRender } from "@tanstack/react-table";
 import React from "react";
 

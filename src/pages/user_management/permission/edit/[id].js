@@ -16,9 +16,10 @@ function EditPermission() {
   const API_URL = useApi().API_URL;
   const { user } = useUser();
   const { showAlert } = useSwal();
+
   const [formData, setFormData] = useState({
     permission_name: "",
-    index_key: "",
+    permission_key: "",
     permission_group: "",
   });
   const [loading, setLoading] = useState(false);
@@ -28,42 +29,55 @@ function EditPermission() {
   };
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !user?.token) return;
     const fetchPermission = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/portal-permission/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
+
         setFormData({
           permission_name: data.permission_name ?? "",
-          index_key: data.index_key ?? "",
+          permission_key: data.permission_key ?? "",
           permission_group: data.permission_group ?? "",
         });
-      } catch {
-        showAlert("Error", "error", "Failed to fetch permission.", "OK");
+      } catch (error) {
+        console.error("Fetch Error:", error);
+        showAlert("Error", "error", "Failed to fetch permission data.", "OK");
       }
     };
     fetchPermission();
-  }, [id, API_URL, user.token, showAlert]);
+  }, [id, API_URL, user.token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await showAlert(
       "Update Permission",
       "question",
-      "Are you sure?",
+      "Are you sure you want to update this permission?",
       "Yes, Update",
       true,
     );
     if (!result.isConfirmed) return;
+
     try {
       setLoading(true);
-      await axios.patch(`${API_URL}/portal-permission/${id}`, formData, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.patch(
+        `${API_URL}/portal-permission/${id}`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
+      );
+
+      if (response.status === 409) {
+        return showAlert("Conflict", "warning", response.data.message, "OK");
+      }
+
       showAlert("Success", "success", "Permission successfully updated.", "OK");
-      router.push("/user_management/permission");
-    } catch {
+      router.push("/user_management/permission/list");
+    } catch (error) {
       showAlert("Error", "error", "Failed to update permission.", "OK");
     } finally {
       setLoading(false);
@@ -98,24 +112,27 @@ function EditPermission() {
                 }
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
+
+              <TextInput
+                required
+                label="Permission Key"
+                placeholder="e.g. user.create"
+                value={formData.permission_key}
+                onChange={(e) => handleChange("permission_key", e.target.value)}
+                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+              />
+
               <TextInput
                 label="Permission Group"
-                placeholder="e.g. Administrator, General, Equipment"
+                placeholder="e.g. Request, Administrator"
                 value={formData.permission_group}
                 onChange={(e) =>
                   handleChange("permission_group", e.target.value)
                 }
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
-              <TextInput
-                required
-                label="Index Key"
-                placeholder="e.g. user.create"
-                value={formData.index_key}
-                onChange={(e) => handleChange("index_key", e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-              />
             </div>
+
             <div className="flex justify-between px-6 pb-6">
               <Button
                 leftSection={<IconArrowLeft size={18} />}

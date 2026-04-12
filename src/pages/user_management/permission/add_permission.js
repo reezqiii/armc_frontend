@@ -15,11 +15,13 @@ function AddPermission() {
   const API_URL = useApi().API_URL;
   const { user } = useUser();
   const { showAlert } = useSwal();
+
   const [formData, setFormData] = useState({
     permission_name: "",
-    index_key: "",
+    permission_key: "",
     permission_group: "",
   });
+
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field, value) => {
@@ -36,14 +38,25 @@ function AddPermission() {
       true,
     );
     if (!result.isConfirmed) return;
+
     try {
       setLoading(true);
-      await axios.post(`${API_URL}/portal-permission`, formData, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.post(
+        `${API_URL}/portal-permission`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
+      );
+
+      if (response.status === 409) {
+        return showAlert("Duplicate", "warning", response.data.message, "OK");
+      }
+
       showAlert("Success", "success", "Permission successfully added.", "OK");
-      router.push("/user_management/permission");
-    } catch {
+      router.push("/user_management/permission/list");
+    } catch (error) {
       showAlert("Error", "error", "Failed to add permission.", "OK");
     } finally {
       setLoading(false);
@@ -71,24 +84,27 @@ function AddPermission() {
               <TextInput
                 required
                 label="Permission Name"
-                placeholder="e.g. Create User"
+                placeholder="e.g. Create Request"
                 value={formData.permission_name}
                 onChange={(e) =>
                   handleChange("permission_name", e.target.value)
                 }
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
+
               <TextInput
                 required
-                label="Index Key"
-                placeholder="e.g. 1, 2, 3"
-                value={formData.index_key}
-                onChange={(e) => handleChange("index_key", e.target.value)}
+                label="Permission Key"
+                placeholder="e.g. request.create"
+                value={formData.permission_key}
+                onChange={(e) => handleChange("permission_key", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
+
               <TextInput
+                required  
                 label="Permission Group"
-                placeholder="e.g. Administrator, General, Equipment"
+                placeholder="e.g. Request, User, Project"
                 value={formData.permission_group}
                 onChange={(e) =>
                   handleChange("permission_group", e.target.value)
@@ -96,6 +112,7 @@ function AddPermission() {
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
             </div>
+
             <div className="flex justify-between px-6 pb-6">
               <Button
                 leftSection={<IconArrowLeft size={18} />}

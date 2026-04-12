@@ -2,7 +2,7 @@ import AuthLayout from "@/components/layout/authLayout";
 import { Button, Paper, TextInput } from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
@@ -10,75 +10,68 @@ import useSwal from "@/hooks/useSwal";
 import Head from "next/head";
 import userList from "@/data/sidebar/UserList";
 
-function EditProject() {
+function AddPosition() {
   const router = useRouter();
-  const { id } = router.query;
   const API_URL = useApi().API_URL;
   const { user } = useUser();
   const { showAlert } = useSwal();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    const fetch = async () => {
-      try {
-        const { data } = await axios.get(`${API_URL}/portal-project/${id}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        setName(data.project_name ?? "");
-      } catch {
-        showAlert("Error", "error", "Failed to fetch project.", "OK");
-      }
-    };
-    fetch();
-  }, [id, API_URL, user.token]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const result = await showAlert(
-      "Update Project",
+      "Add Position",
       "question",
-      "Are you sure you want to update this project?",
-      "Yes, Update",
+      "Are you sure?",
+      "Yes, Add",
       true,
     );
+
     if (!result.isConfirmed) return;
 
     try {
       setLoading(true);
-      const response = await axios.patch(
-        `${API_URL}/portal-project/${id}`,
-        { project_name: name },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-          validateStatus: (status) => status < 500,
-        },
+      await axios.post(
+        `${API_URL}/portal-position`,
+        { position_name: name },
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
-      if (response.status === 409) {
-        return showAlert(
-          "Duplicate Project",
-          "warning",
-          response.data.message || "This project name is already used.",
-          "OK",
-        );
-      }
+      showAlert("Success", "success", "Position successfully added.", "OK");
+      router.push("/user_management/position/list");
+    } catch (error) {
+      console.error("Error adding position:", error);
 
-      if (response.status === 200) {
-        showAlert("Success", "success", "Project successfully updated.", "OK");
-        router.push("/user_management/project/list");
+      const serverMessage = error.response?.data?.message;
+      const statusCode = error.response?.status;
+
+      if (statusCode === 409) {
+        return showAlert(
+          "Duplicate Position",
+          "warning",
+          serverMessage ||
+            "This position name is already registered in the system.",
+          "Try Another Position Name",
+        );
+      } else if (statusCode === 400) {
+        showAlert(
+          "Invalid Input",
+          "error",
+          Array.isArray(serverMessage)
+            ? serverMessage.join(", ")
+            : serverMessage,
+          "Fix It",
+        );
       } else {
         showAlert(
-          "Error",
+          "System Error",
           "error",
-          response.data.message || "Failed to update project.",
-          "OK",
+          "An unexpected error occurred while saving. Please contact IT Support.",
+          "Close",
         );
       }
-    } catch (error) {
-      console.error("Update Error:", error);
-      showAlert("Error", "error", "An unexpected error occurred.", "OK");
     } finally {
       setLoading(false);
     }
@@ -87,7 +80,7 @@ function EditProject() {
   return (
     <AuthLayout sidebarList={userList}>
       <Head>
-        <title>Edit Project | ARMC</title>
+        <title>Add Position | ARMC</title>
       </Head>
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8">
         <Paper
@@ -97,15 +90,15 @@ function EditProject() {
         >
           <div className="border-b py-6 text-center">
             <h1 className="text-2xl font-bold text-teal-600 uppercase">
-              Edit Project
+              Add Position
             </h1>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="p-6">
               <TextInput
                 required
-                label="Project Name"
-                placeholder="Input project name"
+                label="Position Name"
+                placeholder="Input position name (e.g. Senior Engineer)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
@@ -115,6 +108,7 @@ function EditProject() {
               <Button
                 leftSection={<IconArrowLeft size={18} />}
                 color="gray"
+                variant="subtle"
                 onClick={() => router.back()}
               >
                 Back
@@ -125,7 +119,7 @@ function EditProject() {
                 color="teal"
                 loading={loading}
               >
-                Update
+                Save Position
               </Button>
             </div>
           </form>
@@ -135,5 +129,5 @@ function EditProject() {
   );
 }
 
-EditProject.title = "Edit Project";
-export default EditProject;
+AddPosition.title = "Add Position";
+export default AddPosition;

@@ -223,6 +223,14 @@ export default function UserManagementDashboard() {
                   }
                 />
                 <QuickBtn
+                  icon={IconUserCheck} 
+                  label="Add Position"
+                  color="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  onClick={() =>
+                    router.push("/user_management/position/add_position")
+                  }
+                />
+                <QuickBtn
                   icon={IconKey}
                   label="Permissions"
                   color="bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100"
