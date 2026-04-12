@@ -19,7 +19,7 @@ export default function AddEngineering() {
     wo_number: "",
     equipment_name: "",
     issue_description: "",
-    priority: "Medium", // Default value
+    priority: "Medium", 
   });
 
   const [loading, setLoading] = useState(false);
@@ -28,13 +28,9 @@ export default function AddEngineering() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // =========================================================
-  // FUNGSI 1: TAMPILKAN POPUP KONFIRMASI DULU
-  // =========================================================
   const handleConfirmClick = (e) => {
     e.preventDefault();
 
-    // Validasi sederhana agar form tidak kosong
     if (
       !formData.wo_number ||
       !formData.equipment_name ||
@@ -49,21 +45,17 @@ export default function AddEngineering() {
       text: "Are you sure you want to submit this Work Order?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#20c997", // Warna teal
+      confirmButtonColor: "#20c997", 
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, Create",
       cancelButtonText: "Cancel",
     }).then((result) => {
-      // JIKA DIKLIK YES, BARU EKSEKUSI API
       if (result.isConfirmed) {
         executeSaveData();
       }
     });
   };
 
-  // =========================================================
-  // FUNGSI 2: TEMBAK API KE BACKEND
-  // =========================================================
   const executeSaveData = async () => {
     try {
       setLoading(true);
@@ -72,7 +64,6 @@ export default function AddEngineering() {
         validateStatus: (status) => status < 500,
       });
 
-      // Cek apakah nomor WO sudah ada di database
       if (response.status === 409) {
         Swal.fire(
           "Duplicate",
@@ -165,8 +156,8 @@ export default function AddEngineering() {
                 Back
               </Button>
               <Button
-                type="button" // Type button untuk mencegah auto-submit React
-                onClick={handleConfirmClick} // Panggil pop-up disini
+                type="button" 
+                onClick={handleConfirmClick} 
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loading}

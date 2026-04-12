@@ -9,7 +9,6 @@ import useApi from "@/hooks/useApi";
 import Head from "next/head";
 import warehouseList from "@/data/sidebar/WarehouseList";
 
-// PENTING: Import custom hooks
 import useSwal from "@/hooks/useSwal";
 
 export default function AddWarehouse() {
@@ -27,19 +26,17 @@ export default function AddWarehouse() {
     location: "",
   });
 
-  // 1. Tambahkan state untuk menangkap error validasi Mantine
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Hapus pesan error saat user mulai mengetik kembali
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
-  // 2. Fungsi Validasi Manual ala Mantine
   const validate = () => {
     const newErrors = {};
     if (!formData.item_code) newErrors.item_code = "Item Code is required";
@@ -61,15 +58,11 @@ export default function AddWarehouse() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // =========================================================
-  // FUNGSI 1: TAMPILKAN POP-UP KONFIRMASI DULU
-  // =========================================================
   const handleConfirmClick = async (e) => {
     e.preventDefault();
 
-    // Jalankan validasi Mantine terlebih dahulu
     if (!validate()) {
-      return; // Berhenti jika ada field yang belum diisi (muncul pesan merah)
+      return; 
     }
 
     const result = await showConfirm(
@@ -83,9 +76,6 @@ export default function AddWarehouse() {
     }
   };
 
-  // =========================================================
-  // FUNGSI 2: TEMBAK API
-  // =========================================================
   const executeSaveData = async () => {
     try {
       setLoading(true);
@@ -142,7 +132,7 @@ export default function AddWarehouse() {
                 label="Item Code"
                 placeholder="e.g. MAT-001"
                 value={formData.item_code}
-                error={errors.item_code} // Integrasi Error Mantine
+                error={errors.item_code} 
                 onChange={(e) => handleChange("item_code", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
@@ -152,7 +142,7 @@ export default function AddWarehouse() {
                 label="Item Name"
                 placeholder="e.g. Raw Steel Plate"
                 value={formData.item_name}
-                error={errors.item_name} // Integrasi Error Mantine
+                error={errors.item_name} 
                 onChange={(e) => handleChange("item_name", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
@@ -162,7 +152,7 @@ export default function AddWarehouse() {
                 label="Category"
                 placeholder="e.g. Raw Material, Spare Part"
                 value={formData.category}
-                error={errors.category} // Integrasi Error Mantine
+                error={errors.category} 
                 onChange={(e) => handleChange("category", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
@@ -172,20 +162,20 @@ export default function AddWarehouse() {
                   required
                   label="Quantity"
                   value={formData.quantity}
-                  error={errors.quantity} // Integrasi Error Mantine
+                  error={errors.quantity} 
                   onChange={(v) => handleChange("quantity", v)}
                   classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                 />
                 <TextInput
                   required
                   label="Unit"
-                  placeholder="e.g. Pcs, Kg, Liters" // Placeholder sebagai contoh isi
+                  placeholder="e.g. Pcs, Kg, Liters" 
                   value={formData.unit}
                   error={errors.unit}
                   onChange={(e) => handleChange("unit", e.target.value)}
                   classNames={{
                     label: "font-semibold mb-0 text-gray-700",
-                    description: "text-xs italic mb-1", // Styling untuk deskripsi agar tidak terlalu dominan
+                    description: "text-xs italic mb-1", 
                   }}
                 />
               </div>
@@ -195,7 +185,7 @@ export default function AddWarehouse() {
                 label="Location"
                 placeholder="e.g. Zone A-1"
                 value={formData.location}
-                error={errors.location} // Integrasi Error Mantine
+                error={errors.location} 
                 onChange={(e) => handleChange("location", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />

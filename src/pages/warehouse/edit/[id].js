@@ -29,7 +29,6 @@ export default function EditWarehouse() {
   const [loadingData, setLoadingData] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
 
-  // 1. State Form Lengkap
   const [formData, setFormData] = useState({
     item_code: "",
     item_name: "",
@@ -39,18 +38,15 @@ export default function EditWarehouse() {
     location: "",
   });
 
-  // 2. State Validasi Error
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    // Pastikan ID sudah ada (tidak undefined saat pertama kali load Next.js)
     if (!id || !user?.token) return;
 
     const fetchItem = async () => {
       try {
         setLoadingData(true);
 
-        // Dekripsi ID
         const realId = decrypt(id);
 
         const res = await axios.get(`${API_URL}/warehouse/${realId}`, {
@@ -75,19 +71,16 @@ export default function EditWarehouse() {
     };
 
     fetchItem();
-
-    // PENTING: Hapus 'decrypt' dari sini agar tidak memicu loop
   }, [id, API_URL, user?.token, router]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Hapus pesan error saat user mulai mengetik lagi
+
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
-  // 3. Fungsi Validasi Manual (Mantine Style)
   const validate = () => {
     const newErrors = {};
     if (!formData.item_code) newErrors.item_code = "Item Code is required";
@@ -113,7 +106,6 @@ export default function EditWarehouse() {
   const handleConfirm = async (e) => {
     e.preventDefault();
 
-    // Jalankan validasi merah dulu
     if (!validate()) return;
 
     const confirm = await showConfirm(

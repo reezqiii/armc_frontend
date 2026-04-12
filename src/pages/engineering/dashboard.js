@@ -34,7 +34,6 @@ export default function EngineeringDashboard() {
   const [records, setRecords] = useState([]);
   const currentUserRole = user?.role_name || "Unknown Role";
 
-  // --- FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/engineering`, {
@@ -50,7 +49,6 @@ export default function EngineeringDashboard() {
     if (isAuthorized && user?.token) fetchData();
   }, [fetchData, isAuthorized, user?.token]);
 
-  // --- STATISTIK ---
   const totalWO = records.length;
   const pendingWO = records.filter((r) => r.status === "Pending").length;
   const progressWO = records.filter((r) => r.status === "In Progress").length;
@@ -95,7 +93,7 @@ export default function EngineeringDashboard() {
             p="lg"
             withBorder
             shadow="sm"
-            className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white" // Ubah dari blue-600/indigo-800 ke teal
+            className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white" 
           >
             <Group justify="space-between" align="center">
               <div>

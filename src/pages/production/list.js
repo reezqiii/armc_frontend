@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Head from "next/head";
-import { useRouter } from "next/router"; // Tambahkan useRouter
+import { useRouter } from "next/router"; 
 import axios from "axios";
 import Swal from "sweetalert2";
 import { Paper, Badge, Button, Group, Text, Tooltip } from "@mantine/core";
@@ -27,20 +27,17 @@ import productionList from "@/data/sidebar/ProductionList";
 import useEncrypt from "@/hooks/useEncrypt";
 
 export default function ProductionList() {
-  const router = useRouter(); // Inisialisasi router
+  const router = useRouter(); 
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
   const [data, setData] = useState([]);
 
-  // Secara default diset true agar halaman selalu terbuka
   const [isAuthorized, setIsAuthorized] = useState(true);
 
-  // --- 1. LOGIKA RBAC (SEMENTARA DINONAKTIFKAN) ---
   const currentUserRole = user?.role_name || "Unknown Role";
-  const canApprove = true; // Dibuat TRUE secara paksa untuk demo
+  const canApprove = true; 
 
-  // --- 2. FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/production`, {
@@ -58,7 +55,6 @@ export default function ProductionList() {
     }
   }, [fetchData, isAuthorized, user?.token]);
 
-  // --- 3. FUNGSI APPROVE & DELETE ---
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -107,7 +103,6 @@ export default function ProductionList() {
     }
   };
 
-  // --- 4. KONFIGURASI TABLE ---
   const [columnFilters, setColumnFilters] = useState([]);
   const [sorting, setSorting] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
@@ -259,7 +254,6 @@ export default function ProductionList() {
   const totalPages = table.getPageCount();
   const tableInfo = { totalElements: data.length };
 
-  // --- 5. RENDER UI ---
   if (!isAuthorized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">

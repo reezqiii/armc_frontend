@@ -25,7 +25,6 @@ import { useRouter } from "next/router";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 
-// ── UTILS: FORMAT WAKTU ──
 function timeAgo(date) {
   if (!date) return "-";
   const diff = Math.floor((Date.now() - new Date(date)) / 1000);
@@ -35,7 +34,6 @@ function timeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-// ── DATA: STATUS MAP ──
 const REQUEST_STATUS_MAP = {
   0: { label: "Canceled", bg: "#6c757d", text: "#fff" },
   1: { label: "Pending Dept", bg: "#0dcaf0", text: "#fff" },

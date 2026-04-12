@@ -23,20 +23,18 @@ import {
 import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
-import productionList from "@/data/sidebar/ProductionList"; // Pastikan path ini benar
+import productionList from "@/data/sidebar/ProductionList"; 
 
 export default function ProductionDashboard() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
 
-  // Secara default diset true agar halaman selalu terbuka
   const [isAuthorized, setIsAuthorized] = useState(true);
   const [records, setRecords] = useState([]);
 
   const currentUserRole = user?.role_name || "Unknown Role";
 
-  // --- 1. LOGIKA RBAC (SEMENTARA DINONAKTIFKAN) ---
   /* const allowedRolesForPage = ["Admin IT", "Manager Production", "Staff Production", "Requestor"];
   useEffect(() => {
     if (user && !allowedRolesForPage.includes(currentUserRole)) {
@@ -45,7 +43,6 @@ export default function ProductionDashboard() {
   }, [currentUserRole, user]);
   */
 
-  // --- 2. FETCH DATA DARI DATABASE ---
   const fetchData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/production`, {
@@ -63,7 +60,6 @@ export default function ProductionDashboard() {
     }
   }, [fetchData, isAuthorized, user?.token]);
 
-  // --- 3. KALKULASI STATISTIK SECARA DINAMIS ---
   const totalBatches = records.length;
   const qcPassed = records.filter((r) => r.qc_status === "Passed").length;
   const qcFailed = records.filter((r) => r.qc_status === "Failed").length;
@@ -81,8 +77,6 @@ export default function ProductionDashboard() {
     { title: "Pending QC", value: pendingQc, icon: IconClock, color: "orange" },
   ];
 
-  // --- 4. KALKULASI RECENT ACTIVITY ---
-  // Mengambil 4 data terbaru berdasarkan tanggal pembuatan
   const recentActivities = [...records]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 4)
@@ -96,13 +90,12 @@ export default function ProductionDashboard() {
 
       return {
         id: record.id,
-        time: new Date(record.created_at).toLocaleDateString(), // Bisa diganti format jam jika ada
+        time: new Date(record.created_at).toLocaleDateString(), 
         text: `Batch ${record.batch_id} (${record.product_name}) ${actionText}`,
         status: record.qc_status,
       };
     });
 
-  // --- 5. TAMPILAN JIKA DITOLAK (ERROR 403) ---
   if (!isAuthorized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -126,7 +119,6 @@ export default function ProductionDashboard() {
     );
   }
 
-  // --- 6. TAMPILAN DASHBOARD UTAMA ---
   return (
     <>
       <Head>

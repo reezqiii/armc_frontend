@@ -382,7 +382,7 @@ export default function Index() {
                   placeholder="Choose Project"
                   value={valueOption.project_id}
                   onChange={(e) => setFilterOption(e, "project_id")}
-                  data={projectList} // data array with value and label
+                  data={projectList} 
                   searchable
                 />
               </div>
@@ -393,7 +393,7 @@ export default function Index() {
                   placeholder="Choose Discipline"
                   value={valueOption.discipline}
                   onChange={(e) => setFilterOption(e, "discipline")}
-                  data={disciplineList} // data array with value and label
+                  data={disciplineList} 
                   searchable
                 />
               </div>

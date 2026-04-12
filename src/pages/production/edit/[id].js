@@ -23,12 +23,9 @@ export default function EditProduction() {
   const [formData, setFormData] = useState({
     batch_id: "",
     product_name: "",
-    qc_status: "Pending", // Default fallback
+    qc_status: "Pending", 
   });
 
-  // =========================================================
-  // FETCH DATA LAMA SAAT HALAMAN DIBUKA
-  // =========================================================
   useEffect(() => {
     if (!id || !user?.token) return;
 
@@ -36,10 +33,8 @@ export default function EditProduction() {
       try {
         setLoadingData(true);
 
-        // 3. Dekripsi ID dari URL agar kembali menjadi angka asli
         const realId = decrypt(id);
 
-        // Tembak API menggunakan realId (misal: /production/11)
         const response = await axios.get(`${API_URL}/production/${realId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
@@ -65,9 +60,6 @@ export default function EditProduction() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // =========================================================
-  // FUNGSI 1: TAMPILKAN POP-UP KONFIRMASI DULU
-  // =========================================================
   const handleConfirm = async (e) => {
     e.preventDefault();
 
@@ -81,27 +73,21 @@ export default function EditProduction() {
       return;
     }
 
-    // Panggil showConfirm (WAJIB pakai await)
     const result = await showConfirm(
       "Update Production Record?",
       "Are you sure you want to save these changes?",
       "Yes, Update",
     );
 
-    // JIKA USER KLIK "YES", BARU PANGGIL FUNGSI UPDATE KE API
     if (result.isConfirmed) {
       executeUpdateData();
     }
   };
 
-  // =========================================================
-  // FUNGSI 2: TEMBAK API KE BACKEND (PUT)
-  // =========================================================
   const executeUpdateData = async () => {
     try {
       setLoadingSubmit(true);
 
-      // 4. Dekripsi lagi saat mau nge-save
       const realId = decrypt(id);
 
       await axios.put(`${API_URL}/production/${realId}`, formData, {
@@ -109,7 +95,6 @@ export default function EditProduction() {
         validateStatus: (status) => status < 500,
       });
 
-      // Tampilkan Pop-up Success (WAJIB await)
       await showAlert(
         "Success",
         "success",
@@ -117,7 +102,6 @@ export default function EditProduction() {
         "OK",
       );
 
-      // Pindah halaman
       router.push("/production/list");
     } catch (error) {
       await showAlert(
@@ -131,7 +115,6 @@ export default function EditProduction() {
     }
   };
 
-  // Tampilan Loading di awal
   if (loadingData) {
     return (
       <AuthLayout sidebarList={productionList}>
@@ -209,8 +192,8 @@ export default function EditProduction() {
 
               {/* TOMBOL SAVE DENGAN JURUS PAMUNGKAS */}
               <Button
-                type="button" // PENTING: Jangan 'submit'
-                onClick={handleConfirm} // PENTING: Panggil fungsi popup
+                type="button" 
+                onClick={handleConfirm} 
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loadingSubmit}

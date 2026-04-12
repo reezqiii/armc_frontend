@@ -19,7 +19,7 @@ const productionList = [
       },
       {
         title: "Production List",
-        href: "/production/list", // Mengarah ke halaman tabel list
+        href: "/production/list", 
         active: "Production List",
         icon: <IconListDetails size={18} />,
       },

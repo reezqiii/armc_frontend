@@ -26,7 +26,6 @@ export default function WarehouseDashboard() {
   const { API_URL } = useApi();
   const [records, setRecords] = useState([]);
 
-  // --- TAMBAHAN: Logika Current User Role ---
   const currentUserRole = user?.role_name || "Unknown Role";
 
   const fetchData = useCallback(async () => {

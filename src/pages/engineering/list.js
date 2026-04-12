@@ -26,21 +26,17 @@ import Datatables from "@/components/custom/Datatables";
 import engineeringList from "@/data/sidebar/EngineeringList";
 import useEncrypt from "@/hooks/useEncrypt";
 
-
 export default function EngineeringList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
 
-  // 2. PANGGIL HOOK ENCRYPT
   const { encrypt } = useEncrypt();
 
   const [data, setData] = useState([]);
 
-  // RBAC BYPASS (Bisa diklik semua)
   const canApprove = true;
 
-  // Fetch Data
   const fetchData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/engineering`, {
@@ -56,7 +52,6 @@ export default function EngineeringList() {
     if (user?.token) fetchData();
   }, [fetchData, user?.token]);
 
-  // --- FUNGSI DELETE & APPROVE TETAP ADA DI SINI ---
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Delete?",
@@ -100,7 +95,6 @@ export default function EngineeringList() {
     }
   };
 
-  // --- TABLE CONFIG ---
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -189,7 +183,7 @@ export default function EngineeringList() {
         },
       },
     ],
-    [canApprove, router, encrypt], // Jangan lupa masukkan 'encrypt' ke dependencies
+    [canApprove, router, encrypt], 
   );
 
   const table = useReactTable({
@@ -229,7 +223,7 @@ export default function EngineeringList() {
                 color="teal"
                 size="xs"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push("/engineering/add")} // *Catatan: pastikan URL ini match dengan file kamu, saya sesuaikan jadi /engineering/add agar rapi
+                onClick={() => router.push("/engineering/add")} 
               >
                 New Engineering
               </Button>

@@ -464,7 +464,7 @@ function EditUser() {
                         const availableIds = groupIds.filter(
                           (id) => !rolePermissionIds.includes(id),
                         );
-                        if (availableIds.length === 0) return; // Jika semua permission dari role, abaikan
+                        if (availableIds.length === 0) return; 
 
                         const allAvailableSelected = availableIds.every((id) =>
                           selectedPermissionIds.includes(id),
@@ -495,7 +495,7 @@ function EditUser() {
                               <Checkbox
                                 checked={allChecked}
                                 indeterminate={someChecked}
-                                onChange={handleToggleGroup} // Gunakan fungsi yang baru dibuat di atas
+                                onChange={handleToggleGroup} 
                                 onClick={(e) => e.stopPropagation()}
                                 color="teal"
                                 size="sm"
@@ -556,7 +556,7 @@ function EditUser() {
                                   >
                                     <Checkbox
                                       checked={isChecked}
-                                      disabled={isRolePerm} // 4. Disable checkbox bawaan role
+                                      disabled={isRolePerm} 
                                       onChange={() => {
                                         if (!isRolePerm)
                                           togglePermission(p.id_permission);

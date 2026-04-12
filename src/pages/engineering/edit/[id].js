@@ -1,5 +1,13 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { Button, Paper, TextInput, Select, Textarea, Loader, Text } from "@mantine/core";
+import {
+  Button,
+  Paper,
+  TextInput,
+  Select,
+  Textarea,
+  Loader,
+  Text,
+} from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
@@ -9,7 +17,6 @@ import useApi from "@/hooks/useApi";
 import Head from "next/head";
 import engineeringList from "@/data/sidebar/EngineeringList";
 
-// PENTING: Import custom hooks
 import useSwal from "@/hooks/useSwal";
 import useDecrypt from "@/hooks/useDecrypt";
 
@@ -28,12 +35,9 @@ export default function EditEngineering() {
     equipment_name: "",
     issue_description: "",
     priority: "Medium",
-    status: "Pending", // Default fallback
+    status: "Pending", 
   });
 
-  // =========================================================
-  // FETCH DATA LAMA SAAT HALAMAN DIBUKA
-  // =========================================================
   useEffect(() => {
     if (!id || !user?.token) return;
 
@@ -41,10 +45,8 @@ export default function EditEngineering() {
       try {
         setLoadingData(true);
 
-        // 3. Dekripsi ID dari URL agar kembali menjadi angka asli
         const realId = decrypt(id);
 
-        // Tembak API menggunakan realId
         const response = await axios.get(`${API_URL}/engineering/${realId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
@@ -72,9 +74,6 @@ export default function EditEngineering() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // =========================================================
-  // FUNGSI 1: TAMPILKAN POP-UP KONFIRMASI DULU
-  // =========================================================
   const handleConfirm = async (e) => {
     e.preventDefault();
 
@@ -83,32 +82,26 @@ export default function EditEngineering() {
         "Warning",
         "warning",
         "Please fill all required fields!",
-        "OK"
+        "OK",
       );
       return;
     }
 
-    // Panggil showConfirm (WAJIB pakai await)
     const result = await showConfirm(
       "Update Engineering Record?",
       "Are you sure you want to save these changes?",
-      "Yes, Update"
+      "Yes, Update",
     );
 
-    // JIKA USER KLIK "YES", BARU PANGGIL FUNGSI UPDATE KE API
     if (result.isConfirmed) {
       executeUpdateData();
     }
   };
 
-  // =========================================================
-  // FUNGSI 2: TEMBAK API KE BACKEND (PUT)
-  // =========================================================
   const executeUpdateData = async () => {
     try {
       setLoadingSubmit(true);
 
-      // 4. Dekripsi lagi saat mau nge-save
       const realId = decrypt(id);
 
       await axios.put(`${API_URL}/engineering/${realId}`, formData, {
@@ -116,29 +109,26 @@ export default function EditEngineering() {
         validateStatus: (status) => status < 500,
       });
 
-      // Tampilkan Pop-up Success (WAJIB await)
       await showAlert(
         "Success",
         "success",
         "Engineering record successfully updated.",
-        "OK"
+        "OK",
       );
 
-      // Pindah halaman
       router.push("/engineering/list");
     } catch (error) {
       await showAlert(
         "Error",
         "error",
         "Failed to update engineering record.",
-        "OK"
+        "OK",
       );
     } finally {
       setLoadingSubmit(false);
     }
   };
 
-  // Tampilan Loading di awal
   if (loadingData) {
     return (
       <AuthLayout sidebarList={engineeringList}>
@@ -234,8 +224,8 @@ export default function EditEngineering() {
 
               {/* TOMBOL SAVE DENGAN JURUS PAMUNGKAS */}
               <Button
-                type="button" // PENTING: Jangan 'submit'
-                onClick={handleConfirm} // PENTING: Panggil fungsi popup
+                type="button" 
+                onClick={handleConfirm} 
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loadingSubmit}

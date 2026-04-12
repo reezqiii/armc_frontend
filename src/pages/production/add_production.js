@@ -9,14 +9,13 @@ import useApi from "@/hooks/useApi";
 import Head from "next/head";
 import productionList from "@/data/sidebar/ProductionList";
 
-// PENTING: Import custom hook milikmu
 import useSwal from "@/hooks/useSwal";
 
 export default function AddProduction() {
   const router = useRouter();
   const { API_URL } = useApi();
   const { user } = useUser();
-  const { showAlert, showConfirm } = useSwal(); // Ambil fungsi dari hook
+  const { showAlert, showConfirm } = useSwal(); 
 
   const [formData, setFormData] = useState({
     batch_id: "",
@@ -29,13 +28,9 @@ export default function AddProduction() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // =========================================================
-  // FUNGSI 1: TAMPILKAN POP-UP KONFIRMASI DULU
-  // =========================================================
   const handleConfirm = async (e) => {
     e.preventDefault();
 
-    // Validasi sederhana: Jangan izinkan save kalau kosong
     if (!formData.batch_id || !formData.product_name) {
       await showAlert(
         "Warning",
@@ -46,22 +41,17 @@ export default function AddProduction() {
       return;
     }
 
-    // Panggil showConfirm dari useSwal milikmu (WAJIB pakai await)
     const result = await showConfirm(
       "Add Production?",
       "Are you sure you want to add this?",
       "Yes, Add",
     );
 
-    // JIKA USER KLIK "YES", BARU PANGGIL FUNGSI SAVE KE API
     if (result.isConfirmed) {
       executeSaveData();
     }
   };
 
-  // =========================================================
-  // FUNGSI 2: TEMBAK API (Hanya jalan jika klik YES)
-  // =========================================================
   const executeSaveData = async () => {
     try {
       setLoading(true);
@@ -70,9 +60,7 @@ export default function AddProduction() {
         validateStatus: (status) => status < 500,
       });
 
-      // Validasi duplikat
       if (response.status === 409) {
-        // WAJIB await agar pop-up tidak hilang/tertimpa
         await showAlert(
           "Duplicate",
           "warning",
@@ -82,7 +70,6 @@ export default function AddProduction() {
         return;
       }
 
-      // Tampilkan Pop-up Success (WAJIB await)
       await showAlert(
         "Success",
         "success",
@@ -90,15 +77,9 @@ export default function AddProduction() {
         "OK",
       );
 
-      // Baris ini HANYA akan tereksekusi SETELAH user klik tombol "OK" di popup success
       router.push("/production/list");
     } catch (error) {
-      await showAlert(
-        "Error",
-        "error",
-        "Failed to add production.",
-        "OK",
-      );
+      await showAlert("Error", "error", "Failed to add production.", "OK");
     } finally {
       setLoading(false);
     }
@@ -155,8 +136,8 @@ export default function AddProduction() {
 
               {/* KUNCI UTAMANYA DI SINI */}
               <Button
-                type="button" // PENTING: Type harus 'button', JANGAN 'submit'
-                onClick={handleConfirm} // PENTING: Panggil fungsi popup saat diklik
+                type="button" 
+                onClick={handleConfirm} 
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loading}

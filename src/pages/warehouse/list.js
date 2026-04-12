@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Head from "next/head";
-import { useRouter } from "next/router"; // 1. Tambahkan useRouter
+import { useRouter } from "next/router";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { Paper, Button, Group, Text } from "@mantine/core";
@@ -24,20 +24,17 @@ import useApi from "@/hooks/useApi";
 import Datatables from "@/components/custom/Datatables";
 import warehouseList from "@/data/sidebar/WarehouseList";
 
-// 2. IMPORT USEENCRYPT
 import useEncrypt from "@/hooks/useEncrypt";
 
 export default function WarehouseList() {
-  const router = useRouter(); // Inisialisasi router
+  const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
 
-  // Panggil hook encrypt
   const { encrypt } = useEncrypt();
 
   const [data, setData] = useState([]);
 
-  // --- FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/warehouse`, {
@@ -53,7 +50,6 @@ export default function WarehouseList() {
     if (user?.token) fetchData();
   }, [fetchData, user?.token]);
 
-  // --- FUNGSI DELETE (Dipisah agar rapi) ---
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Delete Item?",
@@ -69,14 +65,13 @@ export default function WarehouseList() {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         Swal.fire("Deleted!", "Item has been deleted.", "success");
-        fetchData(); // Refresh data
+        fetchData();
       } catch (error) {
         Swal.fire("Error", "Failed to delete item.", "error");
       }
     }
   };
 
-  // --- TABLE CONFIG ---
   const columns = useMemo(
     () => [
       {
@@ -114,9 +109,7 @@ export default function WarehouseList() {
                 color="blue"
                 px={8}
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(`/warehouse/edit/${encryptedId}`)
-                }
+                onClick={() => router.push(`/warehouse/edit/${encryptedId}`)}
               >
                 Edit
               </Button>
@@ -134,11 +127,10 @@ export default function WarehouseList() {
           );
         },
       },
-    ], 
-    [encrypt, router], // Dependencies useMemo
-  ); // Tutup useMemo
+    ],
+    [encrypt, router],
+  );
 
-  // Sekarang panggil table setelah columns didefinisikan dengan benar
   const table = useReactTable({
     data,
     columns,
