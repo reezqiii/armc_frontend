@@ -1,5 +1,5 @@
 import useEncrypt from "@/hooks/useEncrypt";
-import usePermission from "@/hooks/usePermission"; 
+import usePermission from "@/hooks/usePermission";
 import useCollapseStore from "@/store/useLayout";
 import useUser from "@/store/useUser";
 import { ActionIcon, Collapse, Menu, NavLink } from "@mantine/core";
@@ -16,22 +16,23 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useCallback, useMemo } from "react";
+import React, { useMemo } from "react";
 
 export default function Navigation() {
   const router = useRouter();
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
   const { user } = useUser();
-  const { can, canAny } = usePermission();
+  const { can } = usePermission(); // canAny sudah tidak diperlukan lagi di sini
 
-  const navigation = useMemo(
-    () => [
+  const navigation = useMemo(() => {
+    return [
       {
         name: "Home",
         url: "/dashboard/home",
         icon: <IconHome size={20} />,
       },
+      // ── MENU ADMIN (Murni hanya pakai user.manage) ──
       ...(can("user.manage")
         ? [
             {
@@ -41,13 +42,8 @@ export default function Navigation() {
             },
           ]
         : []),
-      ...(canAny(
-        "request.create",
-        "request.view_own_dept",
-        "request.view_all",
-        "request.approve_hod",
-        "request.approve_it",
-      )
+      // ── MENU ACCESS REQUEST (Harus dicentang manual) ──
+      ...(can("app.request")
         ? [
             {
               name: "Access Request",
@@ -56,24 +52,38 @@ export default function Navigation() {
             },
           ]
         : []),
-      {
-        name: "Production & Quality",
-        url: "/production/dashboard",
-        icon: <IconBuildingFactory size={20} />,
-      },
-      {
-        name: "Engineering",
-        url: "/engineering/dashboard",
-        icon: <IconTool size={20} />,
-      },
-      {
-        name: "Warehouse",
-        url: "/warehouse/dashboard",
-        icon: <IconBox size={20} />,
-      },
-    ],
-    [can],
-  );
+      // ── MENU PRODUCTION (Harus dicentang manual) ──
+      ...(can("app.production")
+        ? [
+            {
+              name: "Production & Quality",
+              url: "/production/dashboard",
+              icon: <IconBuildingFactory size={20} />,
+            },
+          ]
+        : []),
+      // ── MENU ENGINEERING (Harus dicentang manual) ──
+      ...(can("app.engineering")
+        ? [
+            {
+              name: "Engineering",
+              url: "/engineering/dashboard",
+              icon: <IconTool size={20} />,
+            },
+          ]
+        : []),
+      // ── MENU WAREHOUSE (Harus dicentang manual) ──
+      ...(can("app.warehouse")
+        ? [
+            {
+              name: "Warehouse",
+              url: "/warehouse/dashboard",
+              icon: <IconBox size={20} />,
+            },
+          ]
+        : []),
+    ];
+  }, [can]);
 
   const items = navigation.map((link, index) => {
     const menuItems = link.child?.map((item, indexItem) => (

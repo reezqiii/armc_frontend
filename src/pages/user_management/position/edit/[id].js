@@ -1,5 +1,5 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { Button, Paper, TextInput } from "@mantine/core";
+import { Button, Paper, TextInput, Select } from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
@@ -16,8 +16,32 @@ function EditPosition() {
   const API_URL = useApi().API_URL;
   const { user } = useUser();
   const { showAlert } = useSwal();
+
   const [name, setName] = useState("");
+  const [idRole, setIdRole] = useState(null);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // 1. Fetch List Roles untuk dropdown
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/role`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        const mapped = data.map((r) => ({
+          value: String(r.id_role),
+          label: r.role_name,
+        }));
+        setRoles(mapped);
+      } catch (e) {
+        console.error("Error fetching roles:", e);
+      }
+    };
+    if (user?.token) fetchRoles();
+  }, [API_URL, user.token]);
+
+  // 2. Fetch Detail Position
   useEffect(() => {
     if (!id || !user?.token) return;
 
@@ -27,6 +51,7 @@ function EditPosition() {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setName(data.position_name ?? "");
+        setIdRole(data.id_role ? String(data.id_role) : null); // Set initial role
       } catch (error) {
         console.error("Error fetching position:", error);
         showAlert("Error", "error", "Failed to fetch position data.", "OK");
@@ -37,51 +62,64 @@ function EditPosition() {
   }, [id, API_URL, user.token]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const result = await showAlert(
-    "Update Position",
-    "question",
-    "Are you sure you want to update this position?",
-    "Yes, Update",
-    true,
-  );
-
-  if (!result.isConfirmed) return;
-
-  try {
-    setLoading(true);
-    const response = await axios.patch(
-      `${API_URL}/portal-position/${id}`,
-      { position_name: name },
-      { 
-        headers: { Authorization: `Bearer ${user.token}` },
-        validateStatus: (status) => status < 500 
-      },
+    const result = await showAlert(
+      "Update Position",
+      "question",
+      "Are you sure you want to update this position?",
+      "Yes, Update",
+      true,
     );
 
-    if (response.status === 409) {
-      return showAlert(
-        "Duplicate Data",
-        "warning",
-        response.data.message || "Position name already exists.",
-        "Try Another Position Name"
-      );
-    }
+    if (!result.isConfirmed) return;
 
-    if (response.status === 200) {
-      showAlert("Success", "success", "Position successfully updated.", "OK");
-      router.push("/user_management/position/list");
-    } else {
-      showAlert("Error", "error", response.data.message || "Failed to update.", "OK");
+    try {
+      setLoading(true);
+      const response = await axios.patch(
+        `${API_URL}/portal-position/${id}`,
+        {
+          position_name: name,
+          id_role: Number(idRole), // Sertakan ID Role dalam update
+        },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+          validateStatus: (status) => status < 500,
+        },
+      );
+
+      if (response.status === 409) {
+        return showAlert(
+          "Duplicate Data",
+          "warning",
+          response.data.message || "Position name already exists.",
+          "Try Another Name",
+        );
+      }
+
+      if (response.status === 200) {
+        showAlert("Success", "success", "Position successfully updated.", "OK");
+        router.push("/user_management/position/list");
+      } else {
+        showAlert(
+          "Error",
+          "error",
+          response.data.message || "Failed to update.",
+          "OK",
+        );
+      }
+    } catch (error) {
+      console.error("Error updating position:", error);
+      showAlert(
+        "Error",
+        "error",
+        "Failed to update position. Check connection.",
+        "OK",
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error updating position:", error);
-    showAlert("Error", "error", "Failed to update position. Check your connection.", "OK");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <AuthLayout sidebarList={userList}>
@@ -107,23 +145,50 @@ function EditPosition() {
                 placeholder="Input position name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                className="mb-4"
+                classNames={{
+                  label: "font-semibold mb-1 text-gray-700 text-sm",
+                }}
               />
+
+              <Select
+                required
+                label="Role Mapping"
+                placeholder="Select role for this position"
+                data={roles}
+                value={idRole}
+                onChange={setIdRole}
+                searchable
+                nothingFoundMessage="Role not found"
+                classNames={{
+                  label: "font-semibold mb-1 text-gray-700 text-sm",
+                }}
+              />
+
+              <p className="text-[10px] text-gray-400 italic mt-2">
+                * Updating this will affect the suggested role for future access
+                requests.
+              </p>
             </div>
-            <div className="flex justify-between px-6 pb-6">
+
+            <div className="flex justify-between items-center px-8 pb-8">
               <Button
-                leftSection={<IconArrowLeft size={18} />}
+                leftSection={<IconArrowLeft size={16} />}
                 color="gray"
                 variant="subtle"
+                size="sm"
                 onClick={() => router.back()}
               >
                 Back
               </Button>
+
               <Button
                 type="submit"
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
+                size="sm"
                 loading={loading}
+                className="px-6 shadow-md"
               >
                 Update Position
               </Button>

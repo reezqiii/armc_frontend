@@ -47,7 +47,28 @@ function CreateUser() {
   const [errors, setErrors] = useState({});
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+
+      // LOGIKA AUTO-FILL ROLE BERDASARKAN POSITION
+      if (field === "id_position") {
+        // Cari objek posisi yang dipilih dari positionOptions
+        const selectedPos = positionOptions.find((p) => p.value === value);
+
+        if (selectedPos && selectedPos.roleId) {
+          // Set id_role secara otomatis
+          newData.id_role = String(selectedPos.roleId);
+
+          // Hapus error role jika sebelumnya ada
+          if (errors.id_role) {
+            setErrors((prevErr) => ({ ...prevErr, id_role: null }));
+          }
+        }
+      }
+
+      return newData;
+    });
+
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
@@ -61,6 +82,7 @@ function CreateUser() {
           axios.get(`${API_URL}/role`, { headers }),
           axios.get(`${API_URL}/portal-position`, { headers }),
         ]);
+        const rawPositions = posRes.data;
 
         setDeptOptions(
           deptRes.data
@@ -91,6 +113,7 @@ function CreateUser() {
           posRes.data.map((p) => ({
             value: String(p.id),
             label: p.position_name,
+            roleId: p.id_role, // Tambahkan id_role untuk filter posisi berdasarkan role
           })),
         );
       } catch (err) {
@@ -337,6 +360,12 @@ function CreateUser() {
                       onChange={(v) => handleChange("id_role", v)}
                       error={errors.id_role}
                       classNames={inputClass}
+                      // Tambahkan deskripsi otomatis
+                      description={
+                        formData.id_position
+                          ? "Auto-suggested based on position"
+                          : null
+                      }
                     />
                   </div>
                 </div>

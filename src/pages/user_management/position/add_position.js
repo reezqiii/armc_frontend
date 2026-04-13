@@ -1,8 +1,8 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { Button, Paper, TextInput } from "@mantine/core";
+import { Button, Paper, TextInput, Select } from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
@@ -16,7 +16,28 @@ function AddPosition() {
   const { user } = useUser();
   const { showAlert } = useSwal();
   const [name, setName] = useState("");
+  const [idRole, setIdRole] = useState(null); // Tambahkan state untuk role
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/role`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        // Mapping data untuk Mantine Select
+        const mapped = data.map((r) => ({
+          value: String(r.id_role),
+          label: r.role_name,
+        }));
+        setRoles(mapped);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,7 +56,10 @@ function AddPosition() {
       setLoading(true);
       await axios.post(
         `${API_URL}/portal-position`,
-        { position_name: name },
+        {
+          position_name: name,
+          id_role: Number(idRole), // Kirim ID Role ke backend
+        },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
@@ -90,34 +114,63 @@ function AddPosition() {
         >
           <div className="border-b py-6 text-center">
             <h1 className="text-2xl font-bold text-teal-600 uppercase">
-              Add Position
+              Add Role
             </h1>
           </div>
+
           <form onSubmit={handleSubmit}>
             <div className="p-6">
+              {/* TextInput dengan margin bottom agar tidak menempel ke Select */}
               <TextInput
                 required
                 label="Position Name"
                 placeholder="Input position name (e.g. Senior Engineer)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
+                className="mb-4" // Memberikan jarak ke elemen di bawahnya
+                classNames={{
+                  label: "font-semibold mb-1 text-gray-700 text-sm",
+                }}
               />
+
+              <Select
+                required
+                label="Role Mapping"
+                placeholder="Select role for this position"
+                data={roles}
+                value={idRole}
+                onChange={setIdRole}
+                searchable
+                nothingFoundMessage="Role not found"
+                classNames={{
+                  label: "font-semibold mb-1 text-gray-700 text-sm",
+                }}
+              />
+
+              <p className="text-[10px] text-gray-400 italic mt-2">
+                * This role will be automatically suggested when a user with
+                this position requests access.
+              </p>
             </div>
-            <div className="flex justify-between px-6 pb-6">
+
+            <div className="flex justify-between items-center px-8 pb-8">
               <Button
-                leftSection={<IconArrowLeft size={18} />}
+                leftSection={<IconArrowLeft size={16} />}
                 color="gray"
                 variant="subtle"
+                size="sm"
                 onClick={() => router.back()}
               >
                 Back
               </Button>
+
               <Button
                 type="submit"
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
+                size="sm"
                 loading={loading}
+                className="px-6 shadow-md"
               >
                 Save Position
               </Button>

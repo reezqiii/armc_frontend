@@ -1,0 +1,188 @@
+import React, { useState } from "react";
+import { Checkbox, Badge, Loader, Text } from "@mantine/core";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+
+export default function PermissionManager({
+  permissions = [],
+  selectedIds = [], // ID permission yang dicentang langsung
+  inheritedIds = [], // ID permission bawaan dari role (khusus halaman User)
+  onTogglePermission,
+  onToggleGroup,
+  loading = false,
+}) {
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader color="teal" size="sm" />
+        <Text size="sm" color="dimmed" ml="sm">
+          Loading permissions...
+        </Text>
+      </div>
+    );
+  }
+
+  // Grouping logic
+  const grouped = permissions.reduce((acc, p) => {
+    const group = p.permission_group ?? "General";
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(p);
+    return acc;
+  }, {});
+
+  const groupNames = Object.keys(grouped).sort();
+
+  if (groupNames.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-400 text-sm">
+        No permissions available
+      </div>
+    );
+  }
+
+  const toggleCollapse = (group) => {
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      {groupNames.map((group) => {
+        const groupPerms = grouped[group];
+        const isCollapsed = collapsedGroups[group];
+
+        // Kumpulkan semua ID di grup ini
+        const groupIds = groupPerms.map((p) => p.id_permission);
+
+        // Filter ID yang bisa di-klik (tidak terkunci oleh role)
+        const availableIds = groupIds.filter(
+          (id) => !inheritedIds.includes(id),
+        );
+
+        // Hitung total yang tercentang (baik karena direct maupun inherited)
+        const checkedCount = groupIds.filter(
+          (id) => selectedIds.includes(id) || inheritedIds.includes(id),
+        ).length;
+
+        const allChecked = checkedCount === groupPerms.length;
+        const someChecked = checkedCount > 0 && !allChecked;
+
+        return (
+          <div
+            key={group}
+            className="border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+          >
+            {/* --- GROUP HEADER --- */}
+            <div
+              className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => toggleCollapse(group)}
+            >
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  checked={allChecked}
+                  indeterminate={someChecked}
+                  onChange={() => {
+                    // Jika tidak ada yang available (semua dilock role), abaikan
+                    if (availableIds.length === 0) return;
+                    onToggleGroup(availableIds, groupIds);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  color="teal"
+                  size="sm"
+                  className={
+                    availableIds.length === 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }
+                />
+                <span className="text-sm font-bold text-gray-700 tracking-wide">
+                  {group}
+                </span>
+                <Badge
+                  color={checkedCount > 0 ? "teal" : "gray"}
+                  variant="light"
+                  size="xs"
+                >
+                  {checkedCount}/{groupPerms.length}
+                </Badge>
+              </div>
+              {isCollapsed ? (
+                <IconChevronDown size={16} className="text-gray-400" />
+              ) : (
+                <IconChevronUp size={16} className="text-gray-400" />
+              )}
+            </div>
+
+            {/* --- PERMISSION ITEMS --- */}
+            {!isCollapsed && (
+              <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white">
+                {groupPerms.map((p) => {
+                  const isInherited = inheritedIds.includes(p.id_permission);
+                  const isDirect = selectedIds.includes(p.id_permission);
+                  const isChecked = isInherited || isDirect;
+
+                  return (
+                    <div
+                      key={p.id_permission}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
+                        isChecked
+                          ? "bg-teal-50/50 border border-teal-200"
+                          : "hover:bg-gray-50 border border-gray-100"
+                      } ${
+                        isInherited
+                          ? "opacity-75 cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
+                      onClick={() => {
+                        if (!isInherited) onTogglePermission(p.id_permission);
+                      }}
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        disabled={isInherited}
+                        onChange={() => {
+                          if (!isInherited) onTogglePermission(p.id_permission);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        color="teal"
+                        size="sm"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`text-sm font-medium ${isChecked ? "text-teal-900" : "text-gray-700"}`}
+                          >
+                            {p.permission_name}
+                          </p>
+                          {/* Badge "Role" hanya muncul jika ini inherited */}
+                          {isInherited && (
+                            <Badge
+                              color="gray"
+                              variant="outline"
+                              size="xs"
+                              style={{
+                                textTransform: "none",
+                                backgroundColor: "white",
+                              }}
+                            >
+                              Role
+                            </Badge>
+                          )}
+                        </div>
+                        {p.index_key && (
+                          <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                            {p.index_key}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

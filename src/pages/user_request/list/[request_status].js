@@ -102,33 +102,40 @@ export default function RequestListDynamic({ request_status }) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRejectData, setSelectedRejectData] = useState(null);
+
   const isHOD = can("request.approve_hod");
   const isIT = can("request.approve_it");
-  const isAdminOrIT = can("request.view_all");
+  const canViewAll = can("request.view_all");
   const canExport = can("request.export");
-  const isApprover = isHOD || isIT || isAdminOrIT;
+  const isApprover = isHOD || isIT;
   const canApprove = useMemo(() => {
     if (!config || !user?.id) return false;
 
-    if (isAdminOrIT) return true;
-
+    // HOD hanya bisa approve jika dia adalah approver yang ditunjuk
     if (config.id === 1 && isHOD) {
       return data.some((item) => item.approval_hod_by?.id === user.id);
     }
 
+    // IT bisa approve di stage 3
     if (config.id === 3 && isIT) return true;
 
     return false;
-  }, [config, data, user.id, isAdminOrIT, isHOD, isIT]);
+  }, [config, data, user.id, isHOD, isIT]);
 
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
+
+    // ── PERBAIKAN FILTER QUERY ──
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
-      ...(!isAdminOrIT && { dept_id: user.department }),
+
+      // Jika BUKAN Observer/ViewAll, batasi hanya melihat departemennya sendiri
+      ...(!canViewAll && { dept_id: user.department }),
+
       ...(config.id === 0 && {
         status_active: 1,
-        ...(!isAdminOrIT && { requestor_id: user.id }),
+        // Jika BUKAN Observer/ViewAll, batasi hanya melihat request buatannya sendiri
+        ...(!canViewAll && { requestor_id: user.id }),
       }),
     };
 
@@ -200,69 +207,6 @@ export default function RequestListDynamic({ request_status }) {
     },
     [API_URL, encrypt, user.token],
   );
-
-  const handleBulkProcess = async (action) => {
-    if (!isApprover) {
-      Swal.fire("Access Denied", "You are not allowed", "error");
-      return;
-    }
-
-    const selectedRows = table.getSelectedRowModel().rows;
-    const ids = selectedRows.map((r) => r.original.id_request);
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-      Swal.fire("Error", "No request selected", "error");
-      return;
-    }
-
-    let title = "";
-    if (action === "approve") title = `Approve ${ids.length} request(s)?`;
-    else if (action === "reject") title = `Reject ${ids.length} request(s)?`;
-    else if (action === "submit")
-      title = `Submit ${ids.length} request(s) to HOD?`;
-
-    const confirm = await Swal.fire({
-      title,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    let remarks = "";
-    if (action === "reject") {
-      const { value } = await Swal.fire({
-        title: "Rejection Reason",
-        input: "textarea",
-        inputValidator: (v) => !v && "Required",
-        showCancelButton: true,
-      });
-      if (!value) return;
-      remarks = value;
-    }
-
-    const encryptedIds = ids.map((id) => encrypt(String(id)));
-
-    let endpoint = "";
-    if (action === "submit") endpoint = "/requests/submit-to-hod/bulk";
-    else
-      endpoint =
-        config.id === 1
-          ? "/requests/hod-approval/bulk"
-          : "/requests/it-approval/bulk";
-
-    await axios.put(
-      `${API_URL}${endpoint}`,
-      { encryptedIds, action, remarks },
-      { headers: { Authorization: `Bearer ${user.token}` } },
-    );
-
-    Swal.fire("Success", "Done", "success");
-    setRowSelection({});
-    getData();
-  };
 
   const handleExportExcel = async () => {
     if (!canExport) {
@@ -521,8 +465,20 @@ export default function RequestListDynamic({ request_status }) {
       cell: ({ row }) => {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
-        const canEditCancel =
-          request.request_status === 1 && request.created_by === user.id;
+
+        // ── PISAHKAN LOGIKA EDIT DAN CANCEL ──
+
+        // Syarat Edit: Punya izin request.update & status pending & pembuat request
+        const canEdit =
+          can("request.update") &&
+          request.request_status === 1 &&
+          request.created_by === user.id;
+
+        // Syarat Cancel: Punya izin request.cancel & status pending & pembuat request
+        const canCancel =
+          can("request.cancel") &&
+          request.request_status === 1 &&
+          request.created_by === user.id;
 
         return (
           <div className="flex justify-center gap-1 flex-wrap">
@@ -537,7 +493,8 @@ export default function RequestListDynamic({ request_status }) {
               Details
             </Button>
 
-            {canEditCancel && (
+            {/* Tombol Edit menggunakan canEdit */}
+            {canEdit && (
               <Button
                 leftSection={<IconEdit size={16} />}
                 color="yellow"
@@ -550,7 +507,8 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            {canEditCancel && (
+            {/* Tombol Cancel menggunakan canCancel */}
+            {canCancel && (
               <Button
                 leftSection={<IconX size={16} />}
                 color="red"
@@ -577,7 +535,6 @@ export default function RequestListDynamic({ request_status }) {
     handleCancel,
     isApprover,
     canApprove,
-    isAdminOrIT,
   ]);
 
   const table = useReactTable({
@@ -671,16 +628,6 @@ export default function RequestListDynamic({ request_status }) {
                   Selected {Object.keys(rowSelection).length} items
                 </Text>
                 <Group>
-                  {config.id === 0 && (
-                    <Button
-                      color="green"
-                      size="xs"
-                      leftSection={<IconSend size={16} />}
-                      onClick={() => handleBulkProcess("submit")}
-                    >
-                      Submit to HOD Request
-                    </Button>
-                  )}
                   {config.actions.includes("approve_bulk") && canApprove && (
                     <>
                       <Button

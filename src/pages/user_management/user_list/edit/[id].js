@@ -5,17 +5,12 @@ import {
   TextInput,
   Select,
   MultiSelect,
-  Checkbox,
   Badge,
-  Loader,
-  Text,
 } from "@mantine/core";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
   IconShield,
-  IconChevronDown,
-  IconChevronUp,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
@@ -26,6 +21,7 @@ import useSwal from "@/hooks/useSwal";
 import useDecrypt from "@/hooks/useDecrypt";
 import userList from "@/data/sidebar/UserList";
 import Head from "next/head";
+import PermissionManager from "@/components/common/PermissionManager";
 
 function EditUser() {
   const router = useRouter();
@@ -35,18 +31,17 @@ function EditUser() {
   const { showAlert, showConfirm } = useSwal();
   const { decrypt } = useDecrypt();
   const userId = id ? decrypt(id) : null;
-
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [rolePermissionIds, setRolePermissionIds] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
+  const [positionOptions, setPositionOptions] = useState([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
   const [collapsedGroups, setCollapsedGroups] = useState({});
-
   const [formData, setFormData] = useState({
     full_name: "",
     badge_no: "",
@@ -55,15 +50,27 @@ function EditUser() {
     project_id: null,
     project_ids: [],
     department: null,
+    id_position: null, // Tambahkan ini
     id_role: null,
   });
-
   const [errors, setErrors] = useState({});
-
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+
+      // Logika Otomatis: Jika Position diganti, Role ikut berganti
+      if (field === "id_position") {
+        const selectedPos = positionOptions.find((p) => p.value === value);
+        if (selectedPos && selectedPos.roleId) {
+          newData.id_role = String(selectedPos.roleId);
+        }
+      }
+      return newData;
+    });
+
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
+
   useEffect(() => {
     if (!formData.id_role) {
       setRolePermissionIds([]);
@@ -88,14 +95,16 @@ function EditUser() {
 
     fetchRolePermissions();
   }, [formData.id_role, API_URL, user.token]);
+
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        const [deptRes, projectRes, roleRes] = await Promise.all([
+        const [deptRes, projectRes, roleRes, posRes] = await Promise.all([
           axios.get(`${API_URL}/portal-department`, { headers }),
           axios.get(`${API_URL}/portal-project`, { headers }),
           axios.get(`${API_URL}/role`, { headers }),
+          axios.get(`${API_URL}/portal-position`, { headers }),
         ]);
 
         setDeptOptions(
@@ -116,13 +125,21 @@ function EditUser() {
             .filter((r) => r.id_role && r.role_name)
             .map((r) => ({ value: String(r.id_role), label: r.role_name })),
         );
+
+        setPositionOptions(
+          posRes.data.map((p) => ({
+            value: String(p.id),
+            label: p.position_name,
+            roleId: p.id_role, // Simpan meta-data roleId di sini
+          })),
+        );
       } catch (err) {
         console.error("Failed to fetch master data", err);
       }
     };
-
     fetchMasterData();
   }, [API_URL, user.token]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -141,6 +158,7 @@ function EditUser() {
           project_id: data.project_id ? String(data.project_id) : null,
           project_ids: data.project_ids?.map(String) ?? [],
           department: data.dept_id ? String(data.dept_id) : null,
+          id_position: data.id_position ? String(data.id_position) : null,
           id_role: data.id_role ? String(data.id_role) : null,
         });
       } catch (err) {
@@ -153,6 +171,7 @@ function EditUser() {
 
     fetchUser();
   }, [id, API_URL, user.token]);
+
   useEffect(() => {
     if (!id || !userId) return;
 
@@ -177,6 +196,7 @@ function EditUser() {
 
     fetchPermissions();
   }, [id]);
+
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
     if (!acc[group]) acc[group] = [];
@@ -186,31 +206,32 @@ function EditUser() {
 
   const groupNames = Object.keys(grouped).sort();
 
-  const toggleGroup = (group) => {
-    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
-  };
-
-  const toggleAll = (groupPermissions) => {
-    const groupIds = groupPermissions.map((p) => p.id_permission);
-    const allSelected = groupIds.every((gid) =>
-      selectedPermissionIds.includes(gid),
-    );
-    if (allSelected) {
-      setSelectedPermissionIds((prev) =>
-        prev.filter((pid) => !groupIds.includes(pid)),
-      );
-    } else {
-      setSelectedPermissionIds((prev) => [...new Set([...prev, ...groupIds])]);
-    }
-  };
-
-  const togglePermission = (id_permission) => {
+  const handleTogglePermission = (id_permission) => {
     setSelectedPermissionIds((prev) =>
       prev.includes(id_permission)
         ? prev.filter((pid) => pid !== id_permission)
         : [...prev, id_permission],
     );
   };
+
+  const handleToggleGroup = (availableIds) => {
+    const allAvailableSelected = availableIds.every((id) =>
+      selectedPermissionIds.includes(id),
+    );
+
+    if (allAvailableSelected) {
+      // Uncheck semua yang available
+      setSelectedPermissionIds((prev) =>
+        prev.filter((id) => !availableIds.includes(id)),
+      );
+    } else {
+      // Check semua yang available
+      setSelectedPermissionIds((prev) => [
+        ...new Set([...prev, ...availableIds]),
+      ]);
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.full_name) newErrors.full_name = "Full Name is required";
@@ -378,6 +399,18 @@ function EditUser() {
                         error={errors.department}
                         classNames={inputClass}
                       />
+                      {/* KOMPONEN POSITION YANG BARU DITAMBAHKAN */}
+                      <Select
+                        required
+                        searchable
+                        label="Position"
+                        placeholder="Select Position"
+                        data={positionOptions}
+                        value={formData.id_position}
+                        onChange={(v) => handleChange("id_position", v)}
+                        error={errors.id_position}
+                        classNames={inputClass}
+                      />
                       <Select
                         required
                         searchable
@@ -438,172 +471,15 @@ function EditUser() {
                   </Badge>
                 </div>
 
-                {loadingPermissions ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Loader color="teal" size="sm" />
-                    <Text size="sm" color="dimmed" ml="sm">
-                      Loading permissions...
-                    </Text>
-                  </div>
-                ) : (
-                  <div className="p-4 space-y-2">
-                    {groupNames.map((group) => {
-                      const groupPerms = grouped[group];
-                      const isCollapsed = collapsedGroups[group];
-                      const groupIds = groupPerms.map((p) => p.id_permission);
-                      const checkedCount = groupIds.filter(
-                        (gid) =>
-                          selectedPermissionIds.includes(gid) ||
-                          rolePermissionIds.includes(gid),
-                      ).length;
-
-                      const allChecked = checkedCount === groupPerms.length;
-                      const someChecked = checkedCount > 0 && !allChecked;
-                      const handleToggleGroup = (e) => {
-                        e.stopPropagation();
-                        const availableIds = groupIds.filter(
-                          (id) => !rolePermissionIds.includes(id),
-                        );
-                        if (availableIds.length === 0) return; 
-
-                        const allAvailableSelected = availableIds.every((id) =>
-                          selectedPermissionIds.includes(id),
-                        );
-
-                        if (allAvailableSelected) {
-                          setSelectedPermissionIds((prev) =>
-                            prev.filter((id) => !availableIds.includes(id)),
-                          );
-                        } else {
-                          setSelectedPermissionIds((prev) => [
-                            ...new Set([...prev, ...availableIds]),
-                          ]);
-                        }
-                      };
-
-                      return (
-                        <div
-                          key={group}
-                          className="border border-gray-200 rounded-lg overflow-hidden"
-                        >
-                          {/* Group Header */}
-                          <div
-                            className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                            onClick={() => toggleGroup(group)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={allChecked}
-                                indeterminate={someChecked}
-                                onChange={handleToggleGroup} 
-                                onClick={(e) => e.stopPropagation()}
-                                color="teal"
-                                size="sm"
-                              />
-                              <span className="text-sm font-semibold text-gray-700">
-                                {group}
-                              </span>
-                              <Badge
-                                color={checkedCount > 0 ? "teal" : "gray"}
-                                variant="light"
-                                size="xs"
-                              >
-                                {checkedCount}/{groupPerms.length}
-                              </Badge>
-                            </div>
-                            {isCollapsed ? (
-                              <IconChevronDown
-                                size={16}
-                                className="text-gray-400"
-                              />
-                            ) : (
-                              <IconChevronUp
-                                size={16}
-                                className="text-gray-400"
-                              />
-                            )}
-                          </div>
-
-                          {/* Permission Items */}
-                          {!isCollapsed && (
-                            <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {groupPerms.map((p) => {
-                                const isRolePerm = rolePermissionIds.includes(
-                                  p.id_permission,
-                                );
-                                const isDirectPerm =
-                                  selectedPermissionIds.includes(
-                                    p.id_permission,
-                                  );
-                                const isChecked = isRolePerm || isDirectPerm;
-
-                                return (
-                                  <div
-                                    key={p.id_permission}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                                      isChecked
-                                        ? "bg-teal-50 border border-teal-200"
-                                        : "hover:bg-gray-50 border border-transparent"
-                                    } ${
-                                      isRolePerm
-                                        ? "opacity-70 cursor-not-allowed"
-                                        : "cursor-pointer"
-                                    }`}
-                                    onClick={() => {
-                                      if (!isRolePerm)
-                                        togglePermission(p.id_permission);
-                                    }}
-                                  >
-                                    <Checkbox
-                                      checked={isChecked}
-                                      disabled={isRolePerm} 
-                                      onChange={() => {
-                                        if (!isRolePerm)
-                                          togglePermission(p.id_permission);
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      color="teal"
-                                      size="sm"
-                                    />
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-sm text-gray-700 font-medium">
-                                          {p.permission_name}
-                                        </p>
-                                        {/* 5. Tampilkan indikator visual bahwa ini milik Role */}
-                                        {isRolePerm && (
-                                          <Badge
-                                            color="gray"
-                                            variant="outline"
-                                            size="xs"
-                                            style={{ textTransform: "none" }}
-                                          >
-                                            Role
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      {p.index_key && (
-                                        <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                          {p.index_key}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {groupNames.length === 0 && (
-                      <div className="text-center py-8 text-gray-400 text-sm">
-                        No permissions available
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Panggil komponennya di sini! */}
+                <PermissionManager
+                  permissions={permissions}
+                  selectedIds={selectedPermissionIds}
+                  inheritedIds={rolePermissionIds}
+                  onTogglePermission={handleTogglePermission}
+                  onToggleGroup={handleToggleGroup}
+                  loading={loadingPermissions}
+                />
               </Paper>
 
               {/* ── Action Buttons ── */}
