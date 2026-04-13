@@ -23,7 +23,7 @@ export default function Navigation() {
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
   const { user } = useUser();
-  const { can } = usePermission(); // canAny sudah tidak diperlukan lagi di sini
+  const { can } = usePermission(); 
 
   const navigation = useMemo(() => {
     return [
@@ -32,7 +32,7 @@ export default function Navigation() {
         url: "/dashboard/home",
         icon: <IconHome size={20} />,
       },
-      // ── MENU ADMIN (Murni hanya pakai user.manage) ──
+      
       ...(can("user.manage")
         ? [
             {
@@ -42,7 +42,7 @@ export default function Navigation() {
             },
           ]
         : []),
-      // ── MENU ACCESS REQUEST (Harus dicentang manual) ──
+      
       ...(can("app.request")
         ? [
             {
@@ -52,7 +52,7 @@ export default function Navigation() {
             },
           ]
         : []),
-      // ── MENU PRODUCTION (Harus dicentang manual) ──
+      
       ...(can("app.production")
         ? [
             {
@@ -62,7 +62,7 @@ export default function Navigation() {
             },
           ]
         : []),
-      // ── MENU ENGINEERING (Harus dicentang manual) ──
+      
       ...(can("app.engineering")
         ? [
             {
@@ -72,7 +72,7 @@ export default function Navigation() {
             },
           ]
         : []),
-      // ── MENU WAREHOUSE (Harus dicentang manual) ──
+      
       ...(can("app.warehouse")
         ? [
             {

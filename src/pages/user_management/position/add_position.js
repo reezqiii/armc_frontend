@@ -16,7 +16,7 @@ function AddPosition() {
   const { user } = useUser();
   const { showAlert } = useSwal();
   const [name, setName] = useState("");
-  const [idRole, setIdRole] = useState(null); // Tambahkan state untuk role
+  const [idRole, setIdRole] = useState(null);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,7 @@ function AddPosition() {
         const { data } = await axios.get(`${API_URL}/role`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        // Mapping data untuk Mantine Select
+
         const mapped = data.map((r) => ({
           value: String(r.id_role),
           label: r.role_name,
@@ -58,7 +58,7 @@ function AddPosition() {
         `${API_URL}/portal-position`,
         {
           position_name: name,
-          id_role: Number(idRole), // Kirim ID Role ke backend
+          id_role: Number(idRole),
         },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
@@ -127,7 +127,7 @@ function AddPosition() {
                 placeholder="Input position name (e.g. Senior Engineer)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mb-4" // Memberikan jarak ke elemen di bawahnya
+                className="mb-4"
                 classNames={{
                   label: "font-semibold mb-1 text-gray-700 text-sm",
                 }}

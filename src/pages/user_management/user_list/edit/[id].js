@@ -22,6 +22,7 @@ import useDecrypt from "@/hooks/useDecrypt";
 import userList from "@/data/sidebar/UserList";
 import Head from "next/head";
 import PermissionManager from "@/components/common/PermissionManager";
+import useEncrypt from "@/hooks/useEncrypt";
 
 function EditUser() {
   const router = useRouter();
@@ -30,6 +31,8 @@ function EditUser() {
   const { user } = useUser();
   const { showAlert, showConfirm } = useSwal();
   const { decrypt } = useDecrypt();
+  const { encrypt } = useEncrypt();
+
   const userId = id ? decrypt(id) : null;
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -41,24 +44,23 @@ function EditUser() {
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [permissions, setPermissions] = useState([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
-  const [collapsedGroups, setCollapsedGroups] = useState({});
   const [formData, setFormData] = useState({
     full_name: "",
     badge_no: "",
     username: "",
     email: "",
-    project_id: null,
+    id_project: null,
     project_ids: [],
-    department: null,
-    id_position: null, // Tambahkan ini
+    id_department: null,
+    id_position: null,
     id_role: null,
   });
   const [errors, setErrors] = useState({});
+
   const handleChange = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // Logika Otomatis: Jika Position diganti, Role ikut berganti
       if (field === "id_position") {
         const selectedPos = positionOptions.find((p) => p.value === value);
         if (selectedPos && selectedPos.roleId) {
@@ -79,8 +81,10 @@ function EditUser() {
 
     const fetchRolePermissions = async () => {
       try {
+        const encryptedRoleId = encrypt(String(formData.id_role));
+
         const { data } = await axios.get(
-          `${API_URL}/role-permission/${formData.id_role}`,
+          `${API_URL}/role-permission/${encryptedRoleId}`,
           {
             headers: { Authorization: `Bearer ${user.token}` },
           },
@@ -117,8 +121,11 @@ function EditUser() {
         );
         setProjectOptions(
           projectRes.data
-            .filter((p) => p.id && p.project_name)
-            .map((p) => ({ value: String(p.id), label: p.project_name })),
+            .filter((p) => p.id_project && p.project_name)
+            .map((p) => ({
+              value: String(p.id_project),
+              label: p.project_name,
+            })),
         );
         setRoleOptions(
           roleRes.data
@@ -128,9 +135,9 @@ function EditUser() {
 
         setPositionOptions(
           posRes.data.map((p) => ({
-            value: String(p.id),
+            value: String(p.id_position),
             label: p.position_name,
-            roleId: p.id_role, // Simpan meta-data roleId di sini
+            roleId: p.id_role,
           })),
         );
       } catch (err) {
@@ -155,9 +162,9 @@ function EditUser() {
           badge_no: data.badge_no ?? "",
           username: data.username ?? "",
           email: data.email ?? "",
-          project_id: data.project_id ? String(data.project_id) : null,
+          id_project: data.id_project ? String(data.id_project) : null,
           project_ids: data.project_ids?.map(String) ?? [],
-          department: data.dept_id ? String(data.dept_id) : null,
+          id_department: data.id_department ? String(data.id_department) : null,
           id_position: data.id_position ? String(data.id_position) : null,
           id_role: data.id_role ? String(data.id_role) : null,
         });
@@ -173,13 +180,13 @@ function EditUser() {
   }, [id, API_URL, user.token]);
 
   useEffect(() => {
-    if (!id || !userId) return;
+    if (!id) return;
 
     const fetchPermissions = async () => {
       setLoadingPermissions(true);
       try {
         const { data } = await axios.get(
-          `${API_URL}/portal_user_permission/user/${userId}`,
+          `${API_URL}/portal_user_permission/user/${id}`,
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
         setPermissions(data);
@@ -188,14 +195,13 @@ function EditUser() {
         );
       } catch (err) {
         console.error("Failed to fetch user permissions", err);
-        showAlert("Error", "error", "Failed to load permissions.", "OK");
       } finally {
         setLoadingPermissions(false);
       }
     };
 
     fetchPermissions();
-  }, [id]);
+  }, [id, API_URL, user.token]);
 
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
@@ -220,12 +226,10 @@ function EditUser() {
     );
 
     if (allAvailableSelected) {
-      // Uncheck semua yang available
       setSelectedPermissionIds((prev) =>
         prev.filter((id) => !availableIds.includes(id)),
       );
     } else {
-      // Check semua yang available
       setSelectedPermissionIds((prev) => [
         ...new Set([...prev, ...availableIds]),
       ]);
@@ -238,8 +242,9 @@ function EditUser() {
     if (!formData.badge_no) newErrors.badge_no = "Badge ID is required";
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.project_id) newErrors.project_id = "Project is required";
+    if (!formData.id_department)
+      newErrors.id_department = "Department is required";
+    if (!formData.id_project) newErrors.id_project = "Project is required";
     if (!formData.id_role) newErrors.id_role = "Role is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -257,8 +262,8 @@ function EditUser() {
 
     const payload = {
       ...formData,
-      department: Number(formData.department),
-      project_id: Number(formData.project_id),
+      id_department: Number(formData.id_department),
+      id_project: Number(formData.id_project),
       project_ids: formData.project_ids?.map(Number) ?? [],
       id_role: Number(formData.id_role),
     };
@@ -269,7 +274,7 @@ function EditUser() {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       await axios.post(
-        `${API_URL}/portal_user_permission/user/${userId}/sync`,
+        `${API_URL}/portal_user_permission/user/${id}/sync`,
         { permission_ids: selectedPermissionIds },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
@@ -394,9 +399,9 @@ function EditUser() {
                         label="Department"
                         placeholder="Select Department"
                         data={deptOptions}
-                        value={formData.department}
-                        onChange={(v) => handleChange("department", v)}
-                        error={errors.department}
+                        value={formData.id_department}
+                        onChange={(v) => handleChange("id_department", v)}
+                        error={errors.id_department}
                         classNames={inputClass}
                       />
                       {/* KOMPONEN POSITION YANG BARU DITAMBAHKAN */}
@@ -417,9 +422,9 @@ function EditUser() {
                         label="Project"
                         placeholder="Select Project"
                         data={projectOptions}
-                        value={formData.project_id}
-                        onChange={(v) => handleChange("project_id", v)}
-                        error={errors.project_id}
+                        value={formData.id_project}
+                        onChange={(v) => handleChange("id_project", v)}
+                        error={errors.id_project}
                         classNames={inputClass}
                       />
                       <MultiSelect

@@ -111,12 +111,10 @@ export default function RequestListDynamic({ request_status }) {
   const canApprove = useMemo(() => {
     if (!config || !user?.id) return false;
 
-    // HOD hanya bisa approve jika dia adalah approver yang ditunjuk
     if (config.id === 1 && isHOD) {
       return data.some((item) => item.approval_hod_by?.id === user.id);
     }
 
-    // IT bisa approve di stage 3
     if (config.id === 3 && isIT) return true;
 
     return false;
@@ -125,16 +123,14 @@ export default function RequestListDynamic({ request_status }) {
   const getData = useCallback(async () => {
     if (!config || !user?.token) return;
 
-    // ── PERBAIKAN FILTER QUERY ──
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
 
-      // Jika BUKAN Observer/ViewAll, batasi hanya melihat departemennya sendiri
       ...(!canViewAll && { dept_id: user.department }),
 
       ...(config.id === 0 && {
         status_active: 1,
-        // Jika BUKAN Observer/ViewAll, batasi hanya melihat request buatannya sendiri
+
         ...(!canViewAll && { requestor_id: user.id }),
       }),
     };
@@ -466,15 +462,11 @@ export default function RequestListDynamic({ request_status }) {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
 
-        // ── PISAHKAN LOGIKA EDIT DAN CANCEL ──
-
-        // Syarat Edit: Punya izin request.update & status pending & pembuat request
         const canEdit =
           can("request.update") &&
           request.request_status === 1 &&
           request.created_by === user.id;
 
-        // Syarat Cancel: Punya izin request.cancel & status pending & pembuat request
         const canCancel =
           can("request.cancel") &&
           request.request_status === 1 &&

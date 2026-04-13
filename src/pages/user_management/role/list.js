@@ -13,15 +13,17 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
 
 export default function RoleList() {
   const router = useRouter();
   const { user } = useUser();
+  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
+  
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([{ id: "role_name", desc: false }]);
@@ -95,12 +97,14 @@ export default function RoleList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(`/user_management/role/edit/${role.id_role}`)
-                }
+                onClick={() => {
+                  const encryptedId = encrypt(String(role.id_role));
+                  router.push(`/user_management/role/edit/${encryptedId}`);
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 size="xs"
                 color="red"

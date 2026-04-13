@@ -13,14 +13,16 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
 
 export default function ProjectList() {
   const router = useRouter();
   const { user } = useUser();
+  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
+
   const { showAlert } = useSwal();
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -126,12 +128,14 @@ export default function ProjectList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(`/user_management/project/edit/${project.id}`)
-                }
+                onClick={() => {
+                  const encryptedId = encrypt(String(project.id_project));
+                  router.push(`/user_management/project/edit/${encryptedId}`);
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 size="xs"
                 color="red"
@@ -183,7 +187,9 @@ export default function ProjectList() {
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/project/add_project`)}
+                onClick={() =>
+                  router.push(`/user_management/project/add_project`)
+                }
               >
                 Add Project
               </Button>

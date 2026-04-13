@@ -22,7 +22,6 @@ function EditPosition() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Fetch List Roles untuk dropdown
   useEffect(() => {
     const fetchRoles = async () => {
       try {
@@ -41,7 +40,6 @@ function EditPosition() {
     if (user?.token) fetchRoles();
   }, [API_URL, user.token]);
 
-  // 2. Fetch Detail Position
   useEffect(() => {
     if (!id || !user?.token) return;
 
@@ -51,7 +49,7 @@ function EditPosition() {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setName(data.position_name ?? "");
-        setIdRole(data.id_role ? String(data.id_role) : null); // Set initial role
+        setIdRole(data.id_role ? String(data.id_role) : null);
       } catch (error) {
         console.error("Error fetching position:", error);
         showAlert("Error", "error", "Failed to fetch position data.", "OK");
@@ -80,7 +78,7 @@ function EditPosition() {
         `${API_URL}/portal-position/${id}`,
         {
           position_name: name,
-          id_role: Number(idRole), // Sertakan ID Role dalam update
+          id_role: Number(idRole),
         },
         {
           headers: { Authorization: `Bearer ${user.token}` },

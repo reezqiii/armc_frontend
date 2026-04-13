@@ -192,7 +192,7 @@ function EditRole() {
               <PermissionManager
                 permissions={permissions}
                 selectedIds={selectedIds}
-                inheritedIds={[]} // Kosongkan karena Role tidak punya permission warisan
+                inheritedIds={[]}
                 onTogglePermission={handleTogglePermission}
                 onToggleGroup={handleToggleGroup}
                 loading={loadingPermissions}

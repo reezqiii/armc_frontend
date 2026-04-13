@@ -32,7 +32,7 @@ export default function UserList() {
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [sorting, setSorting] = useState([{ id: "created_date", desc: false }]);
+  const [sorting, setSorting] = useState([{ id: "created_date", desc: true }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
@@ -185,6 +185,14 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
+        accessorFn: (row) => row.position_name,
+        id: "position_name",
+        header: "Position",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
         accessorFn: (row) => row.role_name,
         id: "role_name",
         header: "Role",
@@ -237,14 +245,14 @@ export default function UserList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(
-                    `/user_management/user_list/edit/${encrypt(String(userRow.id_user))}`,
-                  )
-                }
+                onClick={() => {
+                  const encryptedId = encrypt(String(userRow.id_user)); 
+                  router.push(`/user_management/user_list/edit/${encryptedId}`); 
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 size="xs"
                 color="gray"

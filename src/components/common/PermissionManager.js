@@ -4,8 +4,8 @@ import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 
 export default function PermissionManager({
   permissions = [],
-  selectedIds = [], // ID permission yang dicentang langsung
-  inheritedIds = [], // ID permission bawaan dari role (khusus halaman User)
+  selectedIds = [], 
+  inheritedIds = [], 
   onTogglePermission,
   onToggleGroup,
   loading = false,
@@ -23,7 +23,7 @@ export default function PermissionManager({
     );
   }
 
-  // Grouping logic
+  
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
     if (!acc[group]) acc[group] = [];
@@ -51,15 +51,15 @@ export default function PermissionManager({
         const groupPerms = grouped[group];
         const isCollapsed = collapsedGroups[group];
 
-        // Kumpulkan semua ID di grup ini
+        
         const groupIds = groupPerms.map((p) => p.id_permission);
 
-        // Filter ID yang bisa di-klik (tidak terkunci oleh role)
+        
         const availableIds = groupIds.filter(
           (id) => !inheritedIds.includes(id),
         );
 
-        // Hitung total yang tercentang (baik karena direct maupun inherited)
+        
         const checkedCount = groupIds.filter(
           (id) => selectedIds.includes(id) || inheritedIds.includes(id),
         ).length;
@@ -82,7 +82,7 @@ export default function PermissionManager({
                   checked={allChecked}
                   indeterminate={someChecked}
                   onChange={() => {
-                    // Jika tidak ada yang available (semua dilock role), abaikan
+                    
                     if (availableIds.length === 0) return;
                     onToggleGroup(availableIds, groupIds);
                   }}

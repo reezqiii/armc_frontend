@@ -20,10 +20,12 @@ import {
 import Head from "next/head";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
 
 export default function PositionList() {
   const router = useRouter();
   const { user } = useUser();
+  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
   const [data, setData] = useState([]);
@@ -132,12 +134,14 @@ export default function PositionList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(`/user_management/position/edit/${position.id}`)
-                }
+                onClick={() => {
+                  const encryptedId = encrypt(String(position.id_position));
+                  router.push(`/user_management/position/edit/${encryptedId}`);
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 size="xs"
                 color="red"

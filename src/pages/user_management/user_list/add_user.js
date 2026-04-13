@@ -37,9 +37,9 @@ function CreateUser() {
     outside_access: "1",
     portal_type: "0",
     status_user: "1",
-    project_id: null,
+    id_project: null,
     project_ids: [],
-    department: null,
+    id_department: null,
     id_position: null,
     id_role: null,
   });
@@ -50,16 +50,12 @@ function CreateUser() {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
 
-      // LOGIKA AUTO-FILL ROLE BERDASARKAN POSITION
       if (field === "id_position") {
-        // Cari objek posisi yang dipilih dari positionOptions
         const selectedPos = positionOptions.find((p) => p.value === value);
 
         if (selectedPos && selectedPos.roleId) {
-          // Set id_role secara otomatis
           newData.id_role = String(selectedPos.roleId);
 
-          // Hapus error role jika sebelumnya ada
           if (errors.id_role) {
             setErrors((prevErr) => ({ ...prevErr, id_role: null }));
           }
@@ -95,9 +91,9 @@ function CreateUser() {
 
         setProjectOptions(
           projectRes.data
-            .filter((p) => p.id && p.project_name)
+            .filter((p) => p.id_project && p.project_name)
             .map((p) => ({
-              value: String(p.id),
+              value: String(p.id_project),
               label: p.project_name,
             })),
         );
@@ -111,9 +107,9 @@ function CreateUser() {
 
         setPositionOptions(
           posRes.data.map((p) => ({
-            value: String(p.id),
+            value: String(p.id_position),
             label: p.position_name,
-            roleId: p.id_role, // Tambahkan id_role untuk filter posisi berdasarkan role
+            roleId: p.id_role,
           })),
         );
       } catch (err) {
@@ -130,9 +126,10 @@ function CreateUser() {
     if (!formData.badge_no) newErrors.badge_no = "Badge ID is required";
     if (!formData.username) newErrors.username = "Username is required";
     if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.department) newErrors.department = "Department is required";
+    if (!formData.id_department)
+      newErrors.id_department = "Department is required";
     if (!formData.id_position) newErrors.id_position = "Position is required";
-    if (!formData.project_id) newErrors.project_id = "Project is required";
+    if (!formData.id_project) newErrors.id_project = "Project is required";
     if (!formData.id_role) newErrors.id_role = "Role is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -151,9 +148,9 @@ function CreateUser() {
 
     const payload = {
       ...formData,
-      department: Number(formData.department),
+      id_department: Number(formData.id_department),
       id_position: Number(formData.id_position),
-      project_id: Number(formData.project_id),
+      id_project: Number(formData.id_project),
       project_ids: formData.project_ids?.map(Number) ?? [],
       id_role: Number(formData.id_role),
       outside_access: Number(formData.outside_access),
@@ -196,9 +193,9 @@ function CreateUser() {
           outside_access: "1",
           portal_type: "0",
           status_user: "1",
-          project_id: null,
+          id_project: null,
           project_ids: [],
-          department: null,
+          id_department: null,
           id_position: null,
           id_role: null,
         });
@@ -313,9 +310,9 @@ function CreateUser() {
                       label="Department"
                       placeholder="Select Department"
                       data={deptOptions}
-                      value={formData.department}
-                      onChange={(v) => handleChange("department", v)}
-                      error={errors.department}
+                      value={formData.id_department}
+                      onChange={(v) => handleChange("id_department", v)}
+                      error={errors.id_department}
                       classNames={inputClass}
                     />
                     <Select
@@ -335,9 +332,9 @@ function CreateUser() {
                       label="Project"
                       placeholder="Select Project"
                       data={projectOptions}
-                      value={formData.project_id}
-                      onChange={(v) => handleChange("project_id", v)}
-                      error={errors.project_id}
+                      value={formData.id_project}
+                      onChange={(v) => handleChange("id_project", v)}
+                      error={errors.id_project}
                       classNames={inputClass}
                     />
                     <MultiSelect
@@ -360,7 +357,6 @@ function CreateUser() {
                       onChange={(v) => handleChange("id_role", v)}
                       error={errors.id_role}
                       classNames={inputClass}
-                      // Tambahkan deskripsi otomatis
                       description={
                         formData.id_position
                           ? "Auto-suggested based on position"

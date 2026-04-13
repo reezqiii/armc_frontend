@@ -13,13 +13,14 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
 
 export default function DepartmentList() {
   const router = useRouter();
   const { user } = useUser();
+  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
 
@@ -130,14 +131,14 @@ export default function DepartmentList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
-                  router.push(
-                    `/user_management/department/edit/${dept.id_department}`,
-                  )
-                }
-              >
-                Edit
-              </Button>
+                onClick={() => {
+            const encryptedId = encrypt(String(dept.id_department));
+            router.push(`/user_management/department/edit/${encryptedId}`);
+          }}
+        >
+          Edit
+        </Button>
+
               <Button
                 size="xs"
                 color="red"

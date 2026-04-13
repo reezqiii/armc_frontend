@@ -16,10 +16,12 @@ import Head from "next/head";
 import { formatDate } from "@/lib/dateFormat";
 import useSwal from "@/hooks/useSwal";
 import userList from "@/data/sidebar/UserList";
+import useEncrypt from "@/hooks/useEncrypt";
 
 export default function PermissionList() {
   const router = useRouter();
   const { user } = useUser();
+  const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
   const [data, setData] = useState([]);
@@ -115,8 +117,8 @@ export default function PermissionList() {
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
       },
-     {
-        accessorFn: (row) => row.permission_key, 
+      {
+        accessorFn: (row) => row.permission_key,
         id: "permission_key",
         header: "Permission Key",
         enableColumnFilter: true,
@@ -145,14 +147,16 @@ export default function PermissionList() {
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
-                onClick={() =>
+                onClick={() => {
+                  const encryptedId = encrypt(String(permission.id_permission));
                   router.push(
-                    `/user_management/permission/edit/${permission.id_permission}`,
-                  )
-                }
+                    `/user_management/permission/edit/${encryptedId}`,
+                  );
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 size="xs"
                 color="red"
@@ -179,9 +183,9 @@ export default function PermissionList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: true, 
-    manualSorting: true, 
-    manualFiltering: true, 
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
     pageCount: totalPages,
   });
 
@@ -204,7 +208,9 @@ export default function PermissionList() {
                 size="sm"
                 color="teal"
                 leftSection={<IconPlus size={16} />}
-                onClick={() => router.push(`/user_management/permission/add_permission`)}
+                onClick={() =>
+                  router.push(`/user_management/permission/add_permission`)
+                }
               >
                 Add Permission
               </Button>
