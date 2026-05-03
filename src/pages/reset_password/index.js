@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { TextInput, Button, Paper, Title, Text, Stack, PasswordInput } from "@mantine/core";
+import {
+  TextInput,
+  Button,
+  Paper,
+  Title,
+  Text,
+  Stack,
+  PasswordInput,
+} from "@mantine/core";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -15,6 +23,8 @@ export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
 
   const handleForgot = async (e) => {
     e.preventDefault();
@@ -40,10 +50,22 @@ export default function ResetPasswordPage() {
 
   const handleReset = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      Swal.fire("Error", "Passwords do not match", "error");
-      return;
+
+    setPasswordError("");
+    setConfirmError("");
+    let isValid = true;
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long.");
+      isValid = false;
     }
+
+    if (newPassword !== confirmPassword) {
+      setConfirmError("Passwords do not match.");
+      isValid = false;
+    }
+
+    if (!isValid) return;
 
     try {
       setLoading(true);
@@ -143,7 +165,11 @@ export default function ResetPasswordPage() {
                     label="New Password"
                     placeholder="Enter new password"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    error={passwordError}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      if (passwordError) setPasswordError("");
+                    }}
                     radius="md"
                     size="md"
                   />
@@ -152,7 +178,11 @@ export default function ResetPasswordPage() {
                     label="Confirm Password"
                     placeholder="Confirm your new password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    error={confirmError}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (confirmError) setConfirmError("");
+                    }}
                     radius="md"
                     size="md"
                   />

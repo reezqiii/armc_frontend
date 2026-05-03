@@ -99,7 +99,7 @@ function EditRequest() {
         );
         setProjectOptions(
           projectRes.data.map((p) => ({
-            value: String(p.id),
+            value: String(p.id_project),
             label: p.project_name,
           })),
         );
@@ -114,7 +114,7 @@ function EditRequest() {
         );
         setPositionOptions(
           positionRes.data.map((pos) => ({
-            value: String(pos.id),
+            value: String(pos.id_position),
             label: pos.position_name,
           })),
         );
@@ -126,15 +126,15 @@ function EditRequest() {
             : data.category_account != null
               ? String(data.category_account)
               : "";
-        const deptId = data.dept_id ? String(data.dept_id) : null;
-        const projectId = data.project_id ? String(data.project_id) : null;
+        const deptId = data.id_department ? String(data.id_department) : null;
+        const projectId = data.id_project ? String(data.id_project) : null;
 
         setFormData({
           created_by_name: data.created_by_name || null,
           full_name: data.full_name || "",
           badge_no: data.badge_no || "",
           email: data.email || "",
-          position: data.position ? String(data.position) : null,
+         position: data.position ? String(data.position) : null,
           department: deptId,
           project: projectId,
           request_reason: data.request_reason || "",
@@ -203,13 +203,10 @@ function EditRequest() {
       email: formData.email,
       request_reason: formData.request_reason,
       status_active: 1,
-      position: formData.position,
-      project_id: formData.project ? Number(formData.project) : undefined,
-      dept_id: formData.department ? Number(formData.department) : undefined,
-      category_account:
-        formData.category_account !== ""
-          ? Number(formData.category_account)
-          : null,
+      id_position: formData.position ? Number(formData.position) : undefined,
+      id_project: formData.project ? Number(formData.project) : undefined,
+      id_department: formData.department ? Number(formData.department) : undefined,
+      id_category: formData.category_account ? Number(formData.category_account) : undefined,
       access_nav_menu: formData.access_nav_menu,
       approval_hod_by: formData.approval_hod_by,
     };

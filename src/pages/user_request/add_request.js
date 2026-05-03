@@ -80,7 +80,7 @@ function CreateRequest() {
       setHodOptions([]);
     }
   };
-  
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -102,7 +102,7 @@ function CreateRequest() {
         );
         setProjectOptions(
           projectRes.data.map((p) => ({
-            value: String(p.id),
+            value: String(p.id_project),
             label: p.project_name,
           })),
         );
@@ -117,7 +117,7 @@ function CreateRequest() {
         );
         setPositionOptions(
           positionRes.data.map((pos) => ({
-            value: String(pos.id),
+            value: String(pos.id_position),
             label: pos.position_name,
           })),
         );
@@ -159,10 +159,10 @@ function CreateRequest() {
       badge_no: formData.badge_no?.trim() || null,
       request_status: 1,
       status_active: 1,
-      position: formData.position,
-      project_id: Number(formData.project),
-      dept_id: Number(formData.department),
-      category_account: Number(formData.category_account),
+      id_position: Number(formData.position),
+      id_project: Number(formData.project),
+      id_department: Number(formData.department),
+      id_category: Number(formData.category_account),
     };
 
     try {
@@ -229,6 +229,7 @@ function CreateRequest() {
                     error={errors.category_account}
                   />
                   <TextInput
+                    required
                     label="Badge ID"
                     placeholder="Input Badge ID"
                     value={formData.badge_no}

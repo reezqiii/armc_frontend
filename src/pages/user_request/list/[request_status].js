@@ -32,6 +32,7 @@ import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { getRequestStatus } from "@/lib/requestStatusList";
 import { formatDate } from "@/lib/dateFormat";
 import Head from "next/head";
+import useSwal from "@/hooks/useSwal";
 
 const STATUS_CONFIG = {
   all: {
@@ -53,7 +54,7 @@ const STATUS_CONFIG = {
     label: "Pending Dept Head Approval",
     icon: IconClock,
     color: "yellow",
-    actions: ["detail", "update", "cancel", "approve_bulk"],
+    actions: ["detail", "update", "cancel"],
   },
   "rejected-hod-approval": {
     id: 2,
@@ -67,7 +68,7 @@ const STATUS_CONFIG = {
     label: "Pending IT Head Approval",
     icon: IconUserCog,
     color: "yellow",
-    actions: ["detail", "approve_bulk"],
+    actions: ["detail"],
   },
   "rejected-it-manager-approval": {
     id: 4,
@@ -94,6 +95,8 @@ export default function RequestListDynamic({ request_status }) {
   const API = useApi();
   const API_URL = API.API_URL;
   const { encrypt } = useEncrypt();
+  const { showAlert, showConfirm, showInput, showLoading, closeSwal } =
+    useSwal();
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [rowSelection, setRowSelection] = useState({});
@@ -179,14 +182,12 @@ export default function RequestListDynamic({ request_status }) {
 
   const handleCancel = useCallback(
     async (id) => {
-      const result = await Swal.fire({
-        title: "Are you sure?",
-        text: "You want to cancel this request",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        confirmButtonText: "Yes, cancel it!",
-      });
+      const result = await showConfirm(
+        "Are you sure?",
+        "You want to cancel this request",
+        "Yes, cancel it!",
+      );
+
       if (!result.isConfirmed) return;
 
       try {
@@ -196,29 +197,26 @@ export default function RequestListDynamic({ request_status }) {
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
         setData((prev) => prev.filter((item) => item.id_request !== id));
-        Swal.fire("Success", "Request canceled", "success");
+        showAlert("Success", "success", "Request canceled", "OK");
       } catch (err) {
-        Swal.fire("Error", "Failed to cancel", "error");
+        showAlert("Error", "error", "Failed to cancel", "OK");
       }
     },
-    [API_URL, encrypt, user.token],
+    [API_URL, encrypt, user.token, showConfirm, showAlert],
   );
 
   const handleExportExcel = async () => {
     if (!canExport) {
-      Swal.fire(
+      showAlert(
         "Access Denied",
-        "You are not authorized to export this data",
         "error",
+        "You are not authorized to export this data",
+        "OK",
       );
       return;
     }
     try {
-      Swal.fire({
-        title: "Preparing File...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+      showLoading("Preparing File...");
 
       const activeFilters = {
         ...(config.id !== null && { request_status: config.id }),
@@ -252,48 +250,21 @@ export default function RequestListDynamic({ request_status }) {
       );
       document.body.appendChild(link);
       link.click();
-      Swal.close();
+      closeSwal();
     } catch (err) {
       console.error("Export error:", err.response?.data || err.message);
-      Swal.fire(
+      closeSwal();
+      showAlert(
         "Error",
-        err.response?.data?.message || "Export failed",
         "error",
+        err.response?.data?.message || "Export failed",
+        "OK",
       );
     }
   };
 
   const columns = useMemo(() => {
     const cols = [];
-
-    const showBulk =
-      config?.actions?.some((a) => a.includes("bulk")) && isApprover;
-    if (showBulk) {
-      cols.push({
-        id: "select",
-        header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            ref={(el) => {
-              if (el) el.indeterminate = table.getIsSomePageRowsSelected();
-            }}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
-          />
-        ),
-        cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            ref={(el) => {
-              if (el) el.indeterminate = row.getIsSomeSelected();
-            }}
-            onChange={row.getToggleSelectedHandler()}
-          />
-        ),
-        size: 40,
-      });
-    }
 
     cols.push(
       {
@@ -462,15 +433,11 @@ export default function RequestListDynamic({ request_status }) {
         const request = row.original;
         const encryptedId = encrypt(String(request.id_request));
 
-        const canEdit =
-          can("request.update") &&
-          request.request_status === 1 &&
-          request.created_by === user.id;
+        const isCreator = Number(request.created_by) === Number(user?.id);
+        const isPendingHOD = request.request_status === 1;
 
-        const canCancel =
-          can("request.cancel") &&
-          request.request_status === 1 &&
-          request.created_by === user.id;
+        const canEdit = (can("request.update") || isCreator) && isPendingHOD;
+        const canCancel = (can("request.cancel") || isCreator) && isPendingHOD;
 
         return (
           <div className="flex justify-center gap-1 flex-wrap">
@@ -485,7 +452,6 @@ export default function RequestListDynamic({ request_status }) {
               Details
             </Button>
 
-            {/* Tombol Edit menggunakan canEdit */}
             {canEdit && (
               <Button
                 leftSection={<IconEdit size={16} />}
@@ -499,7 +465,6 @@ export default function RequestListDynamic({ request_status }) {
               </Button>
             )}
 
-            {/* Tombol Cancel menggunakan canCancel */}
             {canCancel && (
               <Button
                 leftSection={<IconX size={16} />}
@@ -517,16 +482,13 @@ export default function RequestListDynamic({ request_status }) {
 
     return cols;
   }, [
-    config?.actions,
     pagination.pageIndex,
     pagination.pageSize,
-    API_URL,
-    user.token,
+    user?.id,
     encrypt,
     router,
     handleCancel,
-    isApprover,
-    canApprove,
+    can,
   ]);
 
   const table = useReactTable({
@@ -612,37 +574,6 @@ export default function RequestListDynamic({ request_status }) {
               onClose={() => setModalOpen(false)}
               data={selectedRejectData}
             />
-
-            {/* BULK ACTION */}
-            {hasSelectedRows && (
-              <div className="flex justify-between items-center border-t pt-4 mt-4 bg-slate-50 p-3 rounded">
-                <Text size="sm" fw={600}>
-                  Selected {Object.keys(rowSelection).length} items
-                </Text>
-                <Group>
-                  {config.actions.includes("approve_bulk") && canApprove && (
-                    <>
-                      <Button
-                        size="xs"
-                        color="green"
-                        leftSection={<IconCheck size={14} />}
-                        onClick={() => handleBulkProcess("approve")}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="xs"
-                        color="red"
-                        leftSection={<IconX size={14} />}
-                        onClick={() => handleBulkProcess("reject")}
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </Group>
-              </div>
-            )}
           </Paper>
         </div>
       </AuthLayout>
