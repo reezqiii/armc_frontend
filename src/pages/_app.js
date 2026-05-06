@@ -51,8 +51,10 @@ export default function App({ Component, pageProps }) {
             id: userData.id_user,
             name: userData.full_name,
             token: token,
-            permissions_key: userData.permissions_key ?? [],
-            department: userData.department ?? null,
+            role: userData.role_name,
+            role_id: userData.id_role,
+            permission_ids: userData.permission_ids ?? [], // Sesuai dengan payload JWT kita
+            department: userData.department_name,
           });
         } catch (err) {
           console.error("Failed get user", err);

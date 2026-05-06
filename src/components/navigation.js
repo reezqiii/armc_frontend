@@ -17,23 +17,26 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useMemo } from "react";
+import { ROLE_GROUPS, ROLES } from "./constants/roles";
+
 
 export default function Navigation() {
+  const { user } = useUser();
+  console.log("DATA USER SAAT INI:", user);
   const router = useRouter();
   const [opened, { toggle }] = useDisclosure(false);
   const { toggleCollapse } = useCollapseStore();
-  const { user } = useUser();
-  const { can } = usePermission(); 
+  const { isAnyRole } = usePermission();
 
   const navigation = useMemo(() => {
     return [
       {
         name: "Home",
-        url: "/dashboard/home",
+        url: "/",
         icon: <IconHome size={20} />,
       },
-      
-      ...(can("user.manage")
+
+      ...(isAnyRole(ROLES.ADMINISTRATOR)
         ? [
             {
               name: "User Management",
@@ -42,8 +45,9 @@ export default function Navigation() {
             },
           ]
         : []),
-      
-      ...(can("app.request")
+
+      // Menggunakan ROLE_GROUPS agar lebih bersih
+      ...(isAnyRole(...ROLE_GROUPS.CAN_ACCESS_REQUEST)
         ? [
             {
               name: "Access Request",
@@ -52,8 +56,8 @@ export default function Navigation() {
             },
           ]
         : []),
-      
-      ...(can("app.production")
+
+      ...(isAnyRole(...ROLE_GROUPS.CAN_ACCESS_PRODUCTION)
         ? [
             {
               name: "Production & Quality",
@@ -62,8 +66,8 @@ export default function Navigation() {
             },
           ]
         : []),
-      
-      ...(can("app.engineering")
+
+      ...(isAnyRole(ROLES.ADMINISTRATOR)
         ? [
             {
               name: "Engineering",
@@ -72,8 +76,8 @@ export default function Navigation() {
             },
           ]
         : []),
-      
-      ...(can("app.warehouse")
+
+      ...(isAnyRole(ROLES.ADMINISTRATOR)
         ? [
             {
               name: "Warehouse",
@@ -83,7 +87,7 @@ export default function Navigation() {
           ]
         : []),
     ];
-  }, [can]);
+  }, [isAnyRole]);
 
   const items = navigation.map((link, index) => {
     const menuItems = link.child?.map((item, indexItem) => (

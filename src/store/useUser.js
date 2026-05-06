@@ -8,10 +8,9 @@ const useUser = create(
         id: 0,
         name: null,
         token: null,
-        role: null, 
-        role_id: null, 
-        permissions: [],
-        permissions_key: [],
+        role: null,
+        role_id: null,
+        permission_ids: [],
         department: null,
       },
       setUser: (value) => {
@@ -23,8 +22,7 @@ const useUser = create(
               token: null,
               role: null,
               role_id: null,
-              permissions: [],
-              permissions_key: [],
+              permission_ids: [],
               department: null,
             },
           });
@@ -34,28 +32,18 @@ const useUser = create(
         set({
           user: {
             id: value.id,
-            name: value.full_name || value.name,
+            name: value.name || value.full_name,
             token: value.token,
             role: value.role ?? null,
             role_id: value.role_id ?? null,
-            permissions: value.permissions ?? [],
-            permissions_key: value.permissions_key ?? [],
+            permission_ids: value.permission_ids ?? [],
             department: value.department ?? null,
           },
         });
       },
     }),
     {
-      name: "user",
-      storage: {
-        getItem: (name) => {
-          const value = localStorage.getItem(name);
-          return value ? JSON.parse(value) : null;
-        },
-        setItem: (name, value) =>
-          localStorage.setItem(name, JSON.stringify(value)),
-        removeItem: (name) => localStorage.removeItem(name),
-      },
+      name: "user-storage",
     },
   ),
 );

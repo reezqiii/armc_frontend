@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import useSwal from "@/hooks/useSwal";
 import {
   TextInput,
   PasswordInput,
@@ -12,7 +11,7 @@ import {
   Stack,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import Swal from "sweetalert2";
+import useSwal from "@/hooks/useSwal";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useRouter } from "next/router";
@@ -21,7 +20,7 @@ import useUser from "@/store/useUser";
 function LoginPage() {
   const router = useRouter();
   const { setUser } = useUser();
-  const { showAlert } = useSwal();
+  const { showAlert, showLoading, closeSwal } = useSwal();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
@@ -50,48 +49,44 @@ function LoginPage() {
   }, []);
 
   const handleSubmit = async (values) => {
-    Swal.fire({
-      title: "Processing...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+    showLoading("Authenticating...");
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_PORTAL}/auth/validate`,
+        `${process.env.NEXT_PUBLIC_API_PORTAL}/auth/login`,
         values,
       );
 
       if (res.data.token) {
         Cookies.set("token", res.data.token, { expires: 1 });
-        Cookies.set("user_info", JSON.stringify(res.data.user), { expires: 1 });
 
         setUser({
           id: res.data.user.id,
           name: res.data.user.full_name,
           token: res.data.token,
-          role: res.data.user.role ?? null,
-          role_id: res.data.user.role_id ?? null,
-          permissions: res.data.user.permissions ?? [],
-          permissions_key: res.data.user.permissions_key ?? [],
-          department: res.data.user.department ?? null,
+          role: res.data.user.role_name,
+          role_id: res.data.user.role_id,
+          permission_ids: res.data.user.permission_ids, // Sinkron dengan Backend
+          department: res.data.user.department_name,
         });
 
-        router.push("/");
-        showAlert(
-          "Login Successful",
+        closeSwal();
+        await showAlert(
+          "Success",
           "success",
           `Welcome back, ${res.data.user.full_name}!`,
-          "OK",
+          "Let's Go",
         );
+
+        router.push("/");
       }
     } catch (err) {
-      console.error(err);
+      closeSwal();
       showAlert(
-        "Login Failed",
+        "Access Denied",
         "error",
         err.response?.data?.message || "Invalid username or password",
-        "OK",
+        "Try Again",
       );
     }
   };
