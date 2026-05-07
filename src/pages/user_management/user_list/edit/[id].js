@@ -83,15 +83,11 @@ function EditUser() {
       try {
         const encryptedRoleId = encrypt(String(formData.id_role));
 
-        const { data } = await axios.get(
-          `${API_URL}/role-permission/${encryptedRoleId}`,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          },
-        );
-        setRolePermissionIds(
-          data.filter((p) => p.assigned).map((p) => p.id_permission),
-        );
+        const { data } = await axios.get(`${API_URL}/role/${encryptedRoleId}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        setRolePermissionIds(data.permission_ids || []);
       } catch (err) {
         console.error("Failed to fetch role permissions", err);
       }
@@ -186,7 +182,7 @@ function EditUser() {
       setLoadingPermissions(true);
       try {
         const { data } = await axios.get(
-          `${API_URL}/portal_user_permission/user/${id}`,
+          `${API_URL}/user/extra-permissions/${id}`,
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
         setPermissions(data);
@@ -270,16 +266,19 @@ function EditUser() {
 
     try {
       setLoadingSubmit(true);
+
       await axios.put(`${API_URL}/user/update/${id}`, payload, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      await axios.post(
-        `${API_URL}/portal_user_permission/user/${id}/sync`,
-        { permission_ids: selectedPermissionIds },
+
+      await axios.put(
+        `${API_URL}/user/extra-permissions/${id}`,
+        { permission_keys: selectedPermissionIds },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       await showAlert("Success", "success", "User successfully updated", "OK");
+      router.push("/user_management/user_list/list");
     } catch (err) {
       console.error(err);
       showAlert(

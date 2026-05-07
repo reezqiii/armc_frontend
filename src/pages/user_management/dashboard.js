@@ -234,7 +234,7 @@ export default function UserManagementDashboard() {
                   icon={IconKey}
                   label="Permissions"
                   color="bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100"
-                  onClick={() => router.push("/user_management/permission")}
+                  onClick={() => router.push("/user_management/permission/add_permission")}
                 />
               </div>
             </div>

@@ -23,7 +23,7 @@ export default function RoleList() {
   const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
-  
+
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([{ id: "role_name", desc: false }]);
@@ -32,16 +32,47 @@ export default function RoleList() {
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
+
+    const searchQuery = {};
+    columnFilters.forEach((filter) => {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
+    });
+
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
+        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+        : "";
+
     try {
-      const { data } = await axios.get(`${API_URL}/role`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setData(data ?? []);
+      const { data } = await axios.post(
+        `${API_URL}/role/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+      setData(data.data);
+      setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error fetching role:", err);
-      setData([]);
+      console.error("Error fetching Role:", err);
     }
-  }, [user.token, API_URL]);
+  }, [
+    user.token,
+    API_URL,
+    columnFilters,
+    sorting,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -124,13 +155,15 @@ export default function RoleList() {
   const table = useReactTable({
     data,
     columns,
-    filterFns: {},
     state: { columnFilters, sorting, pagination },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
   });
 
   return (

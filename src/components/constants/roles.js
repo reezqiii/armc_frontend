@@ -1,9 +1,9 @@
 // file: src/constants/roles.js
 
 export const ROLES = {
-  ADMIN: "Administrator", // <-- Ubah dari "admin" menjadi "Administrator"
-  REQUESTOR: "Requestor", // <-- Asumsi jika requestor pakai huruf besar
-  HOD: "HOD",             // <-- Asumsi jika hod pakai huruf besar
+  ADMIN: "Administrator",
+  REQUESTOR: "Requestor",
+  HOD: "HOD",
 };
 
 export const ROLE_GROUPS = {

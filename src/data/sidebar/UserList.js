@@ -11,7 +11,7 @@ import {
 const userList = [
   {
     title: "User Management",
-    active: "User Management",
+    active: "/",
     icon: <IconUserCog size={18} />,
     child: [
       {

@@ -18,7 +18,6 @@ import {
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
 import userList from "@/data/sidebar/UserList";
 import useEncrypt from "@/hooks/useEncrypt";
 import useSwal from "@/hooks/useSwal";
@@ -28,21 +27,26 @@ export default function UserList() {
   const { user } = useUser();
   const API_URL = useApi().API_URL;
   const { encrypt } = useEncrypt();
-  const { showAlert, showConfirm } = useSwal();
+  const { showLoading, closeSwal, showAlert, showConfirm } = useSwal();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [sorting, setSorting] = useState([{ id: "created_date", desc: true }]);
+  const [sorting, setSorting] = useState([{ id: "full_name", desc: false }]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
-    if (!router.isReady) return;
 
     const searchQuery = {};
     columnFilters.forEach((filter) => {
-      if (filter.value) searchQuery[filter.id] = filter.value;
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
     });
 
     const filterParams =
@@ -61,19 +65,16 @@ export default function UserList() {
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-      setData(data.data ?? []);
-      setTotalPages(data.total_pages ?? 1);
+      setData(data.data);
+      setTotalPages(data.total_pages);
     } catch (err) {
-      console.error("Error fetching users:", err);
-      setData([]);
-      setTotalPages(1);
+      console.error("Error fetching User:", err);
     }
   }, [
     user.token,
-    router.isReady,
+    API_URL,
     columnFilters,
     sorting,
-    API_URL,
     pagination.pageIndex,
     pagination.pageSize,
   ]);
@@ -84,11 +85,7 @@ export default function UserList() {
 
   const handleExportExcel = async () => {
     try {
-      Swal.fire({
-        title: "Preparing File...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+      showLoading("Preparing File...");
 
       const searchQuery = {};
       columnFilters.forEach((filter) => {
@@ -99,7 +96,7 @@ export default function UserList() {
       const sort_order =
         sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
 
-      const response = await axios.get(`${API_URL}/api/user/export-list`, {
+      const response = await axios.get(`${API_URL}/user/export-list`, {
         params: {
           search: JSON.stringify(searchQuery),
           sort_by,
@@ -112,17 +109,21 @@ export default function UserList() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `User_List.xlsx`);
+      link.setAttribute("download", `User_List_${new Date().getTime()}.xlsx`);
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
-      Swal.close();
+      closeSwal();
     } catch (err) {
       console.error("Export error:", err);
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Export failed",
+
+      showAlert(
+        "Export Failed",
         "error",
+        err.response?.data?.message ||
+          "There was an error generating the file.",
+        "Close",
       );
     }
   };
@@ -135,14 +136,6 @@ export default function UserList() {
         cell: ({ row }) =>
           row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
-      },
-      {
-        accessorFn: (row) => row.created_date,
-        id: "created_date",
-        header: "Created Date",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: ({ row }) => formatDate(row.original.created_date),
       },
       {
         accessorFn: (row) => row.username,
@@ -169,7 +162,7 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.project_name,
+        accessorFn: (row) => row.project?.project_name,
         id: "project_name",
         header: "Project",
         enableColumnFilter: true,
@@ -177,7 +170,7 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.department_name,
+        accessorFn: (row) => row.department?.name_of_department,
         id: "department_name",
         header: "Department",
         enableColumnFilter: true,
@@ -185,7 +178,7 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.position_name,
+        accessorFn: (row) => row.position?.position_name,
         id: "position_name",
         header: "Position",
         enableColumnFilter: true,
@@ -193,9 +186,17 @@ export default function UserList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.role_name,
+        accessorFn: (row) => row.role?.role_name,
         id: "role_name",
         header: "Role",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
+        accessorFn: (row) => row.email,
+        id: "email",
+        header: "Email",
         enableColumnFilter: true,
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
@@ -217,11 +218,15 @@ export default function UserList() {
             if (!result.isConfirmed) return;
 
             try {
+              showLoading("Sending reset link to email...");
+
               const response = await axios.post(
                 `${API_URL}/user/reset-password`,
                 { id_user: userRow.id_user },
                 { headers: { Authorization: `Bearer ${user.token}` } },
               );
+
+              closeSwal();
 
               showAlert(
                 "Success!",
@@ -230,6 +235,8 @@ export default function UserList() {
                 "OK",
               );
             } catch (err) {
+              closeSwal();
+
               showAlert(
                 "Failed!",
                 "error",
@@ -246,8 +253,8 @@ export default function UserList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() => {
-                  const encryptedId = encrypt(String(userRow.id_user)); 
-                  router.push(`/user_management/user_list/edit/${encryptedId}`); 
+                  const encryptedId = encrypt(String(userRow.id_user));
+                  router.push(`/user_management/user_list/edit/${encryptedId}`);
                 }}
               >
                 Edit

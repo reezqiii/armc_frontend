@@ -3,34 +3,21 @@ import useUser from "@/store/useUser";
 export default function usePermission() {
   const { user } = useUser();
 
-  // 1. Ekstraksi Permissions (Granular Actions)
-  const permissions = user?.permissions_key ?? [];
+  const permissions = user?.permission_ids ?? [];
 
-  // 2. Ekstraksi Role(s) (High-level Grouping)
-  // Menangani kemungkinan backend mengirimkan role berupa string tunggal ("it_manager")
-  // atau array of strings (["employee", "approver"])
-  const roles = Array.isArray(user?.roles)
-    ? user.roles
-    : user?.role
-      ? [user.role]
-      : [];
+  const userRole = user?.role_name ?? "";
 
-  // --- PERMISSION CHECKERS ---
-  const can = (permission) => permissions.includes(permission);
-  const canAny = (...perms) => perms.some((p) => permissions.includes(p));
-  const canAll = (...perms) => perms.every((p) => permissions.includes(p));
+  const can = (permissionId) => permissions.includes(Number(permissionId));
 
-  // --- ROLE CHECKERS ---
-  // Mengecek apakah user memiliki role spesifik
-  const isRole = (targetRole) => roles.includes(targetRole);
+  const canAny = (...permissionIds) =>
+    permissionIds.some((p) => permissions.includes(Number(p)));
 
-  // Mengecek apakah user memiliki setidaknya satu dari beberapa role
-  const isAnyRole = (...targetRoles) =>
-    targetRoles.some((r) => roles.includes(r));
+  const canAll = (...permissionIds) =>
+    permissionIds.every((p) => permissions.includes(Number(p)));
 
-  // Mengecek apakah user memiliki semua role yang disyaratkan (jarang dipakai tapi berguna)
-  const isAllRoles = (...targetRoles) =>
-    targetRoles.every((r) => roles.includes(r));
+  const isRole = (targetRole) => userRole === targetRole;
+
+  const isAnyRole = (...targetRoles) => targetRoles.some((r) => userRole === r);
 
   return {
     can,
@@ -38,8 +25,7 @@ export default function usePermission() {
     canAll,
     isRole,
     isAnyRole,
-    isAllRoles,
     permissions,
-    roles,
+    userRole,
   };
 }
