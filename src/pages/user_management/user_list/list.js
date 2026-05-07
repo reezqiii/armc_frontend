@@ -92,15 +92,9 @@ export default function UserList() {
         if (filter.value) searchQuery[filter.id] = filter.value;
       });
 
-      const sort_by = sorting.length > 0 ? sorting[0].id : null;
-      const sort_order =
-        sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : null;
-
-      const response = await axios.get(`${API_URL}/user/export-list`, {
+      const response = await axios.get(`${API_URL}/excel/export-users`, {
         params: {
           search: JSON.stringify(searchQuery),
-          sort_by,
-          sort_order,
         },
         headers: { Authorization: `Bearer ${user.token}` },
         responseType: "blob",
@@ -109,7 +103,8 @@ export default function UserList() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `User_List_${new Date().getTime()}.xlsx`);
+
+      link.setAttribute("download", `User_List_Export.xlsx`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
