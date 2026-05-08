@@ -79,14 +79,25 @@ function EditUser() {
       return;
     }
 
-    const fetchRolePermissions = async () => {
+    const fetchRolePermissions = async (roleId) => {
+      if (
+        !roleId ||
+        roleId === "null" ||
+        roleId === "undefined" ||
+        roleId === lastFetchedRoleId.current
+      ) {
+        return;
+      }
+
       try {
-        const encryptedRoleId = encrypt(String(formData.id_role));
+        lastFetchedRoleId.current = roleId;
+        const encryptedRoleId = encrypt(String(roleId));
+
+        if (!encryptedRoleId) return;
 
         const { data } = await axios.get(`${API_URL}/role/${encryptedRoleId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-
         setRolePermissionIds(data.permission_ids || []);
       } catch (err) {
         console.error("Failed to fetch role permissions", err);
@@ -159,7 +170,7 @@ function EditUser() {
           username: data.username ?? "",
           email: data.email ?? "",
           id_project: data.id_project ? String(data.id_project) : null,
-          project_ids: data.project_ids?.map(String) ?? [],
+          project_ids: data.addon_project ? data.addon_project.split(";") : [],
           id_department: data.id_department ? String(data.id_department) : null,
           id_position: data.id_position ? String(data.id_position) : null,
           id_role: data.id_role ? String(data.id_role) : null,
@@ -186,9 +197,16 @@ function EditUser() {
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
         setPermissions(data);
-        setSelectedPermissionIds(
-          data.filter((p) => p.assigned).map((p) => p.id_permission),
-        );
+
+        const directIds = data
+          .filter(
+            (p) =>
+              p.assigned &&
+              !rolePermissionIds.includes(Number(p.id_permission)),
+          )
+          .map((p) => Number(p.id_permission));
+
+        setSelectedPermissionIds(directIds);
       } catch (err) {
         console.error("Failed to fetch user permissions", err);
       } finally {
@@ -197,7 +215,7 @@ function EditUser() {
     };
 
     fetchPermissions();
-  }, [id, API_URL, user.token]);
+  }, [id, API_URL, user.token, rolePermissionIds]);
 
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
@@ -245,6 +263,7 @@ function EditUser() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -256,36 +275,68 @@ function EditUser() {
     );
     if (!confirm.isConfirmed) return;
 
+    const addonProjectStr =
+      formData.project_ids?.length > 0 ? formData.project_ids.join(";") : null;
     const payload = {
-      ...formData,
+      full_name: formData.full_name,
+      badge_no: formData.badge_no,
+      username: formData.username,
+      email: formData.email,
       id_department: Number(formData.id_department),
       id_project: Number(formData.id_project),
-      project_ids: formData.project_ids?.map(Number) ?? [],
       id_role: Number(formData.id_role),
+      id_position: formData.id_position ? Number(formData.id_position) : null,
+      addon_project: addonProjectStr,
     };
 
     try {
       setLoadingSubmit(true);
 
-      await axios.put(`${API_URL}/user/update/${id}`, payload, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      await Promise.all([
+        axios.put(`${API_URL}/user/update/${id}`, payload, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }),
+        axios.put(
+          `${API_URL}/user/extra-permissions/${id}`,
+          { permission_keys: selectedPermissionIds },
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        ),
+      ]);
 
-      await axios.put(
-        `${API_URL}/user/extra-permissions/${id}`,
-        { permission_keys: selectedPermissionIds },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+      const allActiveIds = new Set([
+        ...rolePermissionIds,
+        ...selectedPermissionIds,
+      ]);
+
+      const activePermissionNames = permissions
+        .filter((p) => allActiveIds.has(p.id_permission))
+        .map((p) => `<li>${p.permission_name}</li>`)
+        .join("");
+
+      await showAlert(
+        "User Updated Successfully!",
+        "success",
+        `
+        <div style="text-align: left; font-size: 14px;">
+          <p>The account for <b>${formData.full_name}</b> has been updated.</p>
+          <hr />
+          <p><b>Total Effective Permissions:</b></p>
+          <ul style="max-height: 200px; overflow-y: auto; padding-left: 20px;">
+            ${activePermissionNames || "<li>No permissions assigned</li>"}
+          </ul>
+        </div>
+        `,
+        "Finish",
       );
 
-      await showAlert("Success", "success", "User successfully updated", "OK");
       router.push("/user_management/user_list/list");
     } catch (err) {
       console.error(err);
       showAlert(
-        "Error",
+        "Update Failed",
         "error",
-        err.response?.data?.message || "Failed to update user",
-        "OK",
+        err.response?.data?.message || "Something went wrong",
+        "Close",
       );
     } finally {
       setLoadingSubmit(false);

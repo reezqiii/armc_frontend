@@ -117,8 +117,9 @@ export default function PermissionManager({
             {!isCollapsed && (
               <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white">
                 {groupPerms.map((p) => {
-                  const isInherited = inheritedIds.includes(p.id_permission);
-                  const isDirect = selectedIds.includes(p.id_permission);
+                  const currentId = Number(p.id_permission);
+                  const isInherited = inheritedIds.includes(currentId);
+                  const isDirect = selectedIds.includes(currentId);
                   const isChecked = isInherited || isDirect;
 
                   return (
