@@ -3,48 +3,83 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { Paper, Button, Group, Text } from "@mantine/core";
+import { Paper, Button, Group, Text, Badge } from "@mantine/core";
 import {
   IconPlus,
   IconEdit,
   IconTrash,
   IconPackages,
-  IconInfoCircle,
   IconX,
 } from "@tabler/icons-react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-} from "@tanstack/react-table";
+import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 
 import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Datatables from "@/components/custom/Datatables";
 import warehouseList from "@/data/sidebar/WarehouseList";
-
 import useEncrypt from "@/hooks/useEncrypt";
 
 export default function WarehouseList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
-
   const { encrypt } = useEncrypt();
 
   const [data, setData] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
 
   const fetchData = useCallback(async () => {
+    if (!user?.token) return;
+
+    const searchQuery = {};
+    columnFilters.forEach((filter) => {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
+    });
+
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
+        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+        : "";
+
     try {
-      const res = await axios.get(`${API_URL}/warehouse`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setData(res.data);
+      const response = await axios.post(
+        `${API_URL}/warehouse/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+
+      const responseData = response.data;
+      setData(responseData.data || []);
+      setTotalPages(responseData.total_pages || 0);
+      setTotalRecords(responseData.total_records || 0);
     } catch (error) {
       console.error("Fetch data error", error);
     }
-  }, [API_URL, user?.token]);
+  }, [
+    API_URL,
+    user?.token,
+    pagination.pageIndex,
+    pagination.pageSize,
+    sorting,
+    columnFilters,
+  ]);
 
   useEffect(() => {
     if (user?.token) fetchData();
@@ -75,29 +110,63 @@ export default function WarehouseList() {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "item_code",
+        accessorFn: (row) => row.creator_name,
+        id: "creator_name",
+        enableColumnFilter: true,
+        enableSorting: true,
+        header: "Requestor Name",
+        size: 200,
+        cell: ({ getValue }) => (
+          <Text size="sm" fw={500}>
+            {getValue() || "-"}
+          </Text>
+        ),
+      },
+      {
+        accessorFn: (row) => row.item_code,
+        id: "item_code",
         header: "Code",
+        enableColumnFilter: true,
+        enableSorting: true,
         cell: ({ row }) => (
           <Text fw={700} color="teal">
             {row.original.item_code}
           </Text>
         ),
       },
-      { accessorKey: "item_name", header: "Item Name" },
       {
-        accessorKey: "quantity",
+        accessorFn: (row) => row.item_name,
+        id: "item_name",
+        header: "Item Name",
+        enableColumnFilter: true,
+        enableSorting: true,
+      },
+
+      {
+        accessorFn: (row) => row.quantity,
+        id: "quantity",
         header: "Qty",
+        enableColumnFilter: true,
+        enableSorting: true,
         cell: ({ row }) => (
-          <Text>
-            {row.original.quantity} {row.original.unit}
+          <Text fw={500}>
+            {row.original.quantity} {row.original.unit || ""}
           </Text>
         ),
       },
-      { accessorKey: "location", header: "Location" },
+      {
+        accessorFn: (row) => row.location,
+        id: "location",
+        header: "Location",
+        enableColumnFilter: true,
+        enableSorting: true,
+      },
       {
         id: "actions",
         header: "Action",
-        size: 100,
+        enableColumnFilter: false,
+        enableSorting: true,
+        size: 150,
         cell: ({ row }) => {
           const record = row.original;
           const encryptedId = encrypt(record.id.toString());
@@ -134,8 +203,15 @@ export default function WarehouseList() {
   const table = useReactTable({
     data,
     columns,
+    state: { sorting, columnFilters, pagination },
+    pageCount: totalPages,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   return (
@@ -154,22 +230,12 @@ export default function WarehouseList() {
                 Inventory List
               </Text>
             </Group>
-
-            {/* TOMBOL ADD PINDAH HALAMAN */}
-            <Button
-              color="teal"
-              size="xs"
-              leftSection={<IconPlus size={16} />}
-              onClick={() => router.push("/warehouse/add_warehouse")}
-            >
-              Add Item
-            </Button>
           </div>
 
           <Datatables
             table={table}
-            totalPages={table.getPageCount()}
-            info={{ totalElements: data.length }}
+            totalPages={totalPages}
+            info={{ totalElements: totalRecords }}
           />
         </Paper>
       </div>

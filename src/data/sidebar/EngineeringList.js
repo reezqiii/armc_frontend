@@ -1,4 +1,9 @@
-import { IconLayoutDashboard, IconListDetails, IconTools } from "@tabler/icons-react";
+import {
+  IconLayoutDashboard,
+  IconListDetails,
+  IconTools,
+  IconUserPlus,
+} from "@tabler/icons-react";
 
 const engineeringList = [
   {
@@ -12,6 +17,12 @@ const engineeringList = [
         href: "/engineering/dashboard",
         active: "Dashboard",
         icon: <IconLayoutDashboard size={18} />,
+      },
+      {
+        title: "Create Engineering",
+        href: "/engineering/add_engineering",
+        active: "Create Engineering",
+        icon: <IconUserPlus size={18} />,
       },
       {
         title: "Engineering List",

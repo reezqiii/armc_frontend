@@ -2,6 +2,7 @@ import {
   IconLayoutDashboard,
   IconListDetails,
   IconBuildingFactory,
+  IconUserPlus,
 } from "@tabler/icons-react";
 
 const productionList = [
@@ -16,6 +17,12 @@ const productionList = [
         href: "/production/dashboard",
         active: "Dashboard",
         icon: <IconLayoutDashboard size={18} />,
+      },
+      {
+        title: "Create Production",
+        href: "/production/add_production",
+        active: "Create Production",
+        icon: <IconUserPlus size={18} />,
       },
       {
         title: "Production List",

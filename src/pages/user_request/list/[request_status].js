@@ -295,7 +295,7 @@ export default function RequestListDynamic({ request_status }) {
         },
       },
       {
-        accessorFn: (row) => row.created_by_name,
+        accessorFn: (row) => row.created_by_name, // Backend alias: creator.full_name as created_by_name
         id: "created_by_name",
         header: "Requestor",
         enableColumnFilter: true,
@@ -305,7 +305,7 @@ export default function RequestListDynamic({ request_status }) {
             <Text fw={600} size="sm">
               {row.original.created_by_name || "-"}
             </Text>
-            <Text size="sm" color="dimmed">
+            <Text size="xs" color="dimmed">
               {row.original.badge_no || "-"}
             </Text>
           </div>
@@ -320,7 +320,7 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.department_name,
+        accessorFn: (row) => row.department_name, // Backend alias: dept.department_name as department_name
         id: "department_name",
         header: "Department",
         enableColumnFilter: true,

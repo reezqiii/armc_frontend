@@ -13,7 +13,7 @@ import {
   IconShield,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
@@ -32,6 +32,7 @@ function EditUser() {
   const { showAlert, showConfirm } = useSwal();
   const { decrypt } = useDecrypt();
   const { encrypt } = useEncrypt();
+  const lastFetchedRoleId = useRef(null);
 
   const userId = id ? decrypt(id) : null;
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -43,6 +44,7 @@ function EditUser() {
   const [positionOptions, setPositionOptions] = useState([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [permissions, setPermissions] = useState([]);
+
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -72,40 +74,6 @@ function EditUser() {
 
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
-
-  useEffect(() => {
-    if (!formData.id_role) {
-      setRolePermissionIds([]);
-      return;
-    }
-
-    const fetchRolePermissions = async (roleId) => {
-      if (
-        !roleId ||
-        roleId === "null" ||
-        roleId === "undefined" ||
-        roleId === lastFetchedRoleId.current
-      ) {
-        return;
-      }
-
-      try {
-        lastFetchedRoleId.current = roleId;
-        const encryptedRoleId = encrypt(String(roleId));
-
-        if (!encryptedRoleId) return;
-
-        const { data } = await axios.get(`${API_URL}/role/${encryptedRoleId}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        setRolePermissionIds(data.permission_ids || []);
-      } catch (err) {
-        console.error("Failed to fetch role permissions", err);
-      }
-    };
-
-    fetchRolePermissions();
-  }, [formData.id_role, API_URL, user.token]);
 
   useEffect(() => {
     const fetchMasterData = async () => {
@@ -155,67 +123,107 @@ function EditUser() {
   }, [API_URL, user.token]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !user?.token) return;
 
-    const fetchUser = async () => {
+    const initUserData = async () => {
+      setLoadingData(true);
+      setLoadingPermissions(true);
+
       try {
-        setLoadingData(true);
-        const { data } = await axios.get(`${API_URL}/user/${id}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
+        const headers = { Authorization: `Bearer ${user.token}` };
+
+        const [userRes, extraPermRes] = await Promise.all([
+          axios.get(`${API_URL}/user/${id}`, { headers }),
+          axios.get(`${API_URL}/user/extra-permissions/${id}`, { headers }),
+        ]);
+
+        const userData = userRes.data;
+        const allPermissions = extraPermRes.data;
+
+        let currentRoleIds = [];
+        if (userData.id_role) {
+          const encryptedRoleId = encrypt(String(userData.id_role));
+          const roleRes = await axios.get(
+            `${API_URL}/role/${encryptedRoleId}`,
+            { headers },
+          );
+          currentRoleIds = (roleRes.data.permission_ids || []).map(Number);
+          setRolePermissionIds(currentRoleIds);
+          lastFetchedRoleId.current = String(userData.id_role);
+        }
+
+        setPermissions(allPermissions);
 
         setFormData({
-          full_name: data.full_name ?? "",
-          badge_no: data.badge_no ?? "",
-          username: data.username ?? "",
-          email: data.email ?? "",
-          id_project: data.id_project ? String(data.id_project) : null,
-          project_ids: data.addon_project ? data.addon_project.split(";") : [],
-          id_department: data.id_department ? String(data.id_department) : null,
-          id_position: data.id_position ? String(data.id_position) : null,
-          id_role: data.id_role ? String(data.id_role) : null,
+          full_name: userData.full_name ?? "",
+          badge_no: userData.badge_no ?? "",
+          username: userData.username ?? "",
+          email: userData.email ?? "",
+          id_project: userData.id_project ? String(userData.id_project) : null,
+          project_ids: userData.addon_project
+            ? userData.addon_project.split(";")
+            : [],
+          id_department: userData.id_department
+            ? String(userData.id_department)
+            : null,
+          id_position: userData.id_position
+            ? String(userData.id_position)
+            : null,
+          id_role: userData.id_role ? String(userData.id_role) : null,
         });
-      } catch (err) {
-        console.error("Failed to fetch user", err);
-        showAlert("Error", "error", "Failed to load user data", "OK");
-      } finally {
-        setLoadingData(false);
-      }
-    };
 
-    fetchUser();
-  }, [id, API_URL, user.token]);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchPermissions = async () => {
-      setLoadingPermissions(true);
-      try {
-        const { data } = await axios.get(
-          `${API_URL}/user/extra-permissions/${id}`,
-          { headers: { Authorization: `Bearer ${user.token}` } },
-        );
-        setPermissions(data);
-
-        const directIds = data
+        const directIds = allPermissions
           .filter(
             (p) =>
-              p.assigned &&
-              !rolePermissionIds.includes(Number(p.id_permission)),
+              p.assigned && !currentRoleIds.includes(Number(p.id_permission)),
           )
           .map((p) => Number(p.id_permission));
 
         setSelectedPermissionIds(directIds);
       } catch (err) {
-        console.error("Failed to fetch user permissions", err);
+        console.error("Failed to init user data", err);
+        showAlert("Error", "error", "Failed to load user data", "OK");
+      } finally {
+        setLoadingData(false);
+        setLoadingPermissions(false);
+      }
+    };
+
+    initUserData();
+  }, [id, API_URL, user.token]);
+
+  useEffect(() => {
+    if (
+      !formData.id_role ||
+      String(formData.id_role) === lastFetchedRoleId.current
+    )
+      return;
+
+    const updateRolePermissions = async () => {
+      setLoadingPermissions(true);
+      try {
+        lastFetchedRoleId.current = String(formData.id_role);
+        const encryptedRoleId = encrypt(String(formData.id_role));
+
+        const { data } = await axios.get(`${API_URL}/role/${encryptedRoleId}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        const newRoleIds = (data.permission_ids || []).map(Number);
+        setRolePermissionIds(newRoleIds);
+
+        setSelectedPermissionIds((prev) =>
+          prev.filter((pid) => !newRoleIds.includes(pid)),
+        );
+      } catch (err) {
+        console.error("Failed to fetch changed role permissions", err);
       } finally {
         setLoadingPermissions(false);
       }
     };
 
-    fetchPermissions();
-  }, [id, API_URL, user.token, rolePermissionIds]);
+    updateRolePermissions();
+  }, [formData.id_role, API_URL, user.token]);
 
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
@@ -277,6 +285,7 @@ function EditUser() {
 
     const addonProjectStr =
       formData.project_ids?.length > 0 ? formData.project_ids.join(";") : null;
+
     const payload = {
       full_name: formData.full_name,
       badge_no: formData.badge_no,
@@ -304,28 +313,21 @@ function EditUser() {
       ]);
 
       const allActiveIds = new Set([
-        ...rolePermissionIds,
-        ...selectedPermissionIds,
+        ...rolePermissionIds.map(Number),
+        ...selectedPermissionIds.map(Number),
       ]);
 
       const activePermissionNames = permissions
-        .filter((p) => allActiveIds.has(p.id_permission))
-        .map((p) => `<li>${p.permission_name}</li>`)
-        .join("");
+        .filter((p) => allActiveIds.has(Number(p.id_permission)))
+        .map((p) => `- ${p.permission_name}`)
+        .join("\n");
+
+      const alertMessage = `Account for ${formData.full_name} has been updated.\n\nTotal Permissions:\n${activePermissionNames || "No permissions assigned"}`;
 
       await showAlert(
         "User Updated Successfully!",
         "success",
-        `
-        <div style="text-align: left; font-size: 14px;">
-          <p>The account for <b>${formData.full_name}</b> has been updated.</p>
-          <hr />
-          <p><b>Total Effective Permissions:</b></p>
-          <ul style="max-height: 200px; overflow-y: auto; padding-left: 20px;">
-            ${activePermissionNames || "<li>No permissions assigned</li>"}
-          </ul>
-        </div>
-        `,
+        alertMessage,
         "Finish",
       );
 
@@ -454,7 +456,6 @@ function EditUser() {
                         error={errors.id_department}
                         classNames={inputClass}
                       />
-                      {/* KOMPONEN POSITION YANG BARU DITAMBAHKAN */}
                       <Select
                         required
                         searchable
@@ -526,7 +527,6 @@ function EditUser() {
                   </Badge>
                 </div>
 
-                {/* Panggil komponennya di sini! */}
                 <PermissionManager
                   permissions={permissions}
                   selectedIds={selectedPermissionIds}

@@ -23,7 +23,7 @@ import {
 import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
-import productionList from "@/data/sidebar/ProductionList"; 
+import productionList from "@/data/sidebar/ProductionList";
 
 export default function ProductionDashboard() {
   const router = useRouter();
@@ -35,20 +35,20 @@ export default function ProductionDashboard() {
 
   const currentUserRole = user?.role_name || "Unknown Role";
 
-  /* const allowedRolesForPage = ["Admin IT", "Manager Production", "Staff Production", "Requestor"];
-  useEffect(() => {
-    if (user && !allowedRolesForPage.includes(currentUserRole)) {
-      setIsAuthorized(false);
-    }
-  }, [currentUserRole, user]);
-  */
-
   const fetchData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/production`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      setRecords(response.data);
+
+      if (Array.isArray(response.data)) {
+        setRecords(response.data);
+      } else if (response.data && Array.isArray(response.data.data)) {
+        setRecords(response.data.data);
+      } else {
+        console.warn("API did not return an array:", response.data);
+        setRecords([]);
+      }
     } catch (error) {
       console.error("Failed to fetch dashboard data", error);
     }
@@ -90,7 +90,7 @@ export default function ProductionDashboard() {
 
       return {
         id: record.id,
-        time: new Date(record.created_at).toLocaleDateString(), 
+        time: new Date(record.created_at).toLocaleDateString(),
         text: `Batch ${record.batch_id} (${record.product_name}) ${actionText}`,
         status: record.qc_status,
       };

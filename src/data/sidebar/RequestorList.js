@@ -21,41 +21,35 @@ const requestorList = [
         href: "/user_request/dashboard",
         active: "Dashboard",
         icon: <IconLayoutDashboard size={18} />,
-        
       },
       {
         title: "User Request List",
         href: "/user_request/list/all",
         active: "User Request List",
         icon: <IconListLetters size={18} />,
-        
       },
       {
         title: "Create User Request",
         href: "/user_request/add_request",
         active: "Create User Request",
-        permission: "request.create",
         icon: <IconUserPlus size={18} />,
       },
       {
         title: "Pending HOD Request",
         href: "/user_request/list/awaiting-hod-approval",
         active: "Pending HOD Request",
-        permission: "request.create", 
         icon: <IconUserCheck size={18} />,
       },
       {
         title: "Pending IT Mgr / Asst. IT Mgr",
         href: "/user_request/list/awaiting-it-manager-approval",
         active: "Pending IT Manager",
-        permission: "request.create", 
         icon: <IconUserCog size={18} />,
       },
       {
         title: "Completed",
         href: "/user_request/list/completed",
         active: "Completed",
-        permission: "request.create", 
         icon: <IconCircleCheck size={18} />,
       },
     ],

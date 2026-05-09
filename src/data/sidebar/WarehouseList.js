@@ -1,4 +1,4 @@
-import { IconLayoutDashboard, IconPackages, IconBoxSeam } from "@tabler/icons-react";
+import { IconLayoutDashboard, IconPackages, IconBoxSeam, IconUserPlus } from "@tabler/icons-react";
 
 const warehouseList = [
   {
@@ -12,6 +12,12 @@ const warehouseList = [
         href: "/warehouse/dashboard",
         active: "Dashboard",
         icon: <IconLayoutDashboard size={18} />,
+      },
+      {
+        title: "Create Warehouse",
+        href: "/warehouse/add_warehouse",
+        active: "Create Warehouse",
+        icon: <IconUserPlus size={18} />,
       },
       {
         title: "Warehouse List",

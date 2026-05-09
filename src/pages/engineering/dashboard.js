@@ -9,12 +9,9 @@ import {
   Group,
   ThemeIcon,
   Badge,
-  Button,
 } from "@mantine/core";
 import {
   IconTools,
-  IconAlertCircle,
-  IconActivity,
   IconClock,
   IconCircleCheck,
   IconAlertTriangle,
@@ -39,9 +36,17 @@ export default function EngineeringDashboard() {
       const response = await axios.get(`${API_URL}/engineering`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      setRecords(response.data);
+
+      if (Array.isArray(response.data)) {
+        setRecords(response.data);
+      } else if (response.data && Array.isArray(response.data.data)) {
+        setRecords(response.data.data);
+      } else {
+        setRecords([]);
+      }
     } catch (error) {
       console.error("Failed to fetch data", error);
+      setRecords([]);
     }
   }, [API_URL, user?.token]);
 
@@ -49,17 +54,23 @@ export default function EngineeringDashboard() {
     if (isAuthorized && user?.token) fetchData();
   }, [fetchData, isAuthorized, user?.token]);
 
-  const totalWO = records.length;
-  const pendingWO = records.filter((r) => r.status === "Pending").length;
-  const progressWO = records.filter((r) => r.status === "In Progress").length;
-  const completedWO = records.filter((r) => r.status === "Completed").length;
+  const safeRecords = Array.isArray(records) ? records : [];
+
+  const totalWO = safeRecords.length;
+  const pendingWO = safeRecords.filter((r) => r.status === "Pending").length;
+  const progressWO = safeRecords.filter(
+    (r) => r.status === "In Progress",
+  ).length;
+  const completedWO = safeRecords.filter(
+    (r) => r.status === "Completed",
+  ).length;
 
   const stats = [
     {
       title: "Total Work Orders",
       value: totalWO,
       icon: IconTools,
-      color: "Teal",
+      color: "teal",
     },
     {
       title: "Pending",
@@ -93,7 +104,7 @@ export default function EngineeringDashboard() {
             p="lg"
             withBorder
             shadow="sm"
-            className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white" 
+            className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white"
           >
             <Group justify="space-between" align="center">
               <div>
@@ -107,8 +118,7 @@ export default function EngineeringDashboard() {
               <Badge color="white" variant="light" size="lg" radius="sm">
                 <Text color="teal" fw={700}>
                   Role: {currentUserRole}
-                </Text>{" "}
-                {/* Tambah teks teal agar kontras */}
+                </Text>
               </Badge>
             </Group>
           </Paper>

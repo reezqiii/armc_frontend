@@ -34,6 +34,7 @@ export default function PositionList() {
     { id: "position_name", desc: false },
   ]);
   const [columnFilters, setColumnFilters] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {

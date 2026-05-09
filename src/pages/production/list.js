@@ -1,59 +1,125 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import Head from "next/head";
-import { useRouter } from "next/router"; 
-import axios from "axios";
-import Swal from "sweetalert2";
-import { Paper, Badge, Button, Group, Text, Tooltip } from "@mantine/core";
+import AuthLayout from "@/components/layout/authLayout";
+import { Button, Paper, Text, Badge, Tooltip, Group } from "@mantine/core";
 import {
+  IconBuildingFactory,
   IconPlus,
   IconCheck,
   IconEdit,
   IconTrash,
   IconAlertCircle,
-  IconBuildingFactory,
 } from "@tabler/icons-react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-} from "@tanstack/react-table";
-import AuthLayout from "@/components/layout/authLayout";
+import { useRouter } from "next/router";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
-import Datatables from "@/components/custom/Datatables";
-import productionList from "@/data/sidebar/ProductionList";
 import useEncrypt from "@/hooks/useEncrypt";
+import Head from "next/head";
+import productionList from "@/data/sidebar/ProductionList";
+import Swal from "sweetalert2";
+import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
+import Datatables from "@/components/custom/Datatables";
 
 export default function ProductionList() {
-  const router = useRouter(); 
+  const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
+
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [sorting, setSorting] = useState([]);
   const [data, setData] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const [isAuthorized, setIsAuthorized] = useState(true);
-
   const currentUserRole = user?.role_name || "Unknown Role";
-  const canApprove = true; 
+  const canApprove = true;
 
   const fetchData = useCallback(async () => {
+    if (!user?.token) return;
+
+    const searchQuery = {};
+    columnFilters.forEach((filter) => {
+      if (
+        filter.value !== undefined &&
+        filter.value !== null &&
+        filter.value !== ""
+      ) {
+        searchQuery[filter.id] = filter.value;
+      }
+    });
+
+    const filterParams =
+      Object.keys(searchQuery).length > 0
+        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
+        : "";
+
+    const sort =
+      sorting.length > 0
+        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
+        : "";
+
     try {
-      const response = await axios.get(`${API_URL}/production`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setData(response.data);
-    } catch (error) {
-      console.error("Failed to fetch data", error);
+      const response = await axios.post(
+        `${API_URL}/production/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } },
+      );
+
+      const responseData = response.data;
+
+      setData(responseData.data);
+      setTotalPages(responseData.total_pages);
+      setTotalRecords(responseData.total);
+    } catch (err) {
+      console.error("Error fetching production:", err);
     }
-  }, [API_URL, user?.token]);
+  }, [
+    user?.token,
+    API_URL,
+    columnFilters,
+    sorting,
+    pagination.pageIndex,
+    pagination.pageSize,
+  ]);
 
   useEffect(() => {
     if (isAuthorized && user?.token) {
       fetchData();
     }
   }, [fetchData, isAuthorized, user?.token]);
+
+  const getStatusString = (statusInt) => {
+    if (statusInt === 2) return "Passed";
+    if (statusInt === 3) return "Failed";
+    return "Pending";
+  };
+
+  const getStatusBadge = (statusInt) => {
+    const statusText = getStatusString(statusInt);
+    switch (statusText) {
+      case "Passed":
+        return (
+          <Badge color="teal" radius="sm">
+            {statusText}
+          </Badge>
+        );
+      case "Failed":
+        return (
+          <Badge color="red" radius="sm">
+            {statusText}
+          </Badge>
+        );
+      default:
+        return (
+          <Badge color="orange" radius="sm">
+            {statusText}
+          </Badge>
+        );
+    }
+  };
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
@@ -92,7 +158,7 @@ export default function ProductionList() {
       try {
         await axios.put(
           `${API_URL}/production/${id}`,
-          { qc_status: "Passed" },
+          { qc_status: 2 },
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
         Swal.fire("Approved!", "Batch has been passed.", "success");
@@ -103,85 +169,63 @@ export default function ProductionList() {
     }
   };
 
-  const [columnFilters, setColumnFilters] = useState([]);
-  const [sorting, setSorting] = useState([]);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Passed":
-        return (
-          <Badge
-            color="teal"
-            radius="sm"
-            styles={{ root: { textTransform: "none" } }}
-          >
-            {status}
-          </Badge>
-        );
-      case "Failed":
-        return (
-          <Badge
-            color="red"
-            radius="sm"
-            styles={{ root: { textTransform: "none" } }}
-          >
-            {status}
-          </Badge>
-        );
-      default:
-        return (
-          <Badge
-            color="orange"
-            radius="sm"
-            styles={{ root: { textTransform: "none" } }}
-          >
-            {status}
-          </Badge>
-        );
-    }
-  };
-
   const columns = useMemo(
     () => [
       {
-        accessorKey: "batch_id",
+        accessorFn: (row) => row.creator_name,
+        id: "creator_name",
+        enableColumnFilter: true,
+        enableSorting: true,
+        header: "Requestor Name",
+        size: 200,
+        cell: ({ getValue }) => (
+          <Text size="sm" fw={500}>
+            {getValue() || "-"}
+          </Text>
+        ),
+      },
+      {
+        accessorFn: (row) => row.batch_id,
+        id: "batch_id",
         header: "Batch ID",
+        enableColumnFilter: true,
+        enableSorting: true,
         size: 150,
         cell: ({ row }) => (
-          <Text fw={700} color="teal" size="sm">
+          <Text fw={700} c="teal" size="sm">
             {row.original.batch_id}
           </Text>
         ),
       },
-      { accessorKey: "product_name", header: "Product Name", size: 300 },
       {
-        accessorKey: "created_at",
-        header: "Date",
-        size: 150,
-        cell: ({ row }) => (
-          <Text size="sm">
-            {" "}
-            {new Date(row.original.created_at).toLocaleDateString()}
-          </Text>
-        ),
+        accessorFn: (row) => row.product_name,
+        id: "product_name",
+        header: "Product Name",
+        enableColumnFilter: true,
+        enableSorting: true,
+        size: 300,
       },
       {
-        accessorKey: "qc_status",
+        accessorFn: (row) => row.qc_status,
+        id: "qc_status",
         header: "QC Status",
+        enableColumnFilter: false,
+        enableSorting: true,
         size: 150,
-        cell: (info) => getStatusBadge(info.getValue()),
+        cell: ({ getValue }) => getStatusBadge(getValue()),
       },
       {
         id: "actions",
         header: "Action",
+        enableColumnFilter: false,
+        enableSorting: true,
         cell: ({ row }) => {
           const record = row.original;
-          const isPending = record.qc_status === "Pending";
+
+          const isPending = record.qc_status === 1 || record.qc_status === null;
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* Tombol Approve */}
               <Tooltip
                 label={canApprove ? "Approve QC" : "Role not permitted"}
                 withArrow
@@ -201,20 +245,19 @@ export default function ProductionList() {
                 </Button>
               </Tooltip>
 
-              {/* TOMBOL EDIT PINDAH HALAMAN */}
               <Button
                 size="xs"
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() => {
                   const encryptedId = encrypt(record.id.toString());
+
                   router.push(`/production/edit/${encryptedId}`);
                 }}
               >
                 Edit
               </Button>
 
-              {/* Tombol Delete */}
               <Tooltip
                 label={canApprove ? "Delete Record" : "Role not permitted"}
                 withArrow
@@ -225,7 +268,9 @@ export default function ProductionList() {
                   disabled={!canApprove}
                   leftSection={<IconTrash size={14} />}
                   onClick={() => handleDelete(record.id)}
-                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
+                  style={{
+                    cursor: !canApprove ? "not-allowed" : "pointer",
+                  }}
                 >
                   Delete
                 </Button>
@@ -242,17 +287,15 @@ export default function ProductionList() {
     data,
     columns,
     state: { sorting, columnFilters, pagination },
+    pageCount: totalPages,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
-
-  const totalPages = table.getPageCount();
-  const tableInfo = { totalElements: data.length };
 
   if (!isAuthorized) {
     return (
@@ -261,9 +304,6 @@ export default function ProductionList() {
         <h1 className="text-3xl font-bold text-gray-800">
           403 - Access Denied
         </h1>
-        <p className="text-gray-500 mt-2">
-          Your role cannot access this module.
-        </p>
         <Button mt="xl" color="teal" onClick={() => router.push("/dashboard")}>
           Back to Home
         </Button>
@@ -280,7 +320,6 @@ export default function ProductionList() {
       <AuthLayout sidebarList={productionList}>
         <div className="py-6 px-4">
           <Paper radius="md" p="md" withBorder shadow="sm">
-            {/* HEADER */}
             <div className="flex items-center justify-between border-b pb-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-teal-100 text-teal-600">
@@ -298,23 +337,13 @@ export default function ProductionList() {
                   </p>
                 </div>
               </div>
-
-              {/* TOMBOL ADD PINDAH HALAMAN */}
-              <Button
-                color="teal"
-                size="xs"
-                leftSection={<IconPlus size={16} />}
-                onClick={() => router.push("/production/add_production")}
-              >
-                Add New Record
-              </Button>
             </div>
 
-            {/* TABLE */}
+            {/* Pastikan Datatables kamu support manual pagination properties */}
             <Datatables
               table={table}
               totalPages={totalPages}
-              info={tableInfo}
+              info={{ totalElements: totalRecords }}
             />
           </Paper>
         </div>
