@@ -37,31 +37,31 @@ export default function Navigation() {
         name: "User Management",
         url: "/user_management/dashboard",
         icon: <IconUserCog size={20} />,
-        show: can(4),
+      show: true,
       },
       {
         name: "Access Request",
         url: "/user_request/dashboard",
         icon: <IconUser size={20} />,
-        show: can(8),
+       show: true,
       },
       {
         name: "Production & Quality",
         url: "/production/dashboard",
         icon: <IconBuildingFactory size={20} />,
-        show: can(5),
+       show: true,
       },
       {
         name: "Engineering",
         url: "/engineering/dashboard",
         icon: <IconTool size={20} />,
-        show: can(6),
+      show: true,
       },
       {
         name: "Warehouse",
         url: "/warehouse/dashboard",
         icon: <IconBox size={20} />,
-        show: can(7),
+        show: true,
       },
     ].filter((nav) => nav.show);
   }, [user, can]);

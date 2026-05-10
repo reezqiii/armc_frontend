@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper, Badge, Text } from "@mantine/core";
+import { Button, Group, Paper, Badge, Text, Tooltip, ActionIcon } from "@mantine/core";
 import {
   IconEdit,
   IconPlus,
@@ -140,36 +140,45 @@ export default function PositionList() {
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
       },
-
       {
         id: "action",
         header: "Action",
-        size: 150,
+        size: 120,
         cell: ({ row }) => {
           const position = row.original;
           const encryptedId = encrypt(String(position.id_position));
 
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  router.push(`/user_management/position/edit/${encryptedId}`);
-                }}
-              >
-                Edit
-              </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tombol Edit Position */}
+              <Tooltip label="Edit Position" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    router.push(
+                      `/user_management/position/edit/${encryptedId}`,
+                    );
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(encryptedId)}
-              >
-                Delete
-              </Button>
+              {/* Tombol Delete Position */}
+              <Tooltip label="Delete Position" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(encryptedId)}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },

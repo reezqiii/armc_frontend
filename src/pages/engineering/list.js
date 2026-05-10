@@ -2,14 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import axios from "axios";
-import Swal from "sweetalert2";
-import { Paper, Badge, Button, Group, Text, Tooltip } from "@mantine/core";
+import { Paper, Badge, Text, Tooltip, Group, ActionIcon } from "@mantine/core";
 import {
-  IconPlus,
   IconCheck,
   IconEdit,
   IconTrash,
   IconTools,
+  IconX,
 } from "@tabler/icons-react";
 import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 
@@ -19,12 +18,16 @@ import useApi from "@/hooks/useApi";
 import Datatables from "@/components/custom/Datatables";
 import engineeringList from "@/data/sidebar/EngineeringList";
 import useEncrypt from "@/hooks/useEncrypt";
+import useSwal from "@/hooks/useSwal";
 
 export default function EngineeringList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
+
+  const { showAlert, showConfirm, showInput, showLoading, closeSwal } =
+    useSwal();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(0);
@@ -88,65 +91,104 @@ export default function EngineeringList() {
   }, [fetchData, user?.token]);
 
   const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Delete?",
-      text: "Cannot be undone!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-    });
+    const result = await showConfirm(
+      "Delete Record",
+      "Cannot be undone!",
+      "Yes, delete it!",
+    );
     if (result.isConfirmed) {
+      showLoading("Deleting...");
       try {
         await axios.delete(`${API_URL}/engineering/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        Swal.fire("Deleted!", "Record has been deleted.", "success");
+        closeSwal();
+        showAlert("Deleted!", "success", "Record has been deleted.", "OK");
         fetchData();
       } catch (error) {
-        Swal.fire("Error", "Failed to delete record.", "error");
+        closeSwal();
+        showAlert("Error", "error", "Failed to delete record.", "OK");
       }
     }
   };
 
   const handleApprove = async (id) => {
-    const result = await Swal.fire({
-      title: "Mark as Completed?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#20c997",
-    });
+    const result = await showConfirm(
+      "Complete WO?",
+      "This will mark the Work Order as Completed.",
+      "Yes, Complete!",
+    );
     if (result.isConfirmed) {
+      showLoading("Updating...");
       try {
-        await axios.put(
-          `${API_URL}/engineering/${id}`,
-          { status: "Completed" },
+        await axios.patch(
+          `${API_URL}/engineering/${id}/approve`,
+          {},
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
-        Swal.fire("Completed!", "Work order marked as completed.", "success");
+        closeSwal();
+        showAlert(
+          "Completed!",
+          "success",
+          "Work order marked as completed.",
+          "OK",
+        );
         fetchData();
       } catch (error) {
-        Swal.fire("Error", "Failed to update status.", "error");
+        closeSwal();
+        showAlert("Error", "error", "Failed to update status.", "OK");
+      }
+    }
+  };
+
+  const handleReject = async (id) => {
+    const { value: remarks, isConfirmed } = await showInput(
+      "Reject WO",
+      "Reason for Rejection",
+      "Type your reason here...",
+      "Reject",
+    );
+
+    if (isConfirmed && remarks) {
+      showLoading("Rejecting...");
+      try {
+        await axios.patch(
+          `${API_URL}/engineering/${id}/reject`,
+          { remarks: remarks },
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        );
+        closeSwal();
+        showAlert(
+          "Rejected!",
+          "success",
+          "Work order has been rejected.",
+          "OK",
+        );
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        showAlert("Error", "error", "Failed to reject", "OK");
       }
     }
   };
 
   const getStatusBadge = (statusVal) => {
-    let statusText = "Pending";
+    let statusText = "Pending by Supervisor";
     let badgeColor = "orange";
 
-    if (statusVal === 3 || statusVal === "Completed") {
-      statusText = "Completed";
+    if (statusVal === 3 || statusVal === "Completed by Supervisor") {
+      statusText = "Completed by Supervisor";
       badgeColor = "teal";
-    } else if (statusVal === 2 || statusVal === "In Progress") {
-      statusText = "In Progress";
+    } else if (statusVal === 4 || statusVal === "Rejected by Supervisor") {
+      statusText = "Rejected by Supervisor";
+      badgeColor = "red";
+    } else if (statusVal === 2 || statusVal === "In Progress by Supervisor") {
+      statusText = "In Progress by Supervisor";
       badgeColor = "blue";
-    } else if (statusVal === 1 || statusVal === "Pending") {
-      statusText = "Pending";
-      badgeColor = "orange";
     }
 
     return (
-      <Badge color={badgeColor} variant="light">
+      <Badge color={badgeColor} variant="filled" radius="sm">
         {statusText}
       </Badge>
     );
@@ -160,12 +202,8 @@ export default function EngineeringList() {
         enableColumnFilter: true,
         enableSorting: true,
         header: "Requestor Name",
-        size: 200,
-        cell: ({ getValue }) => (
-          <Text size="sm" fw={500}>
-            {getValue() || "-"}
-          </Text>
-        ),
+        size: 180,
+        cell: (info) => info.getValue() ?? "-",
       },
       {
         accessorFn: (row) => row.wo_number,
@@ -174,11 +212,7 @@ export default function EngineeringList() {
         enableColumnFilter: true,
         enableSorting: true,
         size: 130,
-        cell: ({ row }) => (
-          <Text fw={700} color="teal" size="sm">
-            {row.original.wo_number}
-          </Text>
-        ),
+        cell: (info) => info.getValue() ?? "-",
       },
       {
         accessorFn: (row) => row.equipment_name,
@@ -221,67 +255,136 @@ export default function EngineeringList() {
         header: "Status",
         enableColumnFilter: false,
         enableSorting: true,
-        size: 120,
-        cell: ({ getValue }) => getStatusBadge(getValue()), 
+        size: 150,
+        cell: ({ row }) => {
+          const statusInt = row.original.status;
+          const remarks = row.original.remarks;
+          const isRejected = statusInt === 4 || statusInt === "Rejected";
+
+          return (
+            <div className="flex flex-col gap-1 items-center text-center w-full">
+              {getStatusBadge(statusInt)}
+              {isRejected && remarks && (
+                <Text
+                  size="xs"
+                  color="red"
+                  className="italic line-clamp-2 mt-1"
+                  title={remarks}
+                >
+                  * {remarks}
+                </Text>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "actions",
         header: "Action",
         enableColumnFilter: false,
-        enableSorting: true,
-        size: 280,
+        enableSorting: false,
+        size: 180,
         cell: ({ row }) => {
           const record = row.original;
-          const isCompleted = record.status === "Completed";
+          const isPending =
+            record.status === 1 ||
+            record.status === 2 ||
+            record.status === "Pending" ||
+            record.status === "In Progress";
+          const id = record.id_wo;
+
           return (
             <Group gap={6} justify="center" wrap="nowrap">
+              {/* TOMBOL APPROVE/COMPLETE */}
               <Tooltip
                 label={canApprove ? "Complete WO" : "Role not permitted"}
                 withArrow
               >
-                <Button
-                  size="xs"
-                  color={canApprove && !isCompleted ? "green" : "gray"}
-                  disabled={!canApprove || isCompleted}
-                  leftSection={<IconCheck size={14} />}
-                  onClick={() => handleApprove(record.id)}
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color={canApprove && isPending ? "green" : "gray"}
+                  disabled={!canApprove || !isPending}
+                  onClick={() => handleApprove(id)}
+                  style={{
+                    cursor:
+                      !canApprove || !isPending ? "not-allowed" : "pointer",
+                  }}
                 >
-                  Complete
-                </Button>
+                  <IconCheck size={16} />
+                </ActionIcon>
               </Tooltip>
 
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  const encryptedId = encrypt(record.id.toString());
-                  router.push(`/engineering/edit/${encryptedId}`);
-                }}
+              {/* TOMBOL REJECT */}
+              <Tooltip
+                label={canApprove ? "Reject WO" : "Role not permitted"}
+                withArrow
               >
-                Edit
-              </Button>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color={canApprove && isPending ? "blue" : "gray"}
+                  disabled={!canApprove || !isPending}
+                  onClick={() => handleReject(id)}
+                  style={{
+                    cursor:
+                      !canApprove || !isPending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <IconX size={16} />
+                </ActionIcon>
+              </Tooltip>
 
+              {/* TOMBOL EDIT */}
+              <Tooltip label="Edit Record" withArrow>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color="yellow"
+                  onClick={() => {
+                    const encryptedId = encrypt(id.toString());
+                    router.push(`/engineering/edit/${encryptedId}`);
+                  }}
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
+
+              {/* TOMBOL DELETE */}
               <Tooltip
                 label={canApprove ? "Delete Record" : "Role not permitted"}
                 withArrow
               >
-                <Button
-                  size="xs"
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
                   color={canApprove ? "red" : "gray"}
                   disabled={!canApprove}
-                  leftSection={<IconTrash size={14} />}
-                  onClick={() => handleDelete(record.id)}
+                  onClick={() => handleDelete(id)}
+                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
                 >
-                  Delete
-                </Button>
+                  <IconTrash size={16} />
+                </ActionIcon>
               </Tooltip>
             </Group>
           );
         },
       },
     ],
-    [canApprove, router, encrypt],
+    [
+      canApprove,
+      router,
+      showConfirm,
+      showAlert,
+      showInput,
+      showLoading,
+      closeSwal,
+      encrypt,
+    ],
   );
 
   const table = useReactTable({

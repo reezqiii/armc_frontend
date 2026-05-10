@@ -6,7 +6,16 @@ import useUser from "@/store/useUser";
 import { useRouter } from "next/router";
 import useEncrypt from "@/hooks/useEncrypt";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Paper, Badge, Button, Group, Text, SimpleGrid } from "@mantine/core";
+import {
+  Tooltip,
+  Paper,
+  Badge,
+  Button,
+  Group,
+  Text,
+  SimpleGrid,
+  ActionIcon,
+} from "@mantine/core";
 import {
   IconFileText,
   IconClock,
@@ -16,12 +25,9 @@ import {
   IconFileSpreadsheet,
   IconInfoCircle,
   IconEdit,
-  IconSend,
-  IconCheck,
   IconListLetters,
 } from "@tabler/icons-react";
 import axios from "axios";
-import Swal from "sweetalert2";
 import {
   useReactTable,
   getCoreRowModel,
@@ -280,22 +286,20 @@ export default function RequestListDynamic({ request_status }) {
         header: "Request Info",
         enableColumnFilter: true,
         enableSorting: true,
+        size: 150,
         cell: ({ row }) => {
           const requestNumber = `REQ-${String(row.original.id_request).padStart(6, "0")}`;
           return (
-            <div className="flex flex-col">
+            <div className="flex flex-col items-center text-center w-full">
               <Text fw={700} color="teal" size="sm">
                 {requestNumber}
-              </Text>
-              <Text size="sm" color="dimmed">
-                {formatDate(row.original.created_date)}
               </Text>
             </div>
           );
         },
       },
       {
-        accessorFn: (row) => row.created_by_name, // Backend alias: creator.full_name as created_by_name
+        accessorFn: (row) => row.created_by_name,
         id: "created_by_name",
         header: "Requestor",
         enableColumnFilter: true,
@@ -320,7 +324,7 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.department_name, // Backend alias: dept.department_name as department_name
+        accessorFn: (row) => row.department_name,
         id: "department_name",
         header: "Department",
         enableColumnFilter: true,
@@ -344,12 +348,17 @@ export default function RequestListDynamic({ request_status }) {
         cell: (info) => info.getValue() || "-",
       },
       {
-        accessorFn: (row) => row.category_account_name,
-        id: "category_account_name",
+        accessorFn: (row) => row.category_account,
+        id: "category_account",
         header: "Category Account",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: (info) => info.getValue() || "-",
+        cell: ({ row }) => {
+          const val = row.original.category_account;
+          if (val === 0 || val === "0") return "Create New Account";
+          if (val === 1 || val === "1") return "Request Permission";
+          return "-";
+        },
       },
       {
         accessorFn: (row) => row.request_status,
@@ -426,7 +435,7 @@ export default function RequestListDynamic({ request_status }) {
     cols.push({
       id: "action",
       header: "Action",
-      size: 250,
+      size: 150,
       enableColumnFilter: false,
       enableSorting: false,
       cell: ({ row }) => {
@@ -436,46 +445,58 @@ export default function RequestListDynamic({ request_status }) {
         const isCreator = Number(request.created_by) === Number(user?.id);
         const isPendingHOD = request.request_status === 1;
 
-        const canEdit = (can("request.update") || isCreator) && isPendingHOD;
-        const canCancel = (can("request.cancel") || isCreator) && isPendingHOD;
+        const canEdit = isCreator && isPendingHOD;
+        const canCancel = isCreator && isPendingHOD;
 
         return (
-          <div className="flex justify-center gap-1 flex-wrap">
-            <Button
-              size="xs"
-              color="blue"
-              leftSection={<IconInfoCircle size={14} />}
-              onClick={() =>
-                router.push(`/user_request/detail_req/${encryptedId}`)
-              }
-            >
-              Details
-            </Button>
-
-            {canEdit && (
-              <Button
-                leftSection={<IconEdit size={16} />}
-                color="yellow"
-                size="xs"
+          <Group gap={6} justify="center" wrap="nowrap">
+            {/* DETAILS */}
+            <Tooltip label="Details" withArrow>
+              <ActionIcon
+                size="md"
+                radius="md"
+                variant="filled"
+                color="blue"
                 onClick={() =>
-                  router.push(`/user_request/edit_req/${encryptedId}`)
+                  router.push(`/user_request/detail_req/${encryptedId}`)
                 }
               >
-                Edit
-              </Button>
+                <IconInfoCircle size={16} />
+              </ActionIcon>
+            </Tooltip>
+
+            {/* EDIT */}
+            {canEdit && (
+              <Tooltip label="Edit Request" withArrow>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color="yellow"
+                  onClick={() =>
+                    router.push(`/user_request/edit_req/${encryptedId}`)
+                  }
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
             )}
 
+            {/* CANCEL */}
             {canCancel && (
-              <Button
-                leftSection={<IconX size={16} />}
-                color="red"
-                size="xs"
-                onClick={() => handleCancel(request.id_request)}
-              >
-                Cancel
-              </Button>
+              <Tooltip label="Cancel Request" withArrow>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color="red"
+                  onClick={() => handleCancel(request.id_request)}
+                >
+                  <IconX size={16} />
+                </ActionIcon>
+              </Tooltip>
             )}
-          </div>
+          </Group>
         );
       },
     });

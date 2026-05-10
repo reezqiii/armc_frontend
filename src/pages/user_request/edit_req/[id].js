@@ -1,17 +1,11 @@
 import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
-import {
-  Button,
-  Paper,
-  TextInput,
-  Textarea,
-  Select,
-  MultiSelect,
-} from "@mantine/core";
+import { Button, Paper, TextInput, Textarea, Select } from "@mantine/core";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
-  IconCalendar,
+  IconCheck,
+  IconClock,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect } from "react";
@@ -19,7 +13,6 @@ import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
-import { formatDate } from "@/lib/dateFormat";
 
 function EditRequest() {
   const router = useRouter();
@@ -39,9 +32,8 @@ function EditRequest() {
     request_reason: "",
     approval_hod_by: "",
     category_account: "",
-    access_nav_menu: [],
+    id_application: "",
     approval_it_hod_by_name: "-",
-    approval_it_date_at: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -53,12 +45,20 @@ function EditRequest() {
   const [positionOptions, setPositionOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
 
+  const CATEGORY_OPTIONS = [
+    { value: "0", label: "Create New Account" },
+    { value: "1", label: "Request Permission" },
+  ];
+
   const fetchHodsByDept = async (dept_id) => {
     if (!dept_id) return setHodOptions([]);
     try {
-      const res = await axios.get(`${API_URL}/user/hods-by-dept/${dept_id}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const res = await axios.get(
+        `${API_URL}/requests/hods-by-dept/${dept_id}`,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        },
+      );
       setHodOptions(
         res.data.map((u) => ({
           value: String(u.id_user),
@@ -75,21 +75,14 @@ function EditRequest() {
     const fetchInitialData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        const [
-          deptRes,
-          projectRes,
-          navMenuRes,
-          categoryRes,
-          positionRes,
-          requestRes,
-        ] = await Promise.all([
-          axios.get(`${API_URL}/portal-department`, { headers }),
-          axios.get(`${API_URL}/portal-project`, { headers }),
-          axios.get(`${API_URL}/portal_nav_menu/list`, { headers }),
-          axios.get(`${API_URL}/category-account`, { headers }),
-          axios.get(`${API_URL}/portal-position`, { headers }),
-          axios.get(`${API_URL}/requests/${id}`, { headers }),
-        ]);
+        const [deptRes, projectRes, navMenuRes, positionRes, requestRes] =
+          await Promise.all([
+            axios.get(`${API_URL}/portal-department`, { headers }),
+            axios.get(`${API_URL}/portal-project`, { headers }),
+            axios.get(`${API_URL}/portal_nav_menu/list`, { headers }),
+            axios.get(`${API_URL}/portal-position`, { headers }),
+            axios.get(`${API_URL}/requests/${id}`, { headers }),
+          ]);
 
         setDeptOptions(
           deptRes.data.map((d) => ({
@@ -109,9 +102,6 @@ function EditRequest() {
             label: n.application_name,
           })),
         );
-        setCategoryOptions(
-          categoryRes.data.map((c) => ({ value: String(c.id), label: c.name })),
-        );
         setPositionOptions(
           positionRes.data.map((pos) => ({
             value: String(pos.id_position),
@@ -120,33 +110,31 @@ function EditRequest() {
         );
 
         const data = requestRes.data;
+
         const catValue =
-          data.category?.id != null
-            ? String(data.category.id)
-            : data.category_account != null
-              ? String(data.category_account)
-              : "";
+          data.category_account != null ? String(data.category_account) : "";
         const deptId = data.id_department ? String(data.id_department) : null;
         const projectId = data.id_project ? String(data.id_project) : null;
+        const posId = data.id_position ? String(data.id_position) : null;
+        const appId = data.id_application ? String(data.id_application) : "";
+        const hodId = data.approval_hod_by_id
+          ? String(data.approval_hod_by_id)
+          : "";
 
         setFormData({
-          created_by_name: data.created_by_name || null,
+          created_by_name:
+            data.created_by_user?.full_name || data.created_by_name || null,
           full_name: data.full_name || "",
           badge_no: data.badge_no || "",
           email: data.email || "",
-         position: data.position ? String(data.position) : null,
+          position: posId,
           department: deptId,
           project: projectId,
           request_reason: data.request_reason || "",
           category_account: catValue,
-          approval_hod_by: data.approval_hod_by?.id
-            ? String(data.approval_hod_by.id)
-            : "",
-          access_nav_menu: Array.isArray(data.access_nav_menu)
-            ? data.access_nav_menu.map((item) => String(item.id))
-            : [],
+          approval_hod_by: hodId,
+          id_application: appId,
           approval_it_hod_by_name: data.approval_it_hod_by?.full_name || "-",
-          approval_it_date_at: data.approval_it_date_at || null,
         });
 
         if (deptId) fetchHodsByDept(deptId);
@@ -179,8 +167,7 @@ function EditRequest() {
     if (!formData.full_name) newErrors.full_name = "Required";
     if (!formData.email) newErrors.email = "Required";
     if (!formData.request_reason) newErrors.request_reason = "Required";
-    if (!formData.access_nav_menu.length)
-      newErrors.access_nav_menu = "Required";
+    if (!formData.id_application) newErrors.id_application = "Required";
     if (!formData.position) newErrors.position = "Required";
 
     if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
@@ -197,18 +184,25 @@ function EditRequest() {
     if (!result.isConfirmed) return;
 
     setLoadingSubmit(true);
+
     const payload = {
       full_name: formData.full_name,
       badge_no: formData.badge_no?.trim() || null,
       email: formData.email,
       request_reason: formData.request_reason,
       status_active: 1,
-      id_position: formData.position ? Number(formData.position) : undefined,
-      id_project: formData.project ? Number(formData.project) : undefined,
-      id_department: formData.department ? Number(formData.department) : undefined,
-      id_category: formData.category_account ? Number(formData.category_account) : undefined,
-      access_nav_menu: formData.access_nav_menu,
-      approval_hod_by: formData.approval_hod_by,
+      id_position: formData.position ? Number(formData.position) : null,
+      id_project: formData.project ? Number(formData.project) : null,
+      id_department: formData.department ? Number(formData.department) : null,
+      category_account: formData.category_account
+        ? Number(formData.category_account)
+        : null,
+      id_application: formData.id_application
+        ? Number(formData.id_application)
+        : null,
+      approval_hod_by_id: formData.approval_hod_by
+        ? Number(formData.approval_hod_by)
+        : null,
     };
 
     try {
@@ -250,17 +244,8 @@ function EditRequest() {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6 md:p-10 space-y-10">
-              {/* 1. Date & Requestor */}
+              {/* 1. Requestor Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="block font-semibold text-gray-700 text-sm">
-                    Request Date
-                  </label>
-                  <div className="h-[40px] px-4 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between text-sm text-gray-600">
-                    {formatDate(new Date())}
-                    <IconCalendar size={18} className="text-gray-400" />
-                  </div>
-                </div>
                 <div className="space-y-1">
                   <label className="block font-semibold text-gray-700 text-sm">
                     Requestor
@@ -281,7 +266,7 @@ function EditRequest() {
                     required
                     label="Category Account"
                     placeholder="Select Category Account"
-                    data={categoryOptions}
+                    data={CATEGORY_OPTIONS}
                     value={formData.category_account}
                     onChange={(v) => handleChange("category_account", v)}
                     error={errors.category_account}
@@ -291,6 +276,7 @@ function EditRequest() {
                     }}
                   />
                   <TextInput
+                    required
                     label="Badge ID"
                     placeholder="Input Badge ID"
                     value={formData.badge_no}
@@ -348,20 +334,23 @@ function EditRequest() {
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
-                  <MultiSelect
+
+                  {/* PERBAIKAN 4: Ubah MultiSelect jadi Select (karena DB int4) */}
+                  <Select
                     required
                     label="Application Access"
                     placeholder="Select Application Access"
                     data={navMenuOptions}
-                    value={formData.access_nav_menu}
-                    onChange={(v) => handleChange("access_nav_menu", v)}
-                    error={errors.access_nav_menu}
+                    value={formData.id_application}
+                    onChange={(v) => handleChange("id_application", v)}
+                    error={errors.id_application}
                     searchable
                     classNames={{
                       label: "font-semibold mb-1 text-gray-700",
-                      input: "min-h-[40px]",
+                      input: "h-[40px]",
                     }}
                   />
+
                   <TextInput
                     required
                     type="email"
@@ -397,68 +386,104 @@ function EditRequest() {
               </div>
 
               {/* 4. Approval Workflow */}
-              <div className="space-y-4">
-                <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest mb-8">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>Requestor</div>
-                    <div>Dept Head Approval</div>
-                    <div>IT Head Approval</div>
-                  </div>
+              <div className="space-y-6">
+                <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
+                  Approval Workflow
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-300 rounded-lg divide-y md:divide-y-0 md:divide-x divide-gray-300 overflow-hidden">
-                  <div className="p-4 bg-white min-h-[100px] flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">
-                      Requested By
-                    </span>
-                    <div className="text-sm font-bold">
-                      {formData.created_by_name ||
-                        formData.requestor_name ||
-                        "-"}
+
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-teal-50 px-6 py-2 text-[10px] font-bold text-teal-700 uppercase tracking-widest border-b border-gray-200">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>Requestor</div>
+                      <div>Dept Head Approval</div>
+                      <div>IT Head Approval</div>
                     </div>
                   </div>
-                  <div className="p-4 bg-white min-h-[100px] flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">
-                      Acknowledge By
-                    </span>
-                    <Select
-                      error={errors.approval_hod_by}
-                      placeholder={
-                        formData.department ? "Select HOD" : "Select Dept First"
-                      }
-                      disabled={!formData.department}
-                      searchable
-                      value={formData.approval_hod_by}
-                      onChange={(v) => handleChange("approval_hod_by", v)}
-                      data={hodOptions}
-                      variant="unstyled"
-                      classNames={{
-                        input: "text-sm font-bold text-teal-600 p-0",
-                      }}
-                    />
-                  </div>
-                  <div className="p-4 bg-gray-50 flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">
-                      Approved By
-                    </span>
-                    {formData.approval_it_hod_by_name &&
-                    formData.approval_it_hod_by_name !== "-" ? (
-                      <>
-                        <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-100">
-                          {formData.approval_it_hod_by_name}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-white">
+                    {/* Col 1 — Requestor */}
+                    <div className="p-5 flex flex-col justify-between min-h-[120px]">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Requested By
+                      </span>
+                      <div className="flex items-center gap-3 py-2 mt-auto">
+                        <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[14px] font-bold text-teal-700 flex-shrink-0">
+                          {(formData.created_by_name || "-")
+                            .charAt(0)
+                            .toUpperCase()}
                         </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {formData.approval_it_date_at
-                            ? formatDate(formData.approval_it_date_at, {
-                                showTime: true,
-                              })
-                            : "Pending..."}
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-800 leading-tight border-b border-gray-100 pb-1">
+                            {formData.created_by_name || "-"}
+                          </p>
+                          <p className="text-xs text-teal-500 mt-0.5 flex items-center gap-1">
+                            <IconCheck size={12} /> Submitted
+                          </p>
                         </div>
-                      </>
-                    ) : (
-                      <div className="text-[12px] italic text-gray-400">
-                        Waiting HOD IT...
                       </div>
-                    )}
+                    </div>
+
+                    {/* Col 2 — HOD (Dengan Form Select) */}
+                    <div className="p-5 flex flex-col min-h-[120px]">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        Acknowledge By
+                      </span>
+                      <div className="mt-auto">
+                        <Select
+                          error={errors.approval_hod_by}
+                          placeholder={
+                            formData.department
+                              ? "Select HOD"
+                              : "Select Dept First"
+                          }
+                          disabled={!formData.department}
+                          searchable
+                          value={formData.approval_hod_by}
+                          onChange={(v) => handleChange("approval_hod_by", v)}
+                          data={hodOptions}
+                          classNames={{
+                            input:
+                              "text-sm font-bold text-teal-700 border-gray-300 focus:border-teal-500",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Col 3 — HOD IT */}
+                    <div className="p-5 bg-gray-50/30 flex flex-col min-h-[120px]">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Approved By
+                      </span>
+                      <div className="mt-auto">
+                        {formData.approval_it_hod_by_name &&
+                        formData.approval_it_hod_by_name !== "-" ? (
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-[14px] font-bold text-teal-700 flex-shrink-0">
+                              {(formData.approval_it_hod_by_name || "-")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-teal-600 leading-tight border-b border-gray-100 pb-1">
+                                {formData.approval_it_hod_by_name}
+                              </p>
+                              <p className="text-xs text-teal-500 mt-0.5 flex items-center gap-1">
+                                <IconCheck size={12} /> Approved
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                              <IconClock size={16} color="#9ca3af" />
+                            </div>
+                            <p className="text-sm font-medium text-gray-400 italic">
+                              Waiting IT Approval...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

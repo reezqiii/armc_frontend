@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper } from "@mantine/core";
+import { ActionIcon, Button, Group, Paper, Tooltip } from "@mantine/core";
 import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -122,31 +122,41 @@ export default function DepartmentList() {
       {
         id: "action",
         header: "Action",
-        size: 150,
+        size: 120,
         cell: ({ row }) => {
           const dept = row.original;
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-            const encryptedId = encrypt(String(dept.id_department));
-            router.push(`/user_management/department/edit/${encryptedId}`);
-          }}
-        >
-          Edit
-        </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tombol Edit */}
+              <Tooltip label="Edit Department" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    const encryptedId = encrypt(String(dept.id_department));
+                    router.push(
+                      `/user_management/department/edit/${encryptedId}`,
+                    );
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(dept.id_department)}
-              >
-                Delete
-              </Button>
+              {/* Tombol Delete */}
+              <Tooltip label="Delete Department" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(dept.id_department)}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },

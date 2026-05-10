@@ -19,7 +19,7 @@ export default function AddEngineering() {
     wo_number: "",
     equipment_name: "",
     issue_description: "",
-    priority: "Medium", 
+    priority: "Medium",
   });
 
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ export default function AddEngineering() {
       text: "Are you sure you want to submit this Work Order?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#20c997", 
+      confirmButtonColor: "#20c997",
       cancelButtonColor: "#d33",
       confirmButtonText: "Yes, Create",
       cancelButtonText: "Cancel",
@@ -59,7 +59,18 @@ export default function AddEngineering() {
   const executeSaveData = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`${API_URL}/engineering`, formData, {
+
+      let priorityInt = 2;
+      if (formData.priority === "Low") priorityInt = 1;
+      if (formData.priority === "Medium") priorityInt = 2;
+      if (formData.priority === "High") priorityInt = 3;
+
+      const payloadData = {
+        ...formData,
+        priority: priorityInt,
+      };
+
+      const response = await axios.post(`${API_URL}/engineering`, payloadData, {
         headers: { Authorization: `Bearer ${user.token}` },
         validateStatus: (status) => status < 500,
       });
@@ -102,7 +113,6 @@ export default function AddEngineering() {
             </h1>
           </div>
 
-          {/* Tag form tanpa onSubmit */}
           <form>
             <div className="p-6 space-y-4">
               <TextInput
@@ -156,8 +166,8 @@ export default function AddEngineering() {
                 Back
               </Button>
               <Button
-                type="button" 
-                onClick={handleConfirmClick} 
+                type="button"
+                onClick={handleConfirmClick}
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loading}

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper } from "@mantine/core";
+import { ActionIcon, Button, Group, Paper, Tooltip } from "@mantine/core";
 import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -119,31 +119,39 @@ export default function ProjectList() {
       {
         id: "action",
         header: "Action",
-        size: 150,
+        size: 120,
         cell: ({ row }) => {
           const project = row.original;
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  const encryptedId = encrypt(String(project.id_project));
-                  router.push(`/user_management/project/edit/${encryptedId}`);
-                }}
-              >
-                Edit
-              </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tombol Edit Project */}
+              <Tooltip label="Edit Project" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    const encryptedId = encrypt(String(project.id_project));
+                    router.push(`/user_management/project/edit/${encryptedId}`);
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(project.id)}
-              >
-                Delete
-              </Button>
+              {/* Tombol Delete Project */}
+              <Tooltip label="Delete Project" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(project.id_project)}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },

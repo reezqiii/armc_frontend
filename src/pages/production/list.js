@@ -1,5 +1,13 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { Button, Paper, Text, Badge, Tooltip, Group } from "@mantine/core";
+import {
+  Button,
+  Paper,
+  Text,
+  Badge,
+  Tooltip,
+  Group,
+  ActionIcon,
+} from "@mantine/core";
 import {
   IconBuildingFactory,
   IconPlus,
@@ -7,6 +15,7 @@ import {
   IconEdit,
   IconTrash,
   IconAlertCircle,
+  IconX,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -16,15 +25,20 @@ import useApi from "@/hooks/useApi";
 import useEncrypt from "@/hooks/useEncrypt";
 import Head from "next/head";
 import productionList from "@/data/sidebar/ProductionList";
-import Swal from "sweetalert2";
 import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 import Datatables from "@/components/custom/Datatables";
+
+// Import custom hook Swal kamu
+import useSwal from "@/hooks/useSwal";
 
 export default function ProductionList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
+
+  const { showAlert, showConfirm, showInput, showLoading, closeSwal } =
+    useSwal();
 
   const [columnFilters, setColumnFilters] = useState([]);
   const [sorting, setSorting] = useState([]);
@@ -72,7 +86,7 @@ export default function ProductionList() {
 
       setData(responseData.data);
       setTotalPages(responseData.total_pages);
-      setTotalRecords(responseData.total);
+      setTotalRecords(responseData.total_records || responseData.total);
     } catch (err) {
       console.error("Error fetching production:", err);
     }
@@ -92,29 +106,29 @@ export default function ProductionList() {
   }, [fetchData, isAuthorized, user?.token]);
 
   const getStatusString = (statusInt) => {
-    if (statusInt === 2) return "Passed";
-    if (statusInt === 3) return "Failed";
-    return "Pending";
+    if (statusInt === 2) return "Approved by HOD";
+    if (statusInt === 3) return "Rejected by HOD";
+    return "Pending by HOD  ";
   };
 
   const getStatusBadge = (statusInt) => {
     const statusText = getStatusString(statusInt);
     switch (statusText) {
-      case "Passed":
+      case "Approved by HOD":
         return (
-          <Badge color="teal" radius="sm">
+          <Badge color="teal" variant="filled" radius="sm">
             {statusText}
           </Badge>
         );
-      case "Failed":
+      case "Rejected by HOD":
         return (
-          <Badge color="red" radius="sm">
+          <Badge color="red" variant="filled" radius="sm">
             {statusText}
           </Badge>
         );
       default:
         return (
-          <Badge color="orange" radius="sm">
+          <Badge color="orange" variant="filled" radius="sm">
             {statusText}
           </Badge>
         );
@@ -122,49 +136,75 @@ export default function ProductionList() {
   };
 
   const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You will not be able to recover this record!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-    });
+    const result = await showConfirm(
+      "Delete Record",
+      "You will not be able to recover this record!",
+      "Yes, delete it!",
+    );
 
     if (result.isConfirmed) {
+      showLoading("Deleting...");
       try {
         await axios.delete(`${API_URL}/production/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        Swal.fire("Deleted!", "Record has been deleted.", "success");
+        closeSwal();
+        showAlert("Deleted!", "success", "Record has been deleted.", "OK");
         fetchData();
       } catch (error) {
-        Swal.fire("Error", "Failed to delete", "error");
+        closeSwal();
+        showAlert("Error", "error", "Failed to delete record", "OK");
       }
     }
   };
 
   const handleApprove = async (id) => {
-    const result = await Swal.fire({
-      title: "Approve QC?",
-      text: "This will mark the batch as Passed.",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#20c997",
-      confirmButtonText: "Yes, Approve!",
-    });
+    const result = await showConfirm(
+      "Approve QC?",
+      "This will mark the batch as Approved.",
+      "Yes, Approve!",
+    );
 
     if (result.isConfirmed) {
+      showLoading("Approving...");
       try {
-        await axios.put(
-          `${API_URL}/production/${id}`,
-          { qc_status: 2 },
+        await axios.patch(
+          `${API_URL}/production/${id}/approve`,
+          {},
           { headers: { Authorization: `Bearer ${user.token}` } },
         );
-        Swal.fire("Approved!", "Batch has been passed.", "success");
+        closeSwal();
+        showAlert("Approved!", "success", "Batch has been approved.", "OK");
         fetchData();
       } catch (error) {
-        Swal.fire("Error", "Failed to approve", "error");
+        closeSwal();
+        showAlert("Error", "error", "Failed to approve", "OK");
+      }
+    }
+  };
+
+  const handleReject = async (id) => {
+    const { value: remarks, isConfirmed } = await showInput(
+      "Reject QC",
+      "Reason for Rejection",
+      "Type your reason here...",
+      "Reject Batch",
+    );
+
+    if (isConfirmed && remarks) {
+      showLoading("Rejecting...");
+      try {
+        await axios.patch(
+          `${API_URL}/production/${id}/reject`,
+          { remarks: remarks },
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        );
+        closeSwal();
+        showAlert("Rejected!", "success", "Batch has been rejected.", "OK");
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        showAlert("Error", "error", "Failed to reject", "OK");
       }
     }
   };
@@ -177,12 +217,8 @@ export default function ProductionList() {
         enableColumnFilter: true,
         enableSorting: true,
         header: "Requestor Name",
-        size: 200,
-        cell: ({ getValue }) => (
-          <Text size="sm" fw={500}>
-            {getValue() || "-"}
-          </Text>
-        ),
+        size: 180,
+        cell: (info) => info.getValue() ?? "-",
       },
       {
         accessorFn: (row) => row.batch_id,
@@ -190,12 +226,8 @@ export default function ProductionList() {
         header: "Batch ID",
         enableColumnFilter: true,
         enableSorting: true,
-        size: 150,
-        cell: ({ row }) => (
-          <Text fw={700} c="teal" size="sm">
-            {row.original.batch_id}
-          </Text>
-        ),
+        size: 130,
+        cell: (info) => info.getValue() ?? "-",
       },
       {
         accessorFn: (row) => row.product_name,
@@ -203,8 +235,9 @@ export default function ProductionList() {
         header: "Product Name",
         enableColumnFilter: true,
         enableSorting: true,
-        size: 300,
+        size: 200,
       },
+
       {
         accessorFn: (row) => row.qc_status,
         id: "qc_status",
@@ -212,75 +245,131 @@ export default function ProductionList() {
         enableColumnFilter: false,
         enableSorting: true,
         size: 150,
-        cell: ({ getValue }) => getStatusBadge(getValue()),
+        cell: ({ row }) => {
+          const statusInt = row.original.qc_status;
+          const remarks = row.original.remarks;
+          const isRejected = statusInt === 3;
+
+          return (
+            <div className="flex flex-col gap-1 items-center text-center w-full">
+              {getStatusBadge(statusInt)}
+              {isRejected && remarks && (
+                <Text
+                  size="xs"
+                  color="red"
+                  className="italic line-clamp-2 mt-1"
+                  title={remarks}
+                >
+                  * {remarks}
+                </Text>
+              )}
+            </div>
+          );
+        },
       },
+
       {
         id: "actions",
         header: "Action",
         enableColumnFilter: false,
-        enableSorting: true,
+        enableSorting: false,
+        size: 180,
         cell: ({ row }) => {
           const record = row.original;
-
           const isPending = record.qc_status === 1 || record.qc_status === null;
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
+              {/* TOMBOL APPROVE */}
               <Tooltip
                 label={canApprove ? "Approve QC" : "Role not permitted"}
                 withArrow
               >
-                <Button
-                  size="xs"
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
                   color={canApprove && isPending ? "green" : "gray"}
                   disabled={!canApprove || !isPending}
-                  leftSection={<IconCheck size={14} />}
                   onClick={() => handleApprove(record.id)}
                   style={{
                     cursor:
                       !canApprove || !isPending ? "not-allowed" : "pointer",
                   }}
                 >
-                  Approve
-                </Button>
+                  <IconCheck size={16} />
+                </ActionIcon>
               </Tooltip>
 
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  const encryptedId = encrypt(record.id.toString());
-
-                  router.push(`/production/edit/${encryptedId}`);
-                }}
+              {/* TOMBOL REJECT */}
+              <Tooltip
+                label={canApprove ? "Reject QC" : "Role not permitted"}
+                withArrow
               >
-                Edit
-              </Button>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color={canApprove && isPending ? "blue" : "gray"}
+                  disabled={!canApprove || !isPending}
+                  onClick={() => handleReject(record.id)}
+                  style={{
+                    cursor:
+                      !canApprove || !isPending ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <IconX size={16} />
+                </ActionIcon>
+              </Tooltip>
 
+              {/* TOMBOL EDIT */}
+              <Tooltip label="Edit Record" withArrow>
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
+                  color="yellow"
+                  onClick={() => {
+                    const encryptedId = encrypt(record.id.toString());
+                    router.push(`/production/edit/${encryptedId}`);
+                  }}
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
+
+              {/* TOMBOL DELETE */}
               <Tooltip
                 label={canApprove ? "Delete Record" : "Role not permitted"}
                 withArrow
               >
-                <Button
-                  size="xs"
+                <ActionIcon
+                  size="md"
+                  radius="md"
+                  variant="filled"
                   color={canApprove ? "red" : "gray"}
                   disabled={!canApprove}
-                  leftSection={<IconTrash size={14} />}
                   onClick={() => handleDelete(record.id)}
-                  style={{
-                    cursor: !canApprove ? "not-allowed" : "pointer",
-                  }}
+                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
                 >
-                  Delete
-                </Button>
+                  <IconTrash size={16} />
+                </ActionIcon>
               </Tooltip>
             </Group>
           );
         },
       },
     ],
-    [canApprove, router],
+    [
+      canApprove,
+      router,
+      showConfirm,
+      showAlert,
+      showInput,
+      showLoading,
+      closeSwal,
+      encrypt,
+    ],
   );
 
   const table = useReactTable({
@@ -339,7 +428,6 @@ export default function ProductionList() {
               </div>
             </div>
 
-            {/* Pastikan Datatables kamu support manual pagination properties */}
             <Datatables
               table={table}
               totalPages={totalPages}

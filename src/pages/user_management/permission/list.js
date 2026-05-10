@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import axios from "axios";
-import { Paper, Button, Group, Text } from "@mantine/core";
+import { Paper, Button, Group, Text, ActionIcon, Tooltip } from "@mantine/core";
 import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import {
   useReactTable,
@@ -139,35 +139,42 @@ export default function PermissionList() {
       {
         id: "action",
         header: "Action",
-        size: 150,
+        size: 120,
         cell: ({ row }) => {
           const permission = row.original;
-
           const encryptedId = encrypt(String(permission.id_permission));
 
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  router.push(
-                    `/user_management/permission/edit/${encryptedId}`,
-                  );
-                }}
-              >
-                Edit
-              </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tombol Edit Permission */}
+              <Tooltip label="Edit Permission" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    router.push(
+                      `/user_management/permission/edit/${encryptedId}`,
+                    );
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(encryptedId)}
-              >
-                Delete
-              </Button>
+              {/* Tombol Delete Permission */}
+              <Tooltip label="Delete Permission" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(encryptedId)}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },

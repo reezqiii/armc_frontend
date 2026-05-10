@@ -138,7 +138,7 @@ export default function ProductionDashboard() {
             <Group justify="space-between" align="center">
               <div>
                 <Text size="xl" fw={700} className="mb-1">
-                  roduction Dashboard
+                  Production Dashboard
                 </Text>
                 <Text size="sm" className="opacity-90">
                   Monitor overall production performance, batch status, and

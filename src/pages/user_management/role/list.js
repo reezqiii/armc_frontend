@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper, Text } from "@mantine/core";
+import { ActionIcon, Button, Group, Paper, Text, Tooltip } from "@mantine/core";
 import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -127,33 +127,40 @@ export default function RoleList() {
       {
         id: "action",
         header: "Action",
-        size: 150,
+        size: 120,
         cell: ({ row }) => {
           const role = row.original;
-
           const encryptedId = encrypt(String(role.id_role));
 
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  router.push(`/user_management/role/edit/${encryptedId}`);
-                }}
-              >
-                Edit
-              </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tombol Edit Role */}
+              <Tooltip label="Edit Role" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    router.push(`/user_management/role/edit/${encryptedId}`);
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(encryptedId)}
-              >
-                Delete
-              </Button>
+              {/* Tombol Delete Role */}
+              <Tooltip label="Delete Role" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(encryptedId)}
+                >
+                  <IconTrash size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },

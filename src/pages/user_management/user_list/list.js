@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Badge, Button, Group, Paper } from "@mantine/core";
+import { ActionIcon, Badge, Button, Group, Paper, Tooltip } from "@mantine/core";
 import {
   IconEdit,
   IconPlus,
@@ -242,27 +242,36 @@ export default function UserList() {
           };
 
           return (
-            <Group gap={6} justify="center" wrap="nowrap">
-              <Button
-                size="xs"
-                color="blue"
-                leftSection={<IconEdit size={14} />}
-                onClick={() => {
-                  const encryptedId = encrypt(String(userRow.id_user));
-                  router.push(`/user_management/user_list/edit/${encryptedId}`);
-                }}
-              >
-                Edit
-              </Button>
+            <Group gap={8} justify="center" wrap="nowrap">
+              {/* Tooltip membantu user memahami fungsi icon */}
+              <Tooltip label="Edit User" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="teal"
+                  size="md"
+                  radius="md"
+                  onClick={() => {
+                    const encryptedId = encrypt(String(userRow.id_user));
+                    router.push(
+                      `/user_management/user_list/edit/${encryptedId}`,
+                    );
+                  }}
+                >
+                  <IconEdit size={18} />
+                </ActionIcon>
+              </Tooltip>
 
-              <Button
-                size="xs"
-                color="gray"
-                leftSection={<IconKey size={14} />}
-                onClick={handleResetPassword}
-              >
-                Reset Password
-              </Button>
+              <Tooltip label="Reset Password" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="gray"
+                  size="md"
+                  radius="md"
+                  onClick={handleResetPassword}
+                >
+                  <IconKey size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           );
         },
