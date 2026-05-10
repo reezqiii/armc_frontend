@@ -46,6 +46,7 @@ function EditUser() {
   const [permissions, setPermissions] = useState([]);
 
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
+
   const [formData, setFormData] = useState({
     full_name: "",
     badge_no: "",
@@ -62,7 +63,6 @@ function EditUser() {
   const handleChange = (field, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-
       if (field === "id_position") {
         const selectedPos = positionOptions.find((p) => p.value === value);
         if (selectedPos && selectedPos.roleId) {
@@ -71,7 +71,6 @@ function EditUser() {
       }
       return newData;
     });
-
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
@@ -87,27 +86,23 @@ function EditUser() {
         ]);
 
         setDeptOptions(
-          deptRes.data
-            .filter((d) => d.id_department && d.name_of_department)
-            .map((d) => ({
-              value: String(d.id_department),
-              label: d.name_of_department,
-            })),
+          deptRes.data.map((d) => ({
+            value: String(d.id_department),
+            label: d.name_of_department,
+          })),
         );
         setProjectOptions(
-          projectRes.data
-            .filter((p) => p.id_project && p.project_name)
-            .map((p) => ({
-              value: String(p.id_project),
-              label: p.project_name,
-            })),
+          projectRes.data.map((p) => ({
+            value: String(p.id_project),
+            label: p.project_name,
+          })),
         );
         setRoleOptions(
-          roleRes.data
-            .filter((r) => r.id_role && r.role_name)
-            .map((r) => ({ value: String(r.id_role), label: r.role_name })),
+          roleRes.data.map((r) => ({
+            value: String(r.id_role),
+            label: r.role_name,
+          })),
         );
-
         setPositionOptions(
           posRes.data.map((p) => ({
             value: String(p.id_position),
@@ -131,7 +126,6 @@ function EditUser() {
 
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-
         const [userRes, extraPermRes] = await Promise.all([
           axios.get(`${API_URL}/user/${id}`, { headers }),
           axios.get(`${API_URL}/user/extra-permissions/${id}`, { headers }),
@@ -140,19 +134,30 @@ function EditUser() {
         const userData = userRes.data;
         const allPermissions = extraPermRes.data;
 
-        let currentRoleIds = [];
+        const userOverrideIds = allPermissions
+          .filter((p) => p.assigned)
+          .map((p) => Number(p.id_permission));
+
+        let defaultRoleIds = [];
         if (userData.id_role) {
           const encryptedRoleId = encrypt(String(userData.id_role));
           const roleRes = await axios.get(
             `${API_URL}/role/${encryptedRoleId}`,
             { headers },
           );
-          currentRoleIds = (roleRes.data.permission_ids || []).map(Number);
-          setRolePermissionIds(currentRoleIds);
-          lastFetchedRoleId.current = String(userData.id_role);
+          defaultRoleIds = (roleRes.data.permission_ids || []).map(Number);
         }
 
         setPermissions(allPermissions);
+        setRolePermissionIds(defaultRoleIds);
+
+        const hasUserOverride = allPermissions.some((p) => p.assigned);
+
+        if (hasUserOverride) {
+          setSelectedPermissionIds(userOverrideIds);
+        } else {
+          setSelectedPermissionIds(defaultRoleIds);
+        }
 
         setFormData({
           full_name: userData.full_name ?? "",
@@ -172,14 +177,7 @@ function EditUser() {
           id_role: userData.id_role ? String(userData.id_role) : null,
         });
 
-        const directIds = allPermissions
-          .filter(
-            (p) =>
-              p.assigned && !currentRoleIds.includes(Number(p.id_permission)),
-          )
-          .map((p) => Number(p.id_permission));
-
-        setSelectedPermissionIds(directIds);
+        lastFetchedRoleId.current = String(userData.id_role);
       } catch (err) {
         console.error("Failed to init user data", err);
         showAlert("Error", "error", "Failed to load user data", "OK");
@@ -192,82 +190,33 @@ function EditUser() {
     initUserData();
   }, [id, API_URL, user.token]);
 
-  useEffect(() => {
-    if (
-      !formData.id_role ||
-      String(formData.id_role) === lastFetchedRoleId.current
-    )
-      return;
-
-    const updateRolePermissions = async () => {
-      setLoadingPermissions(true);
-      try {
-        lastFetchedRoleId.current = String(formData.id_role);
-        const encryptedRoleId = encrypt(String(formData.id_role));
-
-        const { data } = await axios.get(`${API_URL}/role/${encryptedRoleId}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-
-        const newRoleIds = (data.permission_ids || []).map(Number);
-        setRolePermissionIds(newRoleIds);
-
-        setSelectedPermissionIds((prev) =>
-          prev.filter((pid) => !newRoleIds.includes(pid)),
-        );
-      } catch (err) {
-        console.error("Failed to fetch changed role permissions", err);
-      } finally {
-        setLoadingPermissions(false);
-      }
-    };
-
-    updateRolePermissions();
-  }, [formData.id_role, API_URL, user.token]);
-
-  const grouped = permissions.reduce((acc, p) => {
-    const group = p.permission_group ?? "General";
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(p);
-    return acc;
-  }, {});
-
-  const groupNames = Object.keys(grouped).sort();
-
   const handleTogglePermission = (id_permission) => {
+    const idNum = Number(id_permission);
     setSelectedPermissionIds((prev) =>
-      prev.includes(id_permission)
-        ? prev.filter((pid) => pid !== id_permission)
-        : [...prev, id_permission],
+      prev.includes(idNum) ? prev.filter((p) => p !== idNum) : [...prev, idNum],
     );
   };
 
   const handleToggleGroup = (availableIds) => {
-    const allAvailableSelected = availableIds.every((id) =>
-      selectedPermissionIds.includes(id),
-    );
+    const ids = availableIds.map(Number);
+    const allActive = ids.every((id) => selectedPermissionIds.includes(id));
 
-    if (allAvailableSelected) {
+    if (allActive) {
       setSelectedPermissionIds((prev) =>
-        prev.filter((id) => !availableIds.includes(id)),
+        prev.filter((id) => !ids.includes(id)),
       );
     } else {
-      setSelectedPermissionIds((prev) => [
-        ...new Set([...prev, ...availableIds]),
-      ]);
+      setSelectedPermissionIds((prev) => [...new Set([...prev, ...ids])]);
     }
   };
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.full_name) newErrors.full_name = "Full Name is required";
-    if (!formData.badge_no) newErrors.badge_no = "Badge ID is required";
-    if (!formData.username) newErrors.username = "Username is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.id_department)
-      newErrors.id_department = "Department is required";
-    if (!formData.id_project) newErrors.id_project = "Project is required";
-    if (!formData.id_role) newErrors.id_role = "Role is required";
+    if (!formData.full_name) newErrors.full_name = "Required";
+    if (!formData.badge_no) newErrors.badge_no = "Required";
+    if (!formData.username) newErrors.username = "Required";
+    if (!formData.email) newErrors.email = "Required";
+    if (!formData.id_role) newErrors.id_role = "Required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -278,68 +227,56 @@ function EditUser() {
 
     const confirm = await showConfirm(
       "Update User?",
-      "Are you sure you want to update this user account?",
+      "Save changes?",
       "Yes, Update!",
     );
     if (!confirm.isConfirmed) return;
 
-    const addonProjectStr =
-      formData.project_ids?.length > 0 ? formData.project_ids.join(";") : null;
-
-    const payload = {
-      full_name: formData.full_name,
-      badge_no: formData.badge_no,
-      username: formData.username,
-      email: formData.email,
-      id_department: Number(formData.id_department),
-      id_project: Number(formData.id_project),
-      id_role: Number(formData.id_role),
-      id_position: formData.id_position ? Number(formData.id_position) : null,
-      addon_project: addonProjectStr,
-    };
-
     try {
       setLoadingSubmit(true);
+      const finalIds = [...new Set(selectedPermissionIds.map(Number))];
 
-      await Promise.all([
-        axios.put(`${API_URL}/user/update/${id}`, payload, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }),
-        axios.put(
-          `${API_URL}/user/extra-permissions/${id}`,
-          { permission_keys: selectedPermissionIds },
-          { headers: { Authorization: `Bearer ${user.token}` } },
-        ),
-      ]);
+      const payload = {
+        full_name: formData.full_name,
+        badge_no: formData.badge_no,
+        username: formData.username,
+        email: formData.email,
+        id_department: Number(formData.id_department),
+        id_project: Number(formData.id_project),
+        id_role: Number(formData.id_role),
+        id_position: formData.id_position ? Number(formData.id_position) : null,
+        addon_project:
+          formData.project_ids?.length > 0
+            ? formData.project_ids.join(";")
+            : null,
+      };
 
-      const allActiveIds = new Set([
-        ...rolePermissionIds.map(Number),
-        ...selectedPermissionIds.map(Number),
-      ]);
+      await axios.put(`${API_URL}/user/update/${id}`, payload, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
 
-      const activePermissionNames = permissions
-        .filter((p) => allActiveIds.has(Number(p.id_permission)))
-        .map((p) => `- ${p.permission_name}`)
-        .join("\n");
-
-      const alertMessage = `Account for ${formData.full_name} has been updated.\n\nTotal Permissions:\n${activePermissionNames || "No permissions assigned"}`;
-
-      await showAlert(
-        "User Updated Successfully!",
-        "success",
-        alertMessage,
-        "Finish",
+      await axios.post(
+        `${API_URL}/portal_user_permission/user/${id}/sync`,
+        { permission_ids: finalIds },
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
+      if (Number(userId) === Number(user.id)) {
+        const currentUserState = useUser.getState().user;
+        useUser.getState().setUser({
+          ...currentUserState,
+          name: payload.full_name,
+          role_id: payload.id_role,
+          permission_ids: finalIds,
+        });
+      }
+
+      await showAlert("Success!", "success", "User synchronization complete.");
       router.push("/user_management/user_list/list");
     } catch (err) {
-      console.error(err);
-      showAlert(
-        "Update Failed",
-        "error",
-        err.response?.data?.message || "Something went wrong",
-        "Close",
-      );
+      console.error("Final Sync Error:", err);
+      const msg = err.response?.data?.message || "Failed to synchronize data";
+      showAlert("Error", "error", msg);
     } finally {
       setLoadingSubmit(false);
     }
@@ -351,7 +288,7 @@ function EditUser() {
     return (
       <AuthLayout sidebarList={userList}>
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-gray-500">Loading user data...</p>
+          <p>Loading...</p>
         </div>
       </AuthLayout>
     );
@@ -366,167 +303,95 @@ function EditUser() {
         <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8 w-full">
           <form onSubmit={handleSubmit}>
             <div className="max-w-5xl mx-auto space-y-4">
-              {/* ── User Info Card ── */}
               <Paper
                 radius="md"
                 shadow="md"
-                className="bg-white w-full overflow-hidden border border-gray-200"
+                className="bg-white p-8 border border-gray-200"
               >
-                {/* Header */}
-                <div className="border-b py-6 text-center bg-white">
-                  <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
-                    Edit User Account
-                  </h1>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Update user information and direct permissions
-                  </p>
+                <h2 className="text-teal-600 font-bold mb-6 uppercase">
+                  Basic Info
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <TextInput
+                    required
+                    label="Badge ID"
+                    value={formData.badge_no}
+                    onChange={(e) => handleChange("badge_no", e.target.value)}
+                    error={errors.badge_no}
+                    classNames={inputClass}
+                  />
+                  <TextInput
+                    required
+                    label="Full Name"
+                    value={formData.full_name}
+                    onChange={(e) => handleChange("full_name", e.target.value)}
+                    error={errors.full_name}
+                    classNames={inputClass}
+                  />
+                  <TextInput
+                    required
+                    label="Username"
+                    value={formData.username}
+                    onChange={(e) => handleChange("username", e.target.value)}
+                    error={errors.username}
+                    classNames={inputClass}
+                  />
+                  <TextInput
+                    required
+                    label="Email"
+                    value={formData.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    error={errors.email}
+                    classNames={inputClass}
+                  />
                 </div>
-
-                <div className="p-6 md:p-10 space-y-10">
-                  {/* BASIC INFORMATION */}
-                  <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-                      <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                        Basic Information
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <TextInput
-                        required
-                        label="Badge ID"
-                        placeholder="Input Badge ID"
-                        value={formData.badge_no}
-                        onChange={(e) =>
-                          handleChange("badge_no", e.target.value)
-                        }
-                        error={errors.badge_no}
-                        classNames={inputClass}
-                      />
-                      <TextInput
-                        required
-                        label="Full Name"
-                        placeholder="Input Full Name"
-                        value={formData.full_name}
-                        onChange={(e) =>
-                          handleChange("full_name", e.target.value)
-                        }
-                        error={errors.full_name}
-                        classNames={inputClass}
-                      />
-                      <TextInput
-                        required
-                        label="Username"
-                        placeholder="Input Username"
-                        value={formData.username}
-                        onChange={(e) =>
-                          handleChange("username", e.target.value)
-                        }
-                        error={errors.username}
-                        classNames={inputClass}
-                      />
-                      <TextInput
-                        required
-                        type="email"
-                        label="Email Address"
-                        placeholder="example@company.com"
-                        value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        error={errors.email}
-                        classNames={inputClass}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ORGANIZATION */}
-                  <div className="space-y-4">
-                    <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
-                      <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
-                        Organization
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <Select
-                        required
-                        searchable
-                        label="Department"
-                        placeholder="Select Department"
-                        data={deptOptions}
-                        value={formData.id_department}
-                        onChange={(v) => handleChange("id_department", v)}
-                        error={errors.id_department}
-                        classNames={inputClass}
-                      />
-                      <Select
-                        required
-                        searchable
-                        label="Position"
-                        placeholder="Select Position"
-                        data={positionOptions}
-                        value={formData.id_position}
-                        onChange={(v) => handleChange("id_position", v)}
-                        error={errors.id_position}
-                        classNames={inputClass}
-                      />
-                      <Select
-                        required
-                        searchable
-                        label="Project"
-                        placeholder="Select Project"
-                        data={projectOptions}
-                        value={formData.id_project}
-                        onChange={(v) => handleChange("id_project", v)}
-                        error={errors.id_project}
-                        classNames={inputClass}
-                      />
-                      <MultiSelect
-                        searchable
-                        clearable
-                        label="Additional Projects"
-                        placeholder="Select Additional Projects"
-                        data={projectOptions}
-                        value={formData.project_ids}
-                        onChange={(v) => handleChange("project_ids", v)}
-                        classNames={inputClass}
-                      />
-                      <Select
-                        required
-                        searchable
-                        label="Role"
-                        placeholder="Select Role"
-                        data={roleOptions}
-                        value={formData.id_role}
-                        onChange={(v) => handleChange("id_role", v)}
-                        error={errors.id_role}
-                        classNames={inputClass}
-                      />
-                    </div>
-                  </div>
+                <h2 className="text-teal-600 font-bold my-6 uppercase">
+                  Organization
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Select
+                    required
+                    label="Department"
+                    data={deptOptions}
+                    value={formData.id_department}
+                    onChange={(v) => handleChange("id_department", v)}
+                    classNames={inputClass}
+                  />
+                  <Select
+                    required
+                    label="Role"
+                    data={roleOptions}
+                    value={formData.id_role}
+                    onChange={(v) => handleChange("id_role", v)}
+                    classNames={inputClass}
+                  />
+                  <Select
+                    required
+                    label="Project"
+                    data={projectOptions}
+                    value={formData.id_project}
+                    onChange={(v) => handleChange("id_project", v)}
+                    classNames={inputClass}
+                  />
                 </div>
               </Paper>
 
-              {/* ── Direct Permissions Card ── */}
               <Paper
                 radius="md"
                 shadow="md"
-                className="bg-white border border-gray-200"
+                className="bg-white border border-gray-200 overflow-hidden"
               >
-                <div className="border-b py-4 px-6 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <IconShield size={18} className="text-teal-600" />
-                    <div>
-                      <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-                        Direct Permissions
-                      </h2>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        Permission tambahan di luar role yang dimiliki user ini
-                      </p>
-                    </div>
+                <div className="border-b py-4 px-6 flex items-center justify-between bg-white">
+                  <div className="flex items-center gap-2 text-teal-600">
+                    <IconShield size={18} />
+                    <h2 className="text-sm font-bold uppercase tracking-wide">
+                      Permissions Management
+                    </h2>
                   </div>
-                  <Badge color="teal" variant="light" size="sm">
-                    {selectedPermissionIds.length} selected
+                  <Badge color="teal" variant="light">
+                    {selectedPermissionIds.length} Active
                   </Badge>
                 </div>
-
                 <PermissionManager
                   permissions={permissions}
                   selectedIds={selectedPermissionIds}
@@ -537,7 +402,6 @@ function EditUser() {
                 />
               </Paper>
 
-              {/* ── Action Buttons ── */}
               <div className="flex justify-between pb-6">
                 <Button
                   leftSection={<IconArrowLeft size={16} />}
@@ -552,7 +416,6 @@ function EditUser() {
                   leftSection={<IconDeviceFloppy size={16} />}
                   color="teal"
                   loading={loadingSubmit}
-                  disabled={loadingSubmit}
                 >
                   Update User
                 </Button>

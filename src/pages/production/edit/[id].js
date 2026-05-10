@@ -1,8 +1,8 @@
 import AuthLayout from "@/components/layout/authLayout";
-import { Button, Paper, TextInput, Select, Loader, Text } from "@mantine/core";
+import { Button, Paper, TextInput, Loader, Text } from "@mantine/core";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
@@ -18,22 +18,22 @@ export default function EditProduction() {
   const { user } = useUser();
   const { showAlert, showConfirm } = useSwal();
   const { decrypt } = useDecrypt();
+
   const [loadingData, setLoadingData] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   const [formData, setFormData] = useState({
     batch_id: "",
     product_name: "",
-    qc_status: "Pending", 
   });
 
-  useEffect(() => {
-    if (!id || !user?.token) return;
+  const fetchRecord = useCallback(
+    async (encryptedId) => {
+      if (!encryptedId || !user?.token) return;
 
-    const fetchRecord = async () => {
       try {
         setLoadingData(true);
-
-        const realId = decrypt(id);
+        const realId = decrypt(encryptedId);
 
         const response = await axios.get(`${API_URL}/production/${realId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -42,7 +42,6 @@ export default function EditProduction() {
         setFormData({
           batch_id: response.data.batch_id || "",
           product_name: response.data.product_name || "",
-          qc_status: response.data.qc_status || "Pending",
         });
       } catch (error) {
         console.error("Failed to load record:", error);
@@ -51,10 +50,15 @@ export default function EditProduction() {
       } finally {
         setLoadingData(false);
       }
-    };
+    },
+    [API_URL, user?.token],
+  );
 
-    fetchRecord();
-  }, [id, API_URL, user?.token, router]);
+  useEffect(() => {
+    if (id) {
+      fetchRecord(id);
+    }
+  }, [id, fetchRecord]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -63,7 +67,7 @@ export default function EditProduction() {
   const handleConfirm = async (e) => {
     e.preventDefault();
 
-    if (!formData.product_name || !formData.qc_status) {
+    if (!formData.batch_id || !formData.product_name) {
       await showAlert(
         "Warning",
         "warning",
@@ -87,7 +91,6 @@ export default function EditProduction() {
   const executeUpdateData = async () => {
     try {
       setLoadingSubmit(true);
-
       const realId = decrypt(id);
 
       await axios.put(`${API_URL}/production/${realId}`, formData, {
@@ -101,9 +104,9 @@ export default function EditProduction() {
         "Production record successfully updated.",
         "OK",
       );
-
       router.push("/production/list");
     } catch (error) {
+      console.error(error);
       await showAlert(
         "Error",
         "error",
@@ -145,13 +148,14 @@ export default function EditProduction() {
             </h1>
           </div>
 
-          {/* Tag form dibiarkan polos, tanpa atribut onSubmit */}
-          <form>
+          <form onSubmit={handleConfirm}>
             <div className="p-6 md:p-8 space-y-5">
               <TextInput
                 required
                 label="Batch ID"
+                placeholder="e.g. BCH-001"
                 value={formData.batch_id}
+                onChange={(e) => handleChange("batch_id", e.target.value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
 
@@ -161,20 +165,6 @@ export default function EditProduction() {
                 placeholder="e.g. Main Engine Part A"
                 value={formData.product_name}
                 onChange={(e) => handleChange("product_name", e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-              />
-
-              <Select
-                required
-                label="QC Status"
-                placeholder="Select current status"
-                data={[
-                  { value: "Pending", label: "Pending" },
-                  { value: "Passed", label: "Passed (Approved)" },
-                  { value: "Failed", label: "Failed (Rejected)" },
-                ]}
-                value={formData.qc_status}
-                onChange={(value) => handleChange("qc_status", value)}
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
             </div>
@@ -190,10 +180,8 @@ export default function EditProduction() {
                 Back
               </Button>
 
-              {/* TOMBOL SAVE DENGAN JURUS PAMUNGKAS */}
               <Button
-                type="button" 
-                onClick={handleConfirm} 
+                type="submit"
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loadingSubmit}

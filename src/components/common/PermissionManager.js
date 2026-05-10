@@ -4,8 +4,8 @@ import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 
 export default function PermissionManager({
   permissions = [],
-  selectedIds = [], 
-  inheritedIds = [], 
+  selectedIds = [],
+  inheritedIds = [],
   onTogglePermission,
   onToggleGroup,
   loading = false,
@@ -23,7 +23,6 @@ export default function PermissionManager({
     );
   }
 
-  
   const grouped = permissions.reduce((acc, p) => {
     const group = p.permission_group ?? "General";
     if (!acc[group]) acc[group] = [];
@@ -51,17 +50,10 @@ export default function PermissionManager({
         const groupPerms = grouped[group];
         const isCollapsed = collapsedGroups[group];
 
-        
-        const groupIds = groupPerms.map((p) => p.id_permission);
+        const groupIds = groupPerms.map((p) => Number(p.id_permission));
 
-        
-        const availableIds = groupIds.filter(
-          (id) => !inheritedIds.includes(id),
-        );
-
-        
-        const checkedCount = groupIds.filter(
-          (id) => selectedIds.includes(id) || inheritedIds.includes(id),
+        const checkedCount = groupIds.filter((id) =>
+          selectedIds.map(Number).includes(id),
         ).length;
 
         const allChecked = checkedCount === groupPerms.length;
@@ -82,18 +74,11 @@ export default function PermissionManager({
                   checked={allChecked}
                   indeterminate={someChecked}
                   onChange={() => {
-                    
-                    if (availableIds.length === 0) return;
-                    onToggleGroup(availableIds, groupIds);
+                    onToggleGroup(groupIds);
                   }}
                   onClick={(e) => e.stopPropagation()}
                   color="teal"
                   size="sm"
-                  className={
-                    availableIds.length === 0
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }
                 />
                 <span className="text-sm font-bold text-gray-700 tracking-wide">
                   {group}
@@ -118,32 +103,26 @@ export default function PermissionManager({
               <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white">
                 {groupPerms.map((p) => {
                   const currentId = Number(p.id_permission);
-                  const isInherited = inheritedIds.includes(currentId);
-                  const isDirect = selectedIds.includes(currentId);
-                  const isChecked = isInherited || isDirect;
+
+                  const isInherited = inheritedIds
+                    .map(Number)
+                    .includes(currentId);
+
+                  const isChecked = selectedIds.map(Number).includes(currentId);
 
                   return (
                     <div
                       key={p.id_permission}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer ${
                         isChecked
                           ? "bg-teal-50/50 border border-teal-200"
                           : "hover:bg-gray-50 border border-gray-100"
-                      } ${
-                        isInherited
-                          ? "opacity-75 cursor-not-allowed"
-                          : "cursor-pointer"
                       }`}
-                      onClick={() => {
-                        if (!isInherited) onTogglePermission(p.id_permission);
-                      }}
+                      onClick={() => onTogglePermission(p.id_permission)}
                     >
                       <Checkbox
                         checked={isChecked}
-                        disabled={isInherited}
-                        onChange={() => {
-                          if (!isInherited) onTogglePermission(p.id_permission);
-                        }}
+                        onChange={() => onTogglePermission(p.id_permission)}
                         onClick={(e) => e.stopPropagation()}
                         color="teal"
                         size="sm"
@@ -151,14 +130,17 @@ export default function PermissionManager({
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p
-                            className={`text-sm font-medium ${isChecked ? "text-teal-900" : "text-gray-700"}`}
+                            className={`text-sm font-medium ${
+                              isChecked ? "text-teal-900" : "text-gray-700"
+                            }`}
                           >
                             {p.permission_name}
                           </p>
-                          {/* Badge "Role" hanya muncul jika ini inherited */}
+
+                          {/* Badge Role muncul sebagai referensi visual */}
                           {isInherited && (
                             <Badge
-                              color="gray"
+                              color="blue"
                               variant="outline"
                               size="xs"
                               style={{
@@ -166,7 +148,7 @@ export default function PermissionManager({
                                 backgroundColor: "white",
                               }}
                             >
-                              Role
+                              Role Default
                             </Badge>
                           )}
                         </div>

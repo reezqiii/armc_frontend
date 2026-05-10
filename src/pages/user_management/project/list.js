@@ -122,6 +122,9 @@ export default function ProjectList() {
         size: 120,
         cell: ({ row }) => {
           const project = row.original;
+
+          const encryptedId = encrypt(String(project.id_project));
+
           return (
             <Group gap={8} justify="center" wrap="nowrap">
               {/* Tombol Edit Project */}
@@ -132,7 +135,6 @@ export default function ProjectList() {
                   size="md"
                   radius="md"
                   onClick={() => {
-                    const encryptedId = encrypt(String(project.id_project));
                     router.push(`/user_management/project/edit/${encryptedId}`);
                   }}
                 >
@@ -147,7 +149,7 @@ export default function ProjectList() {
                   color="red"
                   size="md"
                   radius="md"
-                  onClick={() => handleDelete(project.id_project)}
+                  onClick={() => handleDelete(encryptedId)}
                 >
                   <IconTrash size={18} />
                 </ActionIcon>
@@ -157,7 +159,15 @@ export default function ProjectList() {
         },
       },
     ],
-    [API_URL, user.token, router, pagination.pageIndex, pagination.pageSize],
+
+    [
+      API_URL,
+      user.token,
+      router,
+      encrypt,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ],
   );
 
   const table = useReactTable({

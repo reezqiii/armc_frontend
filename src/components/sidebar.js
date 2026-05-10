@@ -10,25 +10,40 @@ export default function Sidebar({ className, sidebarList }) {
   const path = usePathname();
   const router = useRouter();
 
-  const permissionIds = useUser((s) => s.user?.permission_ids || []);
+  const userState = useUser((s) => s.user);
+  const permissionIds = useMemo(
+    () => (userState?.permission_ids || []).map(Number),
+    [userState?.permission_ids],
+  );
 
   const filteredList = useMemo(() => {
     return sidebarList
       .filter((item) => {
-        return !item.permission || permissionIds.includes(item.permission);
+        if (!item.permission) return true;
+
+        if (Array.isArray(item.permission)) {
+          return item.permission.some((id) =>
+            permissionIds.includes(Number(id)),
+          );
+        }
+
+        return permissionIds.includes(Number(item.permission));
       })
       .map((item) => {
-        const visibleChildren = item.child?.filter(
-          (child) =>
-            !child.permission || permissionIds.includes(child.permission),
-        );
+        const visibleChildren = item.child?.filter((child) => {
+          if (!child.permission) return true;
 
-        return {
-          ...item,
-          child: visibleChildren || [],
-        };
+          if (Array.isArray(child.permission)) {
+            return child.permission.some((id) =>
+              permissionIds.includes(Number(id)),
+            );
+          }
+
+          return permissionIds.includes(Number(child.permission));
+        });
+
+        return { ...item, child: visibleChildren || [] };
       })
-
       .filter((item) => {
         if (item.child && item.child.length === 0 && !item.href) return false;
         return true;

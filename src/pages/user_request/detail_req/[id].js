@@ -36,13 +36,13 @@ function RequestDetail() {
     return "-";
   };
 
-  const isHOD = can("request.approve_hod");
-  const isIT = can("request.approve_it");
+  const isHOD = can(13);
+  const isIT = can(14);
 
   const canApproveHOD =
     data?.request_status === 1 &&
     isHOD &&
-    Number(data?.approval_hod_by?.id_user) === Number(user?.id);
+    Number(user?.id) === Number(data?.approval_hod_by?.id_user);
 
   const canApproveIT = data?.request_status === 3 && isIT;
 
@@ -92,25 +92,22 @@ function RequestDetail() {
       showLoading("Processing...");
 
       const endpoint =
-        action === "approve" ? `/requests/approve` : `/requests/reject`;
+        data?.request_status === 1
+          ? `/requests/hod-approval/bulk`
+          : `/requests/it-approval/bulk`;
 
       await axios.put(
         `${API_URL}${endpoint}`,
         {
-          ids: [id],
-          remarks,
+          encryptedIds: [id],
+          action: action,
+          remarks: remarks,
         },
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       closeSwal();
-      await showAlert(
-        "Success!",
-        "success",
-        `Request successfully ${action}ed.`,
-        "OK",
-      );
-
+      await showAlert("Success!", "success", `Request ${action}ed.`);
       router.back();
     } catch (err) {
       console.error(err);

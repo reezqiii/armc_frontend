@@ -33,24 +33,21 @@ export default function ProductionDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(true);
   const [records, setRecords] = useState([]);
 
-  const currentUserRole = user?.role_name || "Unknown Role";
-
   const fetchData = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/production`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.post(
+        `${API_URL}/production/serverside_list?page=0&size=100`,
+        {}, 
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        },
+      );
 
-      if (Array.isArray(response.data)) {
-        setRecords(response.data);
-      } else if (response.data && Array.isArray(response.data.data)) {
-        setRecords(response.data.data);
-      } else {
-        console.warn("API did not return an array:", response.data);
-        setRecords([]);
-      }
+      const result = response.data.data || [];
+      setRecords(result);
     } catch (error) {
       console.error("Failed to fetch dashboard data", error);
+      setRecords([]);
     }
   }, [API_URL, user?.token]);
 
@@ -77,24 +74,20 @@ export default function ProductionDashboard() {
     { title: "Pending QC", value: pendingQc, icon: IconClock, color: "orange" },
   ];
 
-  const recentActivities = [...records]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 4)
-    .map((record) => {
-      let actionText = "";
-      if (record.qc_status === "Passed")
-        actionText = `passed quality control inspection.`;
-      else if (record.qc_status === "Failed")
-        actionText = `flagged as Failed during inspection.`;
-      else actionText = `registered in the system and awaiting QC.`;
+  const recentActivities = [...records].slice(0, 4).map((record) => {
+    let actionText = "";
+    if (record.qc_status === "Passed")
+      actionText = `passed quality control inspection.`;
+    else if (record.qc_status === "Failed")
+      actionText = `flagged as Failed during inspection.`;
+    else actionText = `registered in the system and awaiting QC.`;
 
-      return {
-        id: record.id,
-        time: new Date(record.created_at).toLocaleDateString(),
-        text: `Batch ${record.batch_id} (${record.product_name}) ${actionText}`,
-        status: record.qc_status,
-      };
-    });
+    return {
+      id: record.id,
+      text: `Batch ${record.batch_id} (${record.product_name}) ${actionText}`,
+      status: record.qc_status,
+    };
+  });
 
   if (!isAuthorized) {
     return (
@@ -103,10 +96,6 @@ export default function ProductionDashboard() {
         <h1 className="text-3xl font-bold text-gray-800">
           403 - Access Denied
         </h1>
-        <p className="text-gray-500 mt-2 text-center max-w-md">
-          Your current role (<strong>{currentUserRole}</strong>) does not have
-          permission to access the Production Module.
-        </p>
         <Button
           mt="xl"
           color="teal"
@@ -127,7 +116,7 @@ export default function ProductionDashboard() {
 
       <AuthLayout sidebarList={productionList}>
         <div className="py-6 px-4">
-          {/* WELCOME BANNER */}
+          {/* WELCOME BANNER (Role Dihapus) */}
           <Paper
             radius="md"
             p="lg"
@@ -135,20 +124,13 @@ export default function ProductionDashboard() {
             shadow="sm"
             className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white"
           >
-            <Group justify="space-between" align="center">
-              <div>
-                <Text size="xl" fw={700} className="mb-1">
-                  Production Dashboard
-                </Text>
-                <Text size="sm" className="opacity-90">
-                  Monitor overall production performance, batch status, and
-                  quality control metrics in real-time.
-                </Text>
-              </div>
-              <Badge color="white" variant="light" size="lg" radius="sm">
-                Role: {currentUserRole}
-              </Badge>
-            </Group>
+            <Text size="xl" fw={700} className="mb-1">
+              Production Dashboard
+            </Text>
+            <Text size="sm" className="opacity-90">
+              Monitor overall production performance, batch status, and quality
+              control metrics in real-time.
+            </Text>
           </Paper>
 
           {/* STATS GRID */}
@@ -183,7 +165,7 @@ export default function ProductionDashboard() {
             ))}
           </SimpleGrid>
 
-          {/* RECENT ACTIVITY MOCKUP */}
+          {/* RECENT UPDATES (Date Badge Dihapus) */}
           <Paper radius="md" p="md" withBorder shadow="sm">
             <div className="flex items-center gap-2 border-b pb-3 mb-4">
               <IconActivity size={20} className="text-teal-600" />
@@ -192,32 +174,26 @@ export default function ProductionDashboard() {
               </Text>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {recentActivities.length > 0 ? (
                 recentActivities.map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-gray-50 p-3 rounded-md border border-gray-100"
+                    className="flex items-center gap-3 bg-gray-50 p-4 rounded-md border border-gray-100"
                   >
-                    <div>
-                      <Text size="sm" fw={500} className="text-gray-800">
-                        {activity.text}
-                      </Text>
-                    </div>
-                    <Badge
-                      variant="dot"
-                      color={
+                    {/* Memberikan indikator warna sebagai pengganti badge tanggal agar tetap informatif */}
+                    <div
+                      className={`w-1.5 h-8 rounded-full ${
                         activity.status === "Passed"
-                          ? "teal"
+                          ? "bg-teal-500"
                           : activity.status === "Failed"
-                            ? "red"
-                            : "orange"
-                      }
-                      size="sm"
-                      className="mt-2 sm:mt-0"
-                    >
-                      {activity.time}
-                    </Badge>
+                            ? "bg-red-500"
+                            : "bg-orange-500"
+                      }`}
+                    />
+                    <Text size="sm" fw={500} className="text-gray-800 flex-1">
+                      {activity.text}
+                    </Text>
                   </div>
                 ))
               ) : (

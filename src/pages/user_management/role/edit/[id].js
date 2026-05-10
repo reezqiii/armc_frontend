@@ -92,7 +92,9 @@ function EditRole() {
     );
   };
 
-  const handleToggleGroup = (availableIds, groupIds) => {
+  const handleToggleGroup = (groupIds) => {
+    if (!Array.isArray(groupIds)) return;
+
     const allSelected = groupIds.every((id) => selectedIds.includes(id));
 
     if (allSelected) {

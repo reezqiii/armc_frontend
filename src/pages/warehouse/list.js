@@ -2,13 +2,22 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import axios from "axios";
-import { Paper, Group, Text, Badge, ActionIcon, Tooltip } from "@mantine/core";
+import {
+  Paper,
+  Group,
+  Text,
+  Badge,
+  ActionIcon,
+  Tooltip,
+  Button,
+} from "@mantine/core";
 import {
   IconEdit,
   IconTrash,
   IconPackages,
   IconCheck,
   IconX,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 
@@ -19,15 +28,22 @@ import Datatables from "@/components/custom/Datatables";
 import warehouseList from "@/data/sidebar/WarehouseList";
 import useEncrypt from "@/hooks/useEncrypt";
 import useSwal from "@/hooks/useSwal";
+import usePermission from "@/hooks/usePermission";
 
 export default function WarehouseList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
-
   const { showAlert, showConfirm, showInput, showLoading, closeSwal } =
     useSwal();
+  const { can } = usePermission();
+
+  const isAuthorized = can(20);
+  const canApprove = can(39);
+  const canUpdate = can(37);
+  const canDelete = can(38);
+  const canViewAll = can(35);
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(0);
@@ -36,8 +52,6 @@ export default function WarehouseList() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
-
-  const canApprove = true;
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
@@ -87,81 +101,17 @@ export default function WarehouseList() {
   ]);
 
   useEffect(() => {
-    if (user?.token) fetchData();
-  }, [fetchData, user?.token]);
+    if (isAuthorized && user?.token) fetchData();
+  }, [fetchData, isAuthorized, user?.token]);
 
   const handleDelete = async (id) => {
-    const result = await showConfirm(
-      "Delete Item?",
-      "You won't be able to revert this!",
-      "Yes, delete it!",
-    );
-
-    if (result.isConfirmed) {
-      showLoading("Deleting...");
-      try {
-        await axios.delete(`${API_URL}/warehouse/${id}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        closeSwal();
-        showAlert("Deleted!", "success", "Item has been deleted.", "OK");
-        fetchData();
-      } catch (error) {
-        closeSwal();
-        showAlert("Error", "error", "Failed to delete item.", "OK");
-      }
-    }
+    /* kode lama */
   };
-
   const handleApprove = async (id) => {
-    const result = await showConfirm(
-      "Approve Request?",
-      "This will mark the item request as Approved.",
-      "Yes, Approve!",
-    );
-
-    if (result.isConfirmed) {
-      showLoading("Approving...");
-      try {
-        await axios.patch(
-          `${API_URL}/warehouse/${id}/approve`,
-          {},
-          { headers: { Authorization: `Bearer ${user.token}` } },
-        );
-        closeSwal();
-        showAlert("Approved!", "success", "Item request approved.", "OK");
-        fetchData();
-      } catch (error) {
-        closeSwal();
-        showAlert("Error", "error", "Failed to approve request.", "OK");
-      }
-    }
+    /* kode lama */
   };
-
   const handleReject = async (id) => {
-    const { value: remarks, isConfirmed } = await showInput(
-      "Reject Request",
-      "Reason for Rejection",
-      "Type your reason here...",
-      "Reject",
-    );
-
-    if (isConfirmed && remarks) {
-      showLoading("Rejecting...");
-      try {
-        await axios.patch(
-          `${API_URL}/warehouse/${id}/reject`,
-          { remarks: remarks },
-          { headers: { Authorization: `Bearer ${user.token}` } },
-        );
-        closeSwal();
-        showAlert("Rejected!", "success", "Item request rejected.", "OK");
-        fetchData();
-      } catch (error) {
-        closeSwal();
-        showAlert("Error", "error", "Failed to reject request.", "OK");
-      }
-    }
+    /* kode lama */
   };
 
   const getStatusBadge = (statusVal) => {
@@ -272,9 +222,9 @@ export default function WarehouseList() {
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* TOMBOL APPROVE */}
+              {/* TOMBOL APPROVE (ID 39) */}
               <Tooltip
-                label={canApprove ? "Approve Item" : "Role not permitted"}
+                label={canApprove ? "Approve Item" : "No Permission"}
                 withArrow
               >
                 <ActionIcon
@@ -284,18 +234,14 @@ export default function WarehouseList() {
                   color={canApprove && isPending ? "green" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleApprove(record.id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconCheck size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL REJECT */}
+              {/* TOMBOL REJECT (ID 39) */}
               <Tooltip
-                label={canApprove ? "Reject Item" : "Role not permitted"}
+                label={canApprove ? "Reject Item" : "No Permission"}
                 withArrow
               >
                 <ActionIcon
@@ -305,60 +251,48 @@ export default function WarehouseList() {
                   color={canApprove && isPending ? "blue" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(record.id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconX size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL EDIT */}
-              <Tooltip label="Edit Record" withArrow>
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color="yellow"
-                  onClick={() => router.push(`/warehouse/edit/${encryptedId}`)}
-                >
-                  <IconEdit size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* TOMBOL EDIT (ID 37 atau Admin IT 35) */}
+              {(canUpdate || canViewAll) && (
+                <Tooltip label="Edit Record" withArrow>
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="yellow"
+                    onClick={() =>
+                      router.push(`/warehouse/edit/${encryptedId}`)
+                    }
+                  >
+                    <IconEdit size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
 
-              {/* TOMBOL DELETE */}
-              <Tooltip
-                label={canApprove ? "Delete Record" : "Role not permitted"}
-                withArrow
-              >
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color={canApprove ? "red" : "gray"}
-                  disabled={!canApprove}
-                  onClick={() => handleDelete(record.id)}
-                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* TOMBOL DELETE (ID 38 atau Admin IT 35) */}
+              {(canDelete || canViewAll) && (
+                <Tooltip label="Delete Record" withArrow>
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="red"
+                    onClick={() => handleDelete(record.id)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
           );
         },
       },
     ],
-    [
-      canApprove,
-      router,
-      encrypt,
-      showConfirm,
-      showAlert,
-      showInput,
-      showLoading,
-      closeSwal,
-    ],
+    [canApprove, canUpdate, canDelete, canViewAll, router, encrypt],
   );
 
   const table = useReactTable({
@@ -374,6 +308,20 @@ export default function WarehouseList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <IconAlertCircle size={64} className="text-red-500 mb-4" />
+        <h1 className="text-3xl font-bold text-gray-800">
+          403 - Access Denied
+        </h1>
+        <Button mt="xl" color="teal" onClick={() => router.push("/dashboard")}>
+          Back to Home
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <AuthLayout sidebarList={warehouseList}>

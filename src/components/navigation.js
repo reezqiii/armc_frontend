@@ -21,7 +21,7 @@ export default function Navigation() {
   const router = useRouter();
   const [opened, { toggle }] = useDisclosure(false);
 
-  const { can } = usePermission();
+  const { can, canAny } = usePermission();
 
   const toggleCollapse = useCollapseStore((state) => state.toggleCollapse);
 
@@ -37,31 +37,31 @@ export default function Navigation() {
         name: "User Management",
         url: "/user_management/dashboard",
         icon: <IconUserCog size={20} />,
-      show: true,
+        show: can (40),
       },
       {
         name: "Access Request",
         url: "/user_request/dashboard",
         icon: <IconUser size={20} />,
-       show: true,
+        show: can (7),
       },
       {
         name: "Production & Quality",
         url: "/production/dashboard",
         icon: <IconBuildingFactory size={20} />,
-       show: true,
+        show: can (15),
       },
       {
         name: "Engineering",
         url: "/engineering/dashboard",
         icon: <IconTool size={20} />,
-      show: true,
+        show: can (18),
       },
       {
         name: "Warehouse",
         url: "/warehouse/dashboard",
         icon: <IconBox size={20} />,
-        show: true,
+        show: can (20),
       },
     ].filter((nav) => nav.show);
   }, [user, can]);

@@ -19,25 +19,30 @@ import Datatables from "@/components/custom/Datatables";
 import engineeringList from "@/data/sidebar/EngineeringList";
 import useEncrypt from "@/hooks/useEncrypt";
 import useSwal from "@/hooks/useSwal";
+import usePermission from "@/hooks/usePermission";
 
 export default function EngineeringList() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
   const { encrypt } = useEncrypt();
-
   const { showAlert, showConfirm, showInput, showLoading, closeSwal } =
     useSwal();
 
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
-
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
 
-  const canApprove = true;
+  const { can } = usePermission();
+
+  const isAuthorized = can(18);
+  const canApprove = can(24);
+  const canUpdate = can(22);
+  const canDelete = can(23);
+  const canViewAll = can(26);
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
@@ -87,8 +92,8 @@ export default function EngineeringList() {
   ]);
 
   useEffect(() => {
-    if (user?.token) fetchData();
-  }, [fetchData, user?.token]);
+    if (isAuthorized && user?.token) fetchData();
+  }, [fetchData, isAuthorized, user?.token]);
 
   const handleDelete = async (id) => {
     const result = await showConfirm(
@@ -286,18 +291,15 @@ export default function EngineeringList() {
         size: 180,
         cell: ({ row }) => {
           const record = row.original;
-          const isPending =
-            record.status === 1 ||
-            record.status === 2 ||
-            record.status === "Pending" ||
-            record.status === "In Progress";
+
+          const isPending = record.status === 1 || record.status === 2;
           const id = record.id_wo;
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* TOMBOL APPROVE/COMPLETE */}
+              {/* TOMBOL APPROVE/COMPLETE (ID 24) */}
               <Tooltip
-                label={canApprove ? "Complete WO" : "Role not permitted"}
+                label={canApprove ? "Complete WO" : "No Permission"}
                 withArrow
               >
                 <ActionIcon
@@ -307,18 +309,14 @@ export default function EngineeringList() {
                   color={canApprove && isPending ? "green" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleApprove(id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconCheck size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL REJECT */}
+              {/* TOMBOL REJECT (ID 24) */}
               <Tooltip
-                label={canApprove ? "Reject WO" : "Role not permitted"}
+                label={canApprove ? "Reject WO" : "No Permission"}
                 withArrow
               >
                 <ActionIcon
@@ -328,48 +326,43 @@ export default function EngineeringList() {
                   color={canApprove && isPending ? "blue" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconX size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL EDIT */}
-              <Tooltip label="Edit Record" withArrow>
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color="yellow"
-                  onClick={() => {
-                    const encryptedId = encrypt(id.toString());
-                    router.push(`/engineering/edit/${encryptedId}`);
-                  }}
-                >
-                  <IconEdit size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* TOMBOL EDIT (ID 22 atau Admin IT 26) */}
+              {(canUpdate || canViewAll) && (
+                <Tooltip label="Edit Record" withArrow>
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="yellow"
+                    onClick={() => {
+                      const encryptedId = encrypt(id.toString());
+                      router.push(`/engineering/edit/${encryptedId}`);
+                    }}
+                  >
+                    <IconEdit size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
 
-              {/* TOMBOL DELETE */}
-              <Tooltip
-                label={canApprove ? "Delete Record" : "Role not permitted"}
-                withArrow
-              >
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color={canApprove ? "red" : "gray"}
-                  disabled={!canApprove}
-                  onClick={() => handleDelete(id)}
-                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* TOMBOL DELETE (ID 23 atau Admin IT 26) */}
+              {(canDelete || canViewAll) && (
+                <Tooltip label="Delete Record" withArrow>
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="red"
+                    onClick={() => handleDelete(id)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
           );
         },

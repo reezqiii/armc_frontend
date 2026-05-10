@@ -8,82 +8,75 @@ import {
   SimpleGrid,
   Group,
   ThemeIcon,
-  Badge,
+  Button,
 } from "@mantine/core";
 import {
   IconTools,
   IconClock,
   IconCircleCheck,
   IconAlertTriangle,
+  IconActivity,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import AuthLayout from "@/components/layout/authLayout";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
+import usePermission from "@/hooks/usePermission";
 import engineeringList from "@/data/sidebar/EngineeringList";
 
 export default function EngineeringDashboard() {
   const router = useRouter();
   const { user } = useUser();
   const { API_URL } = useApi();
+  const { can } = usePermission();
 
-  const [isAuthorized, setIsAuthorized] = useState(true);
   const [records, setRecords] = useState([]);
-  const currentUserRole = user?.role_name || "Unknown Role";
+  const isAuthorized = can(18);
 
   const fetchData = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/engineering`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      const response = await axios.post(
+        `${API_URL}/engineering/serverside_list?page=0&size=100`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        },
+      );
 
-      if (Array.isArray(response.data)) {
-        setRecords(response.data);
-      } else if (response.data && Array.isArray(response.data.data)) {
-        setRecords(response.data.data);
-      } else {
-        setRecords([]);
-      }
+      const result = response.data.data || [];
+      setRecords(result);
     } catch (error) {
-      console.error("Failed to fetch data", error);
+      console.error("Failed to fetch dashboard data", error);
       setRecords([]);
     }
   }, [API_URL, user?.token]);
 
   useEffect(() => {
-    if (isAuthorized && user?.token) fetchData();
+    if (isAuthorized && user?.token) {
+      fetchData();
+    }
   }, [fetchData, isAuthorized, user?.token]);
 
-  const safeRecords = Array.isArray(records) ? records : [];
-
-  const totalWO = safeRecords.length;
-  const pendingWO = safeRecords.filter((r) => r.status === "Pending").length;
-  const progressWO = safeRecords.filter(
-    (r) => r.status === "In Progress",
-  ).length;
-  const completedWO = safeRecords.filter(
-    (r) => r.status === "Completed",
-  ).length;
+  const totalWO = records.length;
+  const pendingWO = records.filter((r) => r.status === 1).length;
+  const progressWO = records.filter((r) => r.status === 2).length;
+  const completedWO = records.filter((r) => r.status === 3).length;
 
   const stats = [
     {
       title: "Total Work Orders",
       value: totalWO,
       icon: IconTools,
-      color: "teal",
+      color: "blue",
     },
     {
       title: "Pending",
       value: pendingWO,
       icon: IconAlertTriangle,
-      color: "red",
-    },
-    {
-      title: "In Progress",
-      value: progressWO,
-      icon: IconClock,
       color: "orange",
     },
+    { title: "In Progress", value: progressWO, icon: IconClock, color: "blue" },
     {
       title: "Completed",
       value: completedWO,
@@ -92,13 +85,56 @@ export default function EngineeringDashboard() {
     },
   ];
 
+  const recentActivities = [...records].slice(0, 4).map((record) => {
+    let actionText = "";
+    let statusKey = "";
+
+    if (record.status === 3) {
+      actionText = `has been completed and verified.`;
+      statusKey = "Completed";
+    } else if (record.status === 4) {
+      actionText = `was rejected by supervisor.`;
+      statusKey = "Rejected";
+    } else {
+      actionText = `is currently being processed.`;
+      statusKey = "Pending";
+    }
+
+    return {
+      id: record.id_wo,
+      text: `WO #${record.wo_number} (${record.equipment_name}) ${actionText}`,
+      status: statusKey,
+    };
+  });
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <IconAlertCircle size={64} className="text-red-500 mb-4" />
+        <h1 className="text-3xl font-bold text-gray-800">
+          403 - Access Denied
+        </h1>
+        <Button
+          mt="xl"
+          color="teal"
+          variant="light"
+          onClick={() => router.push("/dashboard")}
+        >
+          Back to Home
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
         <title>Engineering Dashboard | PT. XYZ</title>
       </Head>
+
       <AuthLayout sidebarList={engineeringList}>
         <div className="py-6 px-4">
+          {/* WELCOME BANNER (Role Sudah Dihapus) */}
           <Paper
             radius="md"
             p="lg"
@@ -106,23 +142,16 @@ export default function EngineeringDashboard() {
             shadow="sm"
             className="mb-6 bg-gradient-to-r from-teal-500 to-teal-700 text-white"
           >
-            <Group justify="space-between" align="center">
-              <div>
-                <Text size="xl" fw={700} className="mb-1">
-                  Engineering Dashboard
-                </Text>
-                <Text size="sm" className="opacity-90">
-                  Monitor maintenance requests and equipment work orders.
-                </Text>
-              </div>
-              <Badge color="white" variant="light" size="lg" radius="sm">
-                <Text color="teal" fw={700}>
-                  Role: {currentUserRole}
-                </Text>
-              </Badge>
-            </Group>
+            <Text size="xl" fw={700} className="mb-1">
+              Engineering Dashboard
+            </Text>
+            <Text size="sm" className="opacity-90">
+              Monitor maintenance requests and equipment work orders in
+              real-time.
+            </Text>
           </Paper>
 
+          {/* STATS GRID */}
           <SimpleGrid
             cols={{ base: 1, sm: 2, lg: 4 }}
             spacing="lg"
@@ -153,6 +182,44 @@ export default function EngineeringDashboard() {
               </Paper>
             ))}
           </SimpleGrid>
+
+          {/* RECENT UPDATES (Style Konsisten dengan Production) */}
+          <Paper radius="md" p="md" withBorder shadow="sm">
+            <div className="flex items-center gap-2 border-b pb-3 mb-4">
+              <IconActivity size={20} className="text-teal-600" />
+              <Text fw={600} className="text-gray-700">
+                Recent Maintenance Updates
+              </Text>
+            </div>
+
+            <div className="space-y-3">
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center gap-3 bg-gray-50 p-4 rounded-md border border-gray-100"
+                  >
+                    <div
+                      className={`w-1.5 h-8 rounded-full ${
+                        activity.status === "Completed"
+                          ? "bg-teal-500"
+                          : activity.status === "Rejected"
+                            ? "bg-red-500"
+                            : "bg-orange-500"
+                      }`}
+                    />
+                    <Text size="sm" fw={500} className="text-gray-800 flex-1">
+                      {activity.text}
+                    </Text>
+                  </div>
+                ))
+              ) : (
+                <Text size="sm" color="dimmed" align="center" py="md">
+                  No recent maintenance activities found.
+                </Text>
+              )}
+            </div>
+          </Paper>
         </div>
       </AuthLayout>
     </>

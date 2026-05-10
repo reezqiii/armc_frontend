@@ -36,7 +36,6 @@ import {
 import usePermission from "@/hooks/usePermission";
 import RejectTimelineModal from "@/components/request/RejectTimelineModal";
 import { getRequestStatus } from "@/lib/requestStatusList";
-import { formatDate } from "@/lib/dateFormat";
 import Head from "next/head";
 import useSwal from "@/hooks/useSwal";
 
@@ -135,7 +134,7 @@ export default function RequestListDynamic({ request_status }) {
     const searchQuery = {
       ...(config.id !== null && { request_status: config.id }),
 
-      ...(!canViewAll && { dept_id: user.department }),
+      ...(!canViewAll && { id_department: user.department }),
 
       ...(config.id === 0 && {
         status_active: 1,
@@ -379,14 +378,12 @@ export default function RequestListDynamic({ request_status }) {
           if (displayStatus === 2) {
             rejectField = {
               by: row.original.approval_hod_by?.full_name,
-              at: row.original.approval_hod_date_at,
               reason: row.original.rejected_hod_remarks,
             };
           }
           if (displayStatus === 4) {
             rejectField = {
               by: row.original.approval_it_hod_by?.full_name,
-              at: row.original.approval_it_date_at,
               reason: row.original.rejected_it_remarks,
             };
           }
@@ -417,7 +414,6 @@ export default function RequestListDynamic({ request_status }) {
                     setSelectedRejectData({
                       status: status.label,
                       rejected_by_name: rejectField.by,
-                      rejected_at: formatDate(row.original.created_date),
                       rejected_reason: rejectField.reason,
                     });
                     setModalOpen(true);
@@ -445,12 +441,14 @@ export default function RequestListDynamic({ request_status }) {
         const isCreator = Number(request.created_by) === Number(user?.id);
         const isPendingHOD = request.request_status === 1;
 
-        const canEdit = isCreator && isPendingHOD;
-        const canCancel = isCreator && isPendingHOD;
+        const isAdminIT = can(12);
+
+        const canEdit = (isCreator && isPendingHOD && can(9)) || isAdminIT;
+        const canCancel = (isCreator && isPendingHOD && can(10)) || isAdminIT;
 
         return (
           <Group gap={6} justify="center" wrap="nowrap">
-            {/* DETAILS */}
+            {/* DETAILS - Selalu muncul */}
             <Tooltip label="Details" withArrow>
               <ActionIcon
                 size="md"

@@ -4,12 +4,20 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { ActionIcon, Badge, Button, Group, Paper, Tooltip } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  Tooltip,
+} from "@mantine/core";
 import {
   IconEdit,
   IconPlus,
   IconKey,
   IconFileSpreadsheet,
+  IconTrash,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -123,6 +131,36 @@ export default function UserList() {
     }
   };
 
+  const handleDelete = async (id) => {
+    const result = await showConfirm(
+      "Delete User",
+      "Are you sure you want to delete this user? This action cannot be undone.",
+      "Yes, Delete",
+    );
+
+    if (result.isConfirmed) {
+      showLoading("Deleting user...");
+      try {
+        await axios.delete(`${API_URL}/user/${id}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        closeSwal();
+        showAlert("Deleted!", "success", "User has been deleted.", "OK");
+
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        showAlert(
+          "Error",
+          "error",
+          error.response?.data?.message || "Failed to delete user.",
+          "OK",
+        );
+      }
+    }
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -203,6 +241,8 @@ export default function UserList() {
         cell: ({ row }) => {
           const userRow = row.original;
 
+          const encryptedId = encrypt(String(userRow.id_user));
+
           const handleResetPassword = async () => {
             const result = await showConfirm(
               "Reset Password?",
@@ -243,7 +283,7 @@ export default function UserList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tooltip membantu user memahami fungsi icon */}
+              {/* Tombol Edit */}
               <Tooltip label="Edit User" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -251,7 +291,6 @@ export default function UserList() {
                   size="md"
                   radius="md"
                   onClick={() => {
-                    const encryptedId = encrypt(String(userRow.id_user));
                     router.push(
                       `/user_management/user_list/edit/${encryptedId}`,
                     );
@@ -261,6 +300,7 @@ export default function UserList() {
                 </ActionIcon>
               </Tooltip>
 
+              {/* Tombol Reset Password */}
               <Tooltip label="Reset Password" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -270,6 +310,19 @@ export default function UserList() {
                   onClick={handleResetPassword}
                 >
                   <IconKey size={18} />
+                </ActionIcon>
+              </Tooltip>
+
+              {/* Tombol Delete (Baru) */}
+              <Tooltip label="Delete User" withArrow position="bottom">
+                <ActionIcon
+                  variant="filled"
+                  color="red"
+                  size="md"
+                  radius="md"
+                  onClick={() => handleDelete(encryptedId)}
+                >
+                  <IconTrash size={18} />
                 </ActionIcon>
               </Tooltip>
             </Group>

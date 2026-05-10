@@ -125,6 +125,9 @@ export default function DepartmentList() {
         size: 120,
         cell: ({ row }) => {
           const dept = row.original;
+
+          const encryptedId = encrypt(String(dept.id_department));
+
           return (
             <Group gap={8} justify="center" wrap="nowrap">
               {/* Tombol Edit */}
@@ -135,7 +138,6 @@ export default function DepartmentList() {
                   size="md"
                   radius="md"
                   onClick={() => {
-                    const encryptedId = encrypt(String(dept.id_department));
                     router.push(
                       `/user_management/department/edit/${encryptedId}`,
                     );
@@ -152,7 +154,7 @@ export default function DepartmentList() {
                   color="red"
                   size="md"
                   radius="md"
-                  onClick={() => handleDelete(dept.id_department)}
+                  onClick={() => handleDelete(encryptedId)}
                 >
                   <IconTrash size={18} />
                 </ActionIcon>
@@ -162,7 +164,14 @@ export default function DepartmentList() {
         },
       },
     ],
-    [API_URL, user.token, router],
+    [
+      API_URL,
+      user.token,
+      router,
+      encrypt,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ],
   );
 
   const table = useReactTable({

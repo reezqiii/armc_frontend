@@ -27,9 +27,8 @@ import Head from "next/head";
 import productionList from "@/data/sidebar/ProductionList";
 import { useReactTable, getCoreRowModel } from "@tanstack/react-table";
 import Datatables from "@/components/custom/Datatables";
-
-// Import custom hook Swal kamu
 import useSwal from "@/hooks/useSwal";
+import usePermission from "@/hooks/usePermission";
 
 export default function ProductionList() {
   const router = useRouter();
@@ -46,10 +45,13 @@ export default function ProductionList() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const { can } = usePermission();
 
-  const [isAuthorized, setIsAuthorized] = useState(true);
-  const currentUserRole = user?.role_name || "Unknown Role";
-  const canApprove = true;
+  const isAuthorized = can(15);
+  const canApprove = can(33); // ID 33: Approve
+  const canUpdate = can(31); // ID 31: Update
+  const canDelete = can(32); // ID 32: Delete
+  const canViewAll = can(29); // ID 29: View All
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
@@ -271,8 +273,6 @@ export default function ProductionList() {
       {
         id: "actions",
         header: "Action",
-        enableColumnFilter: false,
-        enableSorting: false,
         size: 180,
         cell: ({ row }) => {
           const record = row.original;
@@ -280,11 +280,8 @@ export default function ProductionList() {
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* TOMBOL APPROVE */}
-              <Tooltip
-                label={canApprove ? "Approve QC" : "Role not permitted"}
-                withArrow
-              >
+              {/* APPROVE (ID 33) */}
+              <Tooltip label={canApprove ? "Approve QC" : "No Permission"}>
                 <ActionIcon
                   size="md"
                   radius="md"
@@ -292,20 +289,13 @@ export default function ProductionList() {
                   color={canApprove && isPending ? "green" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleApprove(record.id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconCheck size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL REJECT */}
-              <Tooltip
-                label={canApprove ? "Reject QC" : "Role not permitted"}
-                withArrow
-              >
+              {/* REJECT (ID 33) */}
+              <Tooltip label={canApprove ? "Reject QC" : "No Permission"}>
                 <ActionIcon
                   size="md"
                   radius="md"
@@ -313,48 +303,45 @@ export default function ProductionList() {
                   color={canApprove && isPending ? "blue" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(record.id)}
-                  style={{
-                    cursor:
-                      !canApprove || !isPending ? "not-allowed" : "pointer",
-                  }}
                 >
                   <IconX size={16} />
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL EDIT */}
-              <Tooltip label="Edit Record" withArrow>
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color="yellow"
-                  onClick={() => {
-                    const encryptedId = encrypt(record.id.toString());
-                    router.push(`/production/edit/${encryptedId}`);
-                  }}
-                >
-                  <IconEdit size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* EDIT (ID 31 / 29) */}
+              {/* Muncul jika punya akses Update ATAU Admin IT */}
+              {(canUpdate || canViewAll) && (
+                <Tooltip label="Edit Record">
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="yellow"
+                    onClick={() => {
+                      const encryptedId = encrypt(record.id.toString());
+                      router.push(`/production/edit/${encryptedId}`);
+                    }}
+                  >
+                    <IconEdit size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
 
-              {/* TOMBOL DELETE */}
-              <Tooltip
-                label={canApprove ? "Delete Record" : "Role not permitted"}
-                withArrow
-              >
-                <ActionIcon
-                  size="md"
-                  radius="md"
-                  variant="filled"
-                  color={canApprove ? "red" : "gray"}
-                  disabled={!canApprove}
-                  onClick={() => handleDelete(record.id)}
-                  style={{ cursor: !canApprove ? "not-allowed" : "pointer" }}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Tooltip>
+              {/* DELETE (ID 32 / 29) */}
+              {/* Muncul jika punya akses Delete ATAU Admin IT */}
+              {(canDelete || canViewAll) && (
+                <Tooltip label="Delete Record">
+                  <ActionIcon
+                    size="md"
+                    radius="md"
+                    variant="filled"
+                    color="red"
+                    onClick={() => handleDelete(record.id)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
           );
         },
@@ -418,12 +405,6 @@ export default function ProductionList() {
                   <h1 className="text-md font-extrabold text-teal-600 uppercase">
                     Production List
                   </h1>
-                  <p className="text-xs text-gray-500">
-                    Logged in as:{" "}
-                    <span className="font-semibold text-teal-600">
-                      {currentUserRole}
-                    </span>
-                  </p>
                 </div>
               </div>
             </div>
