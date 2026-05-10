@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper } from "@mantine/core";
+import { Button, Group, Paper, Badge, Text } from "@mantine/core";
 import {
   IconEdit,
   IconPlus,
@@ -28,52 +28,60 @@ export default function PositionList() {
   const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
+
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([
     { id: "position_name", desc: false },
   ]);
   const [columnFilters, setColumnFilters] = useState([]);
-  const [totalRecords, setTotalRecords] = useState(0);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
 
-    const searchQuery = {};
-    columnFilters.forEach((filter) => {
-      if (
-        filter.value !== undefined &&
-        filter.value !== null &&
-        filter.value !== ""
-      ) {
-        searchQuery[filter.id] = filter.value;
-      }
+    const params = new URLSearchParams({
+      page: pagination.pageIndex,
+      size: pagination.pageSize,
     });
 
-    const filterParams =
-      Object.keys(searchQuery).length > 0
-        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
-        : "";
+    if (sorting.length > 0) {
+      params.append(
+        "sort",
+        `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`,
+      );
+    }
 
-    const sort =
-      sorting.length > 0
-        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
-        : "";
+    if (columnFilters.length > 0) {
+      const searchObj = {};
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          searchObj[filter.id] = filter.value;
+        }
+      });
+      if (Object.keys(searchObj).length > 0) {
+        params.append("search", JSON.stringify(searchObj));
+      }
+    }
 
     try {
-      const { data } = await axios.post(
-        `${API_URL}/portal-position/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+      const response = await axios.post(
+        `${API_URL}/portal-position/serverside_list?${params.toString()}`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-      setData(data.data);
-      setTotalPages(data.total_pages);
+
+      setData(response.data.data || []);
+      setTotalPages(response.data.total_pages || 1);
     } catch (err) {
       console.error("Error fetching position:", err);
     }
   }, [
-    user.token,
+    user?.token,
     API_URL,
     columnFilters,
     sorting,
@@ -85,7 +93,7 @@ export default function PositionList() {
     fetchData();
   }, [fetchData]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (encryptedId) => {
     const result = await showAlert(
       "Delete Position",
       "question",
@@ -95,7 +103,7 @@ export default function PositionList() {
     );
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_URL}/portal-position/${id}`, {
+        await axios.delete(`${API_URL}/portal-position/${encryptedId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         showAlert("Deleted!", "success", "Position has been deleted.", "OK");
@@ -123,12 +131,24 @@ export default function PositionList() {
         enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
       },
+
+      {
+        accessorFn: (row) => row.role_name,
+        id: "role_name",
+        header: "Role Assigned",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() ?? "-",
+      },
+
       {
         id: "action",
         header: "Action",
         size: 150,
         cell: ({ row }) => {
           const position = row.original;
+          const encryptedId = encrypt(String(position.id_position));
+
           return (
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
@@ -136,7 +156,6 @@ export default function PositionList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() => {
-                  const encryptedId = encrypt(String(position.id_position));
                   router.push(`/user_management/position/edit/${encryptedId}`);
                 }}
               >
@@ -147,7 +166,7 @@ export default function PositionList() {
                 size="xs"
                 color="red"
                 leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(position.id)}
+                onClick={() => handleDelete(encryptedId)}
               >
                 Delete
               </Button>
@@ -156,7 +175,14 @@ export default function PositionList() {
         },
       },
     ],
-    [API_URL, user.token, router, pagination.pageIndex, pagination.pageSize],
+    [
+      API_URL,
+      user?.token,
+      router,
+      encrypt,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ],
   );
 
   const table = useReactTable({

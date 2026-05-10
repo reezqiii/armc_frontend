@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper } from "@mantine/core";
+import { Button, Group, Paper, Text } from "@mantine/core";
 import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import {
@@ -33,40 +33,48 @@ export default function RoleList() {
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
 
-    const searchQuery = {};
-    columnFilters.forEach((filter) => {
-      if (
-        filter.value !== undefined &&
-        filter.value !== null &&
-        filter.value !== ""
-      ) {
-        searchQuery[filter.id] = filter.value;
-      }
+    const params = new URLSearchParams({
+      page: pagination.pageIndex,
+      size: pagination.pageSize,
     });
 
-    const filterParams =
-      Object.keys(searchQuery).length > 0
-        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
-        : "";
+    if (sorting.length > 0) {
+      params.append(
+        "sort",
+        `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`,
+      );
+    }
 
-    const sort =
-      sorting.length > 0
-        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
-        : "";
+    if (columnFilters.length > 0) {
+      const searchObj = {};
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          searchObj[filter.id] = filter.value;
+        }
+      });
+
+      if (Object.keys(searchObj).length > 0) {
+        params.append("search", JSON.stringify(searchObj));
+      }
+    }
 
     try {
       const { data } = await axios.post(
-        `${API_URL}/role/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+        `${API_URL}/role/serverside_list?${params.toString()}`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-      setData(data.data);
-      setTotalPages(data.total_pages);
+      setData(data.data || []);
+      setTotalPages(data.total_pages || 1);
     } catch (err) {
       console.error("Error fetching Role:", err);
     }
   }, [
-    user.token,
+    user?.token,
     API_URL,
     columnFilters,
     sorting,
@@ -78,7 +86,7 @@ export default function RoleList() {
     fetchData();
   }, [fetchData]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (encryptedId) => {
     const result = await showAlert(
       "Delete Role",
       "question",
@@ -88,7 +96,7 @@ export default function RoleList() {
     );
     if (result.isConfirmed) {
       try {
-        await axios.delete(`${API_URL}/role/${id}`, {
+        await axios.delete(`${API_URL}/role/${encryptedId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         showAlert("Deleted!", "success", "Role has been deleted.", "OK");
@@ -122,6 +130,9 @@ export default function RoleList() {
         size: 150,
         cell: ({ row }) => {
           const role = row.original;
+
+          const encryptedId = encrypt(String(role.id_role));
+
           return (
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
@@ -129,7 +140,6 @@ export default function RoleList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() => {
-                  const encryptedId = encrypt(String(role.id_role));
                   router.push(`/user_management/role/edit/${encryptedId}`);
                 }}
               >
@@ -140,7 +150,7 @@ export default function RoleList() {
                 size="xs"
                 color="red"
                 leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(role.id_role)}
+                onClick={() => handleDelete(encryptedId)}
               >
                 Delete
               </Button>
@@ -149,7 +159,14 @@ export default function RoleList() {
         },
       },
     ],
-    [API_URL, user.token, router],
+    [
+      API_URL,
+      user?.token,
+      router,
+      encrypt,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ],
   );
 
   const table = useReactTable({
@@ -164,6 +181,7 @@ export default function RoleList() {
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
+    pageCount: totalPages,
   });
 
   return (

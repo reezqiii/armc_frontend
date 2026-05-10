@@ -19,7 +19,6 @@ function EditPermission() {
 
   const [formData, setFormData] = useState({
     permission_name: "",
-    permission_key: "",
     permission_group: "",
   });
   const [loading, setLoading] = useState(false);
@@ -38,7 +37,6 @@ function EditPermission() {
 
         setFormData({
           permission_name: data.permission_name ?? "",
-          permission_key: data.permission_key ?? "",
           permission_group: data.permission_group ?? "",
         });
       } catch (error) {
@@ -113,16 +111,10 @@ function EditPermission() {
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
 
-              <TextInput
-                required
-                label="Permission Key"
-                placeholder="e.g. user.create"
-                value={formData.permission_key}
-                onChange={(e) => handleChange("permission_key", e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-              />
+              {/* INPUT PERMISSION KEY DIHAPUS DARI SINI */}
 
               <TextInput
+                required
                 label="Permission Group"
                 placeholder="e.g. Request, Administrator"
                 value={formData.permission_group}

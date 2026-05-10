@@ -1,22 +1,22 @@
-import Datatables from "@/components/custom/Datatables";
-import AuthLayout from "@/components/layout/authLayout";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import useApi from "@/hooks/useApi";
-import useUser from "@/store/useUser";
-import axios from "axios";
-import { Button, Group, Paper } from "@mantine/core";
-import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
+import axios from "axios";
+import { Paper, Button, Group, Text } from "@mantine/core";
+import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import {
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-import Head from "next/head";
-import { formatDate } from "@/lib/dateFormat";
-import useSwal from "@/hooks/useSwal";
+
+import AuthLayout from "@/components/layout/authLayout";
+import useUser from "@/store/useUser";
+import useApi from "@/hooks/useApi";
+import Datatables from "@/components/custom/Datatables";
 import userList from "@/data/sidebar/UserList";
 import useEncrypt from "@/hooks/useEncrypt";
+import useSwal from "@/hooks/useSwal";
 
 export default function PermissionList() {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function PermissionList() {
   const { encrypt } = useEncrypt();
   const API_URL = useApi().API_URL;
   const { showAlert } = useSwal();
+
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [sorting, setSorting] = useState([
@@ -35,40 +36,49 @@ export default function PermissionList() {
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
 
-    const searchQuery = {};
-    columnFilters.forEach((filter) => {
-      if (
-        filter.value !== undefined &&
-        filter.value !== null &&
-        filter.value !== ""
-      ) {
-        searchQuery[filter.id] = filter.value;
-      }
+    const params = new URLSearchParams({
+      page: pagination.pageIndex,
+      size: pagination.pageSize,
     });
 
-    const filterParams =
-      Object.keys(searchQuery).length > 0
-        ? `search=${encodeURIComponent(JSON.stringify(searchQuery))}`
-        : "";
+    if (sorting.length > 0) {
+      params.append(
+        "sort",
+        `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`,
+      );
+    }
 
-    const sort =
-      sorting.length > 0
-        ? `${sorting[0].id},${sorting[0].desc ? "desc" : "asc"}`
-        : "";
+    if (columnFilters.length > 0) {
+      const searchObj = {};
+      columnFilters.forEach((filter) => {
+        if (
+          filter.value !== undefined &&
+          filter.value !== null &&
+          filter.value !== ""
+        ) {
+          searchObj[filter.id] = filter.value;
+        }
+      });
+
+      if (Object.keys(searchObj).length > 0) {
+        params.append("search", JSON.stringify(searchObj));
+      }
+    }
 
     try {
-      const { data } = await axios.post(
-        `${API_URL}/portal-permission/serverside_list?${filterParams}&page=${pagination.pageIndex}&size=${pagination.pageSize}&sort=${sort}`,
+      const response = await axios.post(
+        `${API_URL}/portal-permission/serverside_list?${params.toString()}`,
         {},
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
-      setData(data.data);
-      setTotalPages(data.total_pages);
+
+      setData(response.data.data || []);
+      setTotalPages(response.data.total_pages || 1);
     } catch (err) {
       console.error("Error fetching permission:", err);
     }
   }, [
-    user.token,
+    user?.token,
     API_URL,
     columnFilters,
     sorting,
@@ -106,7 +116,8 @@ export default function PermissionList() {
       {
         id: "no",
         header: "No",
-        cell: ({ row }) => row.index + 1,
+        cell: ({ row }) =>
+          row.index + 1 + pagination.pageIndex * pagination.pageSize,
         size: 40,
       },
       {
@@ -118,21 +129,11 @@ export default function PermissionList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
-        accessorFn: (row) => row.permission_key,
-        id: "permission_key",
-        header: "Permission Key",
-        enableColumnFilter: true,
-        enableSorting: true,
-        cell: (info) => (
-          <code className="bg-gray-100 text-teal-600 px-2 py-0.5 rounded text-xs font-mono">
-            {info.getValue() ?? "-"}
-          </code>
-        ),
-      },
-      {
         accessorFn: (row) => row.permission_group,
         id: "permission_group",
         header: "Group",
+        enableColumnFilter: true,
+        enableSorting: true,
         cell: (info) => info.getValue() ?? "-",
       },
       {
@@ -141,6 +142,9 @@ export default function PermissionList() {
         size: 150,
         cell: ({ row }) => {
           const permission = row.original;
+
+          const encryptedId = encrypt(String(permission.id_permission));
+
           return (
             <Group gap={6} justify="center" wrap="nowrap">
               <Button
@@ -148,7 +152,6 @@ export default function PermissionList() {
                 color="blue"
                 leftSection={<IconEdit size={14} />}
                 onClick={() => {
-                  const encryptedId = encrypt(String(permission.id_permission));
                   router.push(
                     `/user_management/permission/edit/${encryptedId}`,
                   );
@@ -161,7 +164,7 @@ export default function PermissionList() {
                 size="xs"
                 color="red"
                 leftSection={<IconTrash size={14} />}
-                onClick={() => handleDelete(permission.id_permission)}
+                onClick={() => handleDelete(encryptedId)}
               >
                 Delete
               </Button>
@@ -170,7 +173,14 @@ export default function PermissionList() {
         },
       },
     ],
-    [API_URL, user.token, router],
+    [
+      API_URL,
+      user?.token,
+      router,
+      encrypt,
+      pagination.pageIndex,
+      pagination.pageSize,
+    ],
   );
 
   const table = useReactTable({

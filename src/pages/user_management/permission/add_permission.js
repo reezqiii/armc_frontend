@@ -18,7 +18,6 @@ function AddPermission() {
 
   const [formData, setFormData] = useState({
     permission_name: "",
-    permission_key: "",
     permission_group: "",
   });
 
@@ -84,7 +83,7 @@ function AddPermission() {
               <TextInput
                 required
                 label="Permission Name"
-                placeholder="e.g. Create Request"
+                placeholder="e.g. request.create"
                 value={formData.permission_name}
                 onChange={(e) =>
                   handleChange("permission_name", e.target.value)
@@ -92,17 +91,10 @@ function AddPermission() {
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
 
-              <TextInput
-                required
-                label="Permission Key"
-                placeholder="e.g. request.create"
-                value={formData.permission_key}
-                onChange={(e) => handleChange("permission_key", e.target.value)}
-                classNames={{ label: "font-semibold mb-1 text-gray-700" }}
-              />
+              {/* INPUT PERMISSION KEY DIHAPUS DARI SINI */}
 
               <TextInput
-                required  
+                required
                 label="Permission Group"
                 placeholder="e.g. Request, User, Project"
                 value={formData.permission_group}
