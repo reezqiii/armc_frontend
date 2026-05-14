@@ -132,15 +132,14 @@ export default function RequestListDynamic({ request_status }) {
     if (!config || !user?.token) return;
 
     const searchQuery = {
-      ...(config.id !== null && { request_status: config.id }),
+      ...(config.id !== null &&
+        config.id !== 0 && { request_status: config.id }),
 
-      ...(!canViewAll && { id_department: user.department }),
+      ...(!canViewAll && { department_name: user.department }),
 
-      ...(config.id === 0 && {
-        status_active: 1,
+      ...(config.id === 0 && { status_active: 0 }),
 
-        ...(!canViewAll && { requestor_id: user.id }),
-      }),
+      ...(config.id !== 0 && { status_active: 1 }),
     };
 
     columnFilters.forEach((filter) => {
@@ -290,9 +289,7 @@ export default function RequestListDynamic({ request_status }) {
           const requestNumber = `REQ-${String(row.original.id_request).padStart(6, "0")}`;
           return (
             <div className="flex flex-col items-center text-center w-full">
-              <Text fw={700} color="teal" size="sm">
-                {requestNumber}
-              </Text>
+              {requestNumber}
             </div>
           );
         },
@@ -303,16 +300,15 @@ export default function RequestListDynamic({ request_status }) {
         header: "Requestor",
         enableColumnFilter: true,
         enableSorting: true,
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Text fw={600} size="sm">
-              {row.original.created_by_name || "-"}
-            </Text>
-            <Text size="xs" color="dimmed">
-              {row.original.badge_no || "-"}
-            </Text>
-          </div>
-        ),
+        cell: (info) => info.getValue() || "-",
+      },
+      {
+        accessorFn: (row) => row.badge_no,
+        id: "badge_no",
+        header: "Badge No",
+        enableColumnFilter: true,
+        enableSorting: true,
+        cell: (info) => info.getValue() || "-",
       },
       {
         accessorFn: (row) => row.full_name,

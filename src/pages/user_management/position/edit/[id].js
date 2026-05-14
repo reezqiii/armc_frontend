@@ -86,32 +86,29 @@ function EditPosition() {
         },
       );
 
-      if (response.status === 409) {
+      if (response.data.success === false) {
         return showAlert(
-          "Duplicate Data",
+          "Update Conflict",
           "warning",
-          response.data.message || "Position name already exists.",
-          "Try Another Name",
+          response.data.message ||
+            "The name is already used by another record.",
+          "Check Name Again",
         );
       }
 
-      if (response.status === 200) {
-        showAlert("Success", "success", "Position successfully updated.", "OK");
-        router.push("/user_management/position/list");
-      } else {
-        showAlert(
-          "Error",
-          "error",
-          response.data.message || "Failed to update.",
-          "OK",
-        );
-      }
+      showAlert(
+        "Updated",
+        "success",
+        "Position details have been updated.",
+        "OK",
+      );
+      router.push("/user_management/position/list");
     } catch (error) {
       console.error("Error updating position:", error);
       showAlert(
-        "Error",
+        "Update Failed",
         "error",
-        "Failed to update position. Check connection.",
+        "Could not update position. Please check your connection.",
         "OK",
       );
     } finally {

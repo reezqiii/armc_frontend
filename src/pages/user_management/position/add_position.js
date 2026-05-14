@@ -45,16 +45,19 @@ function AddPosition() {
     const result = await showAlert(
       "Add Position",
       "question",
-      "Are you sure?",
+      "Are you sure you want to add this new position?",
       "Yes, Add",
       true,
     );
 
     if (!result.isConfirmed) return;
 
+    let response;
+
     try {
       setLoading(true);
-      await axios.post(
+
+      response = await axios.post(
         `${API_URL}/portal-position`,
         {
           position_name: name,
@@ -63,39 +66,29 @@ function AddPosition() {
         { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
-      showAlert("Success", "success", "Position successfully added.", "OK");
+      if (response && response.data && response.data.success === false) {
+        return showAlert(
+          "Duplicate Entry",
+          "warning",
+          response.data.message || "This position name is already registered.",
+          "Try Another Name",
+        );
+      }
+
+      showAlert(
+        "Success",
+        "success",
+        "Position has been added successfully.",
+        "OK",
+      );
       router.push("/user_management/position/list");
     } catch (error) {
       console.error("Error adding position:", error);
 
-      const serverMessage = error.response?.data?.message;
-      const statusCode = error.response?.status;
+      const errorMsg =
+        error.response?.data?.message || "An unexpected error occurred.";
 
-      if (statusCode === 409) {
-        return showAlert(
-          "Duplicate Position",
-          "warning",
-          serverMessage ||
-            "This position name is already registered in the system.",
-          "Try Another Position Name",
-        );
-      } else if (statusCode === 400) {
-        showAlert(
-          "Invalid Input",
-          "error",
-          Array.isArray(serverMessage)
-            ? serverMessage.join(", ")
-            : serverMessage,
-          "Fix It",
-        );
-      } else {
-        showAlert(
-          "System Error",
-          "error",
-          "An unexpected error occurred while saving. Please contact IT Support.",
-          "Close",
-        );
-      }
+      showAlert("System Error", "error", errorMsg, "Close");
     } finally {
       setLoading(false);
     }
@@ -114,7 +107,7 @@ function AddPosition() {
         >
           <div className="border-b py-6 text-center">
             <h1 className="text-2xl font-bold text-teal-600 uppercase">
-              Add Role
+              Add Position
             </h1>
           </div>
 
