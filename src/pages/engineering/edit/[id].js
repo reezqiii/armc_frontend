@@ -16,8 +16,6 @@ import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Head from "next/head";
 import engineeringList from "@/data/sidebar/EngineeringList";
-
-// Gunakan hook yang ada
 import useSwal from "@/hooks/useSwal";
 import useDecrypt from "@/hooks/useDecrypt";
 

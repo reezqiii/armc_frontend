@@ -75,6 +75,8 @@ function EditUser() {
   };
 
   useEffect(() => {
+    if (!user || !user.token) return;
+
     const fetchMasterData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
@@ -115,7 +117,7 @@ function EditUser() {
       }
     };
     fetchMasterData();
-  }, [API_URL, user.token]);
+  }, [API_URL, user?.token]);
 
   useEffect(() => {
     if (!id || !user?.token) return;

@@ -57,7 +57,7 @@ const requestorList = [
         href: "/user_request/list/completed",
         active: "Completed",
         icon: <IconCircleCheck size={18} />,
-        permission: 8,
+        permission: 7,
       },
     ],
   },

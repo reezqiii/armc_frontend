@@ -134,11 +134,7 @@ export default function RequestListDynamic({ request_status }) {
     const searchQuery = {
       ...(config.id !== null &&
         config.id !== 0 && { request_status: config.id }),
-
-      ...(!canViewAll && { department_name: user.department }),
-
       ...(config.id === 0 && { status_active: 0 }),
-
       ...(config.id !== 0 && { status_active: 1 }),
     };
 
@@ -373,13 +369,11 @@ export default function RequestListDynamic({ request_status }) {
           let rejectField = null;
           if (displayStatus === 2) {
             rejectField = {
-              by: row.original.approval_hod_by?.full_name,
               reason: row.original.rejected_hod_remarks,
             };
           }
           if (displayStatus === 4) {
             rejectField = {
-              by: row.original.approval_it_hod_by?.full_name,
               reason: row.original.rejected_it_remarks,
             };
           }
@@ -409,7 +403,6 @@ export default function RequestListDynamic({ request_status }) {
                   onClick={() => {
                     setSelectedRejectData({
                       status: status.label,
-                      rejected_by_name: rejectField.by,
                       rejected_reason: rejectField.reason,
                     });
                     setModalOpen(true);
@@ -439,8 +432,8 @@ export default function RequestListDynamic({ request_status }) {
 
         const isAdminIT = can(12);
 
-        const canEdit = (isCreator && isPendingHOD && can(9)) || isAdminIT;
-        const canCancel = (isCreator && isPendingHOD && can(10)) || isAdminIT;
+        const canEdit = can(9) && (isAdminIT || (isCreator && isPendingHOD));
+        const canCancel = can(10) && (isAdminIT || (isCreator && isPendingHOD));
 
         return (
           <Group gap={6} justify="center" wrap="nowrap">

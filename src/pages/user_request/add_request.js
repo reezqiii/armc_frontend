@@ -19,8 +19,6 @@ import axios from "axios";
 import useUser from "@/store/useUser";
 import useApi from "@/hooks/useApi";
 import Swal from "sweetalert2";
-
-// PERBAIKAN 1: Buat konstanta statis untuk Category Account
 const CATEGORY_OPTIONS = [
   { value: "0", label: "Create New Account" },
   { value: "1", label: "Request Permission" },
@@ -53,7 +51,6 @@ function CreateRequest() {
   const [positionOptions, setPositionOptions] = useState([]);
   const [projectOptions, setProjectOptions] = useState([]);
   const [navMenuOptions, setNavMenuOptions] = useState([]);
-  // categoryOptions state dihapus karena kita pakai CATEGORY_OPTIONS statis
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -93,7 +90,6 @@ function CreateRequest() {
     const fetchAllData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-        // PERBAIKAN 3: Hapus API pemanggilan category-account
         const [deptRes, projectRes, navMenuRes, positionRes] =
           await Promise.all([
             axios.get(`${API_URL}/portal-department`, { headers }),
@@ -158,8 +154,6 @@ function CreateRequest() {
     if (!result.isConfirmed) return;
 
     setLoadingSubmit(true);
-    
-    // PERBAIKAN 4: Samakan Payload persis seperti Entity DB (seperti di Edit)
     const payload = {
       full_name: formData.full_name,
       badge_no: formData.badge_no?.trim() || null,
