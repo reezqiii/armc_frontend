@@ -48,10 +48,10 @@ export default function ProductionList() {
   const { can } = usePermission();
 
   const isAuthorized = can(15);
-  const canApprove = can(33); // ID 33: Approve
-  const canUpdate = can(31); // ID 31: Update
-  const canDelete = can(32); // ID 32: Delete
-  const canViewAll = can(29); // ID 29: View All
+  const canApprove = can(33);
+  const canUpdate = can(31);
+  const canDelete = can(32);
+  const canViewAll = can(29);
 
   const fetchData = useCallback(async () => {
     if (!user?.token) return;
@@ -280,7 +280,6 @@ export default function ProductionList() {
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* APPROVE (ID 33) */}
               <Tooltip label={canApprove ? "Approve QC" : "No Permission"}>
                 <ActionIcon
                   size="md"
@@ -294,13 +293,12 @@ export default function ProductionList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* REJECT (ID 33) */}
               <Tooltip label={canApprove ? "Reject QC" : "No Permission"}>
                 <ActionIcon
                   size="md"
                   radius="md"
                   variant="filled"
-                  color={canApprove && isPending ? "blue" : "gray"}
+                  color={canApprove && isPending ? "red" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(record.id)}
                 >
@@ -308,8 +306,6 @@ export default function ProductionList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* EDIT (ID 31 / 29) */}
-              {/* Muncul jika punya akses Update ATAU Admin IT */}
               {(canUpdate || canViewAll) && (
                 <Tooltip label="Edit Record">
                   <ActionIcon
@@ -327,8 +323,6 @@ export default function ProductionList() {
                 </Tooltip>
               )}
 
-              {/* DELETE (ID 32 / 29) */}
-              {/* Muncul jika punya akses Delete ATAU Admin IT */}
               {(canDelete || canViewAll) && (
                 <Tooltip label="Delete Record">
                   <ActionIcon
@@ -372,6 +366,10 @@ export default function ProductionList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  if (!user || !user.token) {
+    return null;
+  }
 
   if (!isAuthorized) {
     return (

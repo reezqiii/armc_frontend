@@ -164,7 +164,6 @@ function RequestDetail() {
           shadow="md"
           className="bg-white p-0 w-full overflow-hidden border border-gray-200"
         >
-          {/* Header */}
           <div className="border-b py-6 text-center bg-white">
             <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
               Portal Access Request Form
@@ -174,7 +173,6 @@ function RequestDetail() {
           </div>
 
           <div className="p-6 md:p-10 space-y-10">
-            {/* 1. Date & Requestor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <label className="block font-semibold text-gray-700 text-sm">
@@ -186,7 +184,6 @@ function RequestDetail() {
               </div>
             </div>
 
-            {/* 2. Employee Description */}
             <div className="space-y-6">
               <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                 Employee Description
@@ -198,7 +195,6 @@ function RequestDetail() {
                     Category Account
                   </label>
                   <div className="h-[40px] px-3 bg-gray-50 border border-gray-300 rounded-md flex items-center text-sm text-gray-600">
-                    {/* Ganti data.category?.category_name menjadi fungsi helper ini */}
                     {getCategoryName(data.category_account)}
                   </div>
                 </div>
@@ -261,7 +257,6 @@ function RequestDetail() {
               </div>
             </div>
 
-            {/* 3. Purpose of Access Request */}
             <div className="space-y-4">
               <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                 Purpose of Access Request
@@ -276,15 +271,12 @@ function RequestDetail() {
               </div>
             </div>
 
-            {/* 4. Approval History */}
             <div className="space-y-6">
-              {/* Header dengan style yang sama seperti Purpose of Access Request */}
               <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                 Approval History
               </div>
 
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* Sub-header untuk kolom */}
                 <div className="bg-teal-50 px-6 py-2 text-[10px] font-bold text-teal-700 uppercase tracking-widest border-b border-gray-200">
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>Requestor</div>
@@ -294,7 +286,6 @@ function RequestDetail() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-white">
-                  {/* Col 1 — Requestor */}
                   <div className="p-5 flex flex-col justify-between min-h-[120px]">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       Requested By
@@ -314,7 +305,6 @@ function RequestDetail() {
                     </div>
                   </div>
 
-                  {/* Col 2 — HOD */}
                   <div className="p-5 flex flex-col justify-between min-h-[120px]">
                     <div>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -374,7 +364,6 @@ function RequestDetail() {
                     )}
                   </div>
 
-                  {/* Col 3 — HOD IT */}
                   <div className="p-5 bg-gray-50/30 flex flex-col justify-between min-h-[120px]">
                     <div>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -432,7 +421,6 @@ function RequestDetail() {
               </div>
             </div>
 
-            {/* Action Buttons (Footer) */}
             <div className="flex justify-between items-center pt-2">
               <Button
                 leftSection={<IconArrowLeft size={18} />}

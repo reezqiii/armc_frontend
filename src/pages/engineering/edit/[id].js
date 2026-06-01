@@ -178,7 +178,6 @@ export default function EditEngineering() {
           shadow="md"
           className="bg-white max-w-2xl mx-auto border border-gray-200"
         >
-          {/* Header diselaraskan menjadi teal */}
           <div className="border-b py-6 text-center bg-teal-50/50">
             <h1 className="text-2xl font-bold text-teal-700 uppercase">
               Edit Work Order

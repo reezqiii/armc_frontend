@@ -127,7 +127,6 @@ export default function ProjectList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit Project */}
               <Tooltip label="Edit Project" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -142,7 +141,6 @@ export default function ProjectList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete Project */}
               <Tooltip label="Delete Project" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

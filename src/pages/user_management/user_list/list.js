@@ -283,7 +283,6 @@ export default function UserList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit */}
               <Tooltip label="Edit User" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -300,7 +299,6 @@ export default function UserList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Reset Password */}
               <Tooltip label="Reset Password" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -313,7 +311,6 @@ export default function UserList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete (Baru) */}
               <Tooltip label="Delete User" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

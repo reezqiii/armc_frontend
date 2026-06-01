@@ -110,7 +110,6 @@ export default function Dashboard() {
   return (
     <AuthLayout sidebarList={requestorList}>
       <div className="py-6 px-4 bg-gray-50 min-h-screen">
-        {/* ── HEADER & FILTER ── */}
         <div className="flex items-center justify-between mb-6">
           <Group gap="xs">
             <div className="p-2 rounded-lg bg-teal-100 text-teal-700">
@@ -154,7 +153,6 @@ export default function Dashboard() {
           </Paper>
         </div>
 
-        {/* ── STATS CARDS ── */}
         <Grid mb="lg">
           <Grid.Col span={{ base: 6, md: 3 }}>
             <Paper withBorder p="md" radius="md" shadow="sm">
@@ -210,7 +208,6 @@ export default function Dashboard() {
           </Grid.Col>
         </Grid>
 
-        {/* ── RECENT ACTIVITY ── */}
         <Paper withBorder radius="md" shadow="sm" p="md">
           <Group justify="space-between" mb="lg" className="border-b pb-3">
             <Group gap="xs">

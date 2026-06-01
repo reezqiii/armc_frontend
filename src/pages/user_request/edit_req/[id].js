@@ -244,7 +244,6 @@ function EditRequest() {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6 md:p-10 space-y-10">
-              {/* 1. Requestor Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="block font-semibold text-gray-700 text-sm">
@@ -256,7 +255,6 @@ function EditRequest() {
                 </div>
               </div>
 
-              {/* 2. Employee Description */}
               <div className="space-y-6">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Employee Description
@@ -335,7 +333,6 @@ function EditRequest() {
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
 
-                  {/* PERBAIKAN 4: Ubah MultiSelect jadi Select (karena DB int4) */}
                   <Select
                     required
                     label="Application Access"
@@ -367,7 +364,6 @@ function EditRequest() {
                 </div>
               </div>
 
-              {/* 3. Purpose of Access Request */}
               <div className="space-y-4">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Purpose of Access Request
@@ -385,7 +381,6 @@ function EditRequest() {
                 />
               </div>
 
-              {/* 4. Approval Workflow */}
               <div className="space-y-6">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Approval Workflow
@@ -401,7 +396,6 @@ function EditRequest() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-white">
-                    {/* Col 1 — Requestor */}
                     <div className="p-5 flex flex-col justify-between min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         Requested By
@@ -423,7 +417,6 @@ function EditRequest() {
                       </div>
                     </div>
 
-                    {/* Col 2 — HOD (Dengan Form Select) */}
                     <div className="p-5 flex flex-col min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
                         Acknowledge By
@@ -449,7 +442,6 @@ function EditRequest() {
                       </div>
                     </div>
 
-                    {/* Col 3 — HOD IT */}
                     <div className="p-5 bg-gray-50/30 flex flex-col min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         Approved By
@@ -488,7 +480,6 @@ function EditRequest() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-between pt-6">
                 <Button
                   leftSection={<IconArrowLeft size={18} />}

@@ -437,7 +437,6 @@ export default function RequestListDynamic({ request_status }) {
 
         return (
           <Group gap={6} justify="center" wrap="nowrap">
-            {/* DETAILS - Selalu muncul */}
             <Tooltip label="Details" withArrow>
               <ActionIcon
                 size="md"
@@ -452,7 +451,6 @@ export default function RequestListDynamic({ request_status }) {
               </ActionIcon>
             </Tooltip>
 
-            {/* EDIT */}
             {canEdit && (
               <Tooltip label="Edit Request" withArrow>
                 <ActionIcon
@@ -469,7 +467,6 @@ export default function RequestListDynamic({ request_status }) {
               </Tooltip>
             )}
 
-            {/* CANCEL */}
             {canCancel && (
               <Tooltip label="Cancel Request" withArrow>
                 <ActionIcon
@@ -547,7 +544,6 @@ export default function RequestListDynamic({ request_status }) {
       <AuthLayout sidebarList={requestorList}>
         <div className="py-6 px-4">
           <Paper radius="md" p="md" withBorder shadow="sm">
-            {/* HEADER */}
             <div className="flex items-center justify-between border-b pb-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-teal-100 text-teal-600">
@@ -573,10 +569,8 @@ export default function RequestListDynamic({ request_status }) {
               )}
             </div>
 
-            {/* TABLE */}
             <Datatables table={table} totalPages={totalPages} />
 
-            {/* MODAL */}
             <RejectTimelineModal
               opened={modalOpen}
               onClose={() => setModalOpen(false)}

@@ -178,17 +178,17 @@ export default function EngineeringList() {
   };
 
   const getStatusBadge = (statusVal) => {
-    let statusText = "Pending by Supervisor";
+    let statusText = "Pending by HOD";
     let badgeColor = "orange";
 
-    if (statusVal === 3 || statusVal === "Completed by Supervisor") {
-      statusText = "Completed by Supervisor";
+    if (statusVal === 3 || statusVal === "Completed by HOD") {
+      statusText = "Completed by HOD";
       badgeColor = "teal";
-    } else if (statusVal === 4 || statusVal === "Rejected by Supervisor") {
-      statusText = "Rejected by Supervisor";
+    } else if (statusVal === 4 || statusVal === "Rejected by HOD") {
+      statusText = "Rejected by HOD";
       badgeColor = "red";
-    } else if (statusVal === 2 || statusVal === "In Progress by Supervisor") {
-      statusText = "In Progress by Supervisor";
+    } else if (statusVal === 2 || statusVal === "In Progress by HOD") {
+      statusText = "In Progress by HOD";
       badgeColor = "blue";
     }
 
@@ -297,7 +297,6 @@ export default function EngineeringList() {
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* TOMBOL APPROVE/COMPLETE (ID 24) */}
               <Tooltip
                 label={canApprove ? "Complete WO" : "No Permission"}
                 withArrow
@@ -314,7 +313,6 @@ export default function EngineeringList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL REJECT (ID 24) */}
               <Tooltip
                 label={canApprove ? "Reject WO" : "No Permission"}
                 withArrow
@@ -323,7 +321,7 @@ export default function EngineeringList() {
                   size="md"
                   radius="md"
                   variant="filled"
-                  color={canApprove && isPending ? "blue" : "gray"}
+                  color={canApprove && isPending ? "red" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(id)}
                 >
@@ -331,7 +329,6 @@ export default function EngineeringList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL EDIT (ID 22 atau Admin IT 26) */}
               {(canUpdate || canViewAll) && (
                 <Tooltip label="Edit Record" withArrow>
                   <ActionIcon
@@ -349,7 +346,6 @@ export default function EngineeringList() {
                 </Tooltip>
               )}
 
-              {/* TOMBOL DELETE (ID 23 atau Admin IT 26) */}
               {(canDelete || canViewAll) && (
                 <Tooltip label="Delete Record" withArrow>
                   <ActionIcon

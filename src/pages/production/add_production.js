@@ -15,7 +15,7 @@ export default function AddProduction() {
   const router = useRouter();
   const { API_URL } = useApi();
   const { user } = useUser();
-  const { showAlert, showConfirm } = useSwal(); 
+  const { showAlert, showConfirm } = useSwal();
 
   const [formData, setFormData] = useState({
     batch_id: "",
@@ -102,7 +102,6 @@ export default function AddProduction() {
             </h1>
           </div>
 
-          {/* Tag form dibiarkan polos, tanpa atribut onSubmit */}
           <form>
             <div className="p-6 space-y-4">
               <TextInput
@@ -134,10 +133,9 @@ export default function AddProduction() {
                 Back
               </Button>
 
-              {/* KUNCI UTAMANYA DI SINI */}
               <Button
-                type="button" 
-                onClick={handleConfirm} 
+                type="button"
+                onClick={handleConfirm}
                 leftSection={<IconDeviceFloppy size={18} />}
                 color="teal"
                 loading={loading}

@@ -130,7 +130,6 @@ export default function DepartmentList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit */}
               <Tooltip label="Edit Department" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -147,7 +146,6 @@ export default function DepartmentList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete */}
               <Tooltip label="Delete Department" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

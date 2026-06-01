@@ -102,7 +102,6 @@ export default function UserManagementDashboard() {
       </Head>
       <AuthLayout sidebarList={userList}>
         <div className="py-6 px-4 bg-gray-50 min-h-screen">
-          {/* Header */}
           <div className="mb-6">
             <h1 className="text-xl font-extrabold text-teal-600 uppercase tracking-wide">
               User Management
@@ -111,7 +110,7 @@ export default function UserManagementDashboard() {
               Overview of users, roles, and access control
             </p>
           </div>
-          {/* Stat Cards */}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard
               icon={IconUsers}
@@ -139,7 +138,7 @@ export default function UserManagementDashboard() {
               color="bg-orange-500"
             />
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 lg:col-span-2">
               <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4">
@@ -186,7 +185,6 @@ export default function UserManagementDashboard() {
               )}
             </div>
 
-            {/* Quick Access - 1/3 width */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
               <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4">
                 Quick Access
@@ -223,7 +221,7 @@ export default function UserManagementDashboard() {
                   }
                 />
                 <QuickBtn
-                  icon={IconUserCheck} 
+                  icon={IconUserCheck}
                   label="Add Position"
                   color="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                   onClick={() =>
@@ -234,13 +232,14 @@ export default function UserManagementDashboard() {
                   icon={IconKey}
                   label="Permissions"
                   color="bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100"
-                  onClick={() => router.push("/user_management/permission/add_permission")}
+                  onClick={() =>
+                    router.push("/user_management/permission/add_permission")
+                  }
                 />
               </div>
             </div>
           </div>
 
-          {/* Recent Password Reset*/}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4 flex items-center gap-2">
               <IconKey size={16} className="text-teal-500" />

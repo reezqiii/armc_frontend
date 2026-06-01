@@ -66,7 +66,7 @@ function LoginPage() {
           token: res.data.token,
           role: res.data.user.role_name,
           role_id: res.data.user.role_id,
-          permission_ids: res.data.user.permission_ids, // Sinkron dengan Backend
+          permission_ids: res.data.user.permission_ids, 
           department: res.data.user.department_name,
         });
 
@@ -93,7 +93,7 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* FORM SECTION */}
+      
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -150,7 +150,7 @@ function LoginPage() {
             </Stack>
           </form>
 
-          {/* PWA text banner */}
+          
           {showInstallBanner && (
             <Text
               size="sm"
@@ -162,7 +162,7 @@ function LoginPage() {
         </motion.div>
       </div>
 
-      {/* RIGHT SIDE*/}
+      
       <div className="hidden lg:flex lg:w-1/2 bg-teal-900 items-center justify-center p-12 text-white">
         <motion.div
           initial={{ opacity: 0, x: 20 }}

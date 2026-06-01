@@ -167,7 +167,6 @@ export default function EditWarehouse() {
           shadow="md"
           className="bg-white max-w-2xl mx-auto border border-gray-200"
         >
-          {/* Header Section - Sekarang Seragam dengan Engineering */}
           <div className="border-b py-6 text-center">
             <h1 className="text-2xl font-bold text-teal-600 uppercase">
               Edit Inventory Item
@@ -217,7 +216,6 @@ export default function EditWarehouse() {
                   classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                 />
 
-                {/* Unit diubah ke TextInput dengan Placeholder Informatif */}
                 <TextInput
                   required
                   label="Unit"

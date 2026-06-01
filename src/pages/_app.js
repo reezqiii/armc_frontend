@@ -53,7 +53,7 @@ export default function App({ Component, pageProps }) {
             token: token,
             role: userData.role_name,
             role_id: userData.id_role,
-            permission_ids: userData.permission_ids ?? [], // Sesuai dengan payload JWT kita
+            permission_ids: userData.permission_ids ?? [], 
             department: userData.department_name,
           });
         } catch (err) {

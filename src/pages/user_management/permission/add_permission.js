@@ -91,8 +91,6 @@ function AddPermission() {
                 classNames={{ label: "font-semibold mb-1 text-gray-700" }}
               />
 
-              {/* INPUT PERMISSION KEY DIHAPUS DARI SINI */}
-
               <TextInput
                 required
                 label="Permission Group"

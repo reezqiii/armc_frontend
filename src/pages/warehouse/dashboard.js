@@ -111,6 +111,10 @@ export default function WarehouseDashboard() {
     };
   });
 
+  if (!user || !user.token) {
+    return null;
+  }
+
   if (!isAuthorized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -138,7 +142,6 @@ export default function WarehouseDashboard() {
 
       <AuthLayout sidebarList={warehouseList}>
         <div className="py-6 px-4">
-          {/* WELCOME BANNER (Role Dihapus) */}
           <Paper
             radius="md"
             p="lg"
@@ -155,7 +158,6 @@ export default function WarehouseDashboard() {
             </Text>
           </Paper>
 
-          {/* STATS CARDS */}
           <SimpleGrid
             cols={{ base: 1, sm: 2, lg: 4 }}
             spacing="lg"
@@ -183,7 +185,6 @@ export default function WarehouseDashboard() {
             ))}
           </SimpleGrid>
 
-          {/* RECENT UPDATES (Style Konsisten) */}
           <Paper radius="md" p="md" withBorder shadow="sm">
             <div className="flex items-center gap-2 border-b pb-3 mb-4">
               <IconActivity size={20} className="text-teal-600" />

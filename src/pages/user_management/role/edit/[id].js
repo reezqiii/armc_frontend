@@ -147,7 +147,6 @@ function EditRole() {
       <div className="bg-gray-100 min-h-screen py-8 px-4 md:px-8">
         <form onSubmit={handleSubmit}>
           <div className="max-w-3xl mx-auto space-y-4">
-            {/* Role Name Card */}
             <Paper
               radius="md"
               shadow="md"
@@ -173,7 +172,6 @@ function EditRole() {
               </div>
             </Paper>
 
-            {/* Permissions Card */}
             <Paper
               radius="md"
               shadow="md"
@@ -201,7 +199,6 @@ function EditRole() {
               />
             </Paper>
 
-            {/* Action Buttons */}
             <div className="flex justify-between pb-6">
               <Button
                 leftSection={<IconArrowLeft size={18} />}

@@ -64,7 +64,6 @@ export default function PermissionManager({
             key={group}
             className="border border-gray-200 rounded-lg overflow-hidden shadow-sm"
           >
-            {/* --- GROUP HEADER --- */}
             <div
               className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
               onClick={() => toggleCollapse(group)}
@@ -98,7 +97,6 @@ export default function PermissionManager({
               )}
             </div>
 
-            {/* --- PERMISSION ITEMS --- */}
             {!isCollapsed && (
               <div className="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white">
                 {groupPerms.map((p) => {
@@ -137,7 +135,6 @@ export default function PermissionManager({
                             {p.permission_name}
                           </p>
 
-                          {/* Badge Role muncul sebagai referensi visual */}
                           {isInherited && (
                             <Badge
                               color="blue"

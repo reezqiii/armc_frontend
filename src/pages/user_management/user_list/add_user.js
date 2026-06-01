@@ -235,7 +235,6 @@ function CreateUser() {
             shadow="md"
             className="bg-white w-full overflow-hidden border border-gray-200"
           >
-            {/* Header */}
             <div className="border-b py-6 text-center bg-white">
               <h1 className="text-2xl font-bold text-teal-600 uppercase tracking-tight">
                 Create New User Account
@@ -244,7 +243,6 @@ function CreateUser() {
 
             <form onSubmit={handleSubmit}>
               <div className="p-6 md:p-10 space-y-10">
-                {/* BASIC INFORMATION */}
                 <div className="space-y-4">
                   <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
@@ -253,7 +251,6 @@ function CreateUser() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {" "}
-                    {/* ← ganti jadi 2 kolom */}
                     <TextInput
                       required
                       label="Badge ID"
@@ -296,7 +293,6 @@ function CreateUser() {
                   </div>
                 </div>
 
-                {/* ORGANIZATION */}
                 <div className="space-y-4">
                   <div className="-mx-6 md:-mx-10 bg-teal-600 shadow-sm">
                     <div className="px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
@@ -367,7 +363,6 @@ function CreateUser() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-between px-6 md:px-10 pb-8 pt-2">
                 <Button
                   leftSection={<IconArrowLeft size={16} />}

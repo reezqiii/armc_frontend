@@ -146,7 +146,6 @@ export default function PermissionList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit Permission */}
               <Tooltip label="Edit Permission" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -163,7 +162,6 @@ export default function PermissionList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete Permission */}
               <Tooltip label="Delete Permission" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

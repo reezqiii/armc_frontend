@@ -1,12 +1,6 @@
 import AuthLayout from "@/components/layout/authLayout";
 import requestorList from "@/data/sidebar/RequestorList";
-import {
-  Button,
-  Paper,
-  TextInput,
-  Textarea,
-  Select,
-} from "@mantine/core";
+import { Button, Paper, TextInput, Textarea, Select } from "@mantine/core";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
@@ -41,7 +35,7 @@ function CreateRequest() {
     request_reason: "",
     approval_hod_by: "",
     category_account: "",
-    id_application: "", // PERBAIKAN 2: Ubah access_nav_menu jadi id_application
+    id_application: "",
   });
 
   const [errors, setErrors] = React.useState({});
@@ -137,7 +131,7 @@ function CreateRequest() {
     if (!formData.full_name) newErrors.full_name = "Required";
     if (!formData.email) newErrors.email = "Required";
     if (!formData.request_reason) newErrors.request_reason = "Required";
-    if (!formData.id_application) newErrors.id_application = "Required"; // Disesuaikan
+    if (!formData.id_application) newErrors.id_application = "Required";
     if (!formData.position) newErrors.position = "Required";
 
     if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
@@ -164,9 +158,15 @@ function CreateRequest() {
       id_position: formData.position ? Number(formData.position) : null,
       id_project: formData.project ? Number(formData.project) : null,
       id_department: formData.department ? Number(formData.department) : null,
-      category_account: formData.category_account ? Number(formData.category_account) : null,
-      id_application: formData.id_application ? Number(formData.id_application) : null,
-      approval_hod_by_id: formData.approval_hod_by ? Number(formData.approval_hod_by) : null,
+      category_account: formData.category_account
+        ? Number(formData.category_account)
+        : null,
+      id_application: formData.id_application
+        ? Number(formData.id_application)
+        : null,
+      approval_hod_by_id: formData.approval_hod_by
+        ? Number(formData.approval_hod_by)
+        : null,
     };
 
     try {
@@ -198,7 +198,6 @@ function CreateRequest() {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6 md:p-10 space-y-10">
-              {/* 1. Requestor */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
                   <label className="block font-semibold text-gray-700 text-sm">
@@ -210,7 +209,6 @@ function CreateRequest() {
                 </div>
               </div>
 
-              {/* 2. Employee Description */}
               <div className="space-y-6">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Employee Description
@@ -220,7 +218,7 @@ function CreateRequest() {
                     required
                     label="Category Account"
                     placeholder="Select Category Account"
-                    data={CATEGORY_OPTIONS} // <--- PERBAIKAN: Gunakan Statis Data
+                    data={CATEGORY_OPTIONS}
                     value={formData.category_account}
                     onChange={(v) => handleChange("category_account", v)}
                     error={errors.category_account}
@@ -288,8 +286,7 @@ function CreateRequest() {
                     searchable
                     classNames={{ label: "font-semibold mb-1 text-gray-700" }}
                   />
-                  
-                  {/* PERBAIKAN 5: Ubah MultiSelect jadi Select single */}
+
                   <Select
                     required
                     label="Application Access"
@@ -321,7 +318,6 @@ function CreateRequest() {
                 </div>
               </div>
 
-              {/* 3. Purpose of Access Request */}
               <div className="space-y-4">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Purpose of Access Request
@@ -339,7 +335,6 @@ function CreateRequest() {
                 />
               </div>
 
-              {/* 4. Approval Workflow */}
               <div className="space-y-6">
                 <div className="-mx-6 md:-mx-10 bg-teal-600 px-6 md:px-10 py-3 text-sm font-bold text-white uppercase tracking-widest">
                   Approval Workflow
@@ -355,7 +350,6 @@ function CreateRequest() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 bg-white">
-                    {/* Col 1 — Requestor */}
                     <div className="p-5 flex flex-col justify-between min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         Requested By
@@ -377,7 +371,6 @@ function CreateRequest() {
                       </div>
                     </div>
 
-                    {/* Col 2 — HOD */}
                     <div className="p-5 flex flex-col min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
                         Acknowledge By
@@ -403,7 +396,6 @@ function CreateRequest() {
                       </div>
                     </div>
 
-                    {/* Col 3 — HOD IT */}
                     <div className="p-5 bg-gray-50/30 flex flex-col min-h-[120px]">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         Approved By
@@ -423,7 +415,6 @@ function CreateRequest() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-between pt-6">
                 <Button
                   leftSection={<IconArrowLeft size={18} />}

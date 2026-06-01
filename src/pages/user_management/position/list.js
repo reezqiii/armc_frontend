@@ -4,7 +4,15 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "@/hooks/useApi";
 import useUser from "@/store/useUser";
 import axios from "axios";
-import { Button, Group, Paper, Badge, Text, Tooltip, ActionIcon } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Paper,
+  Badge,
+  Text,
+  Tooltip,
+  ActionIcon,
+} from "@mantine/core";
 import {
   IconEdit,
   IconPlus,
@@ -150,7 +158,6 @@ export default function PositionList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit Position */}
               <Tooltip label="Edit Position" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -167,7 +174,6 @@ export default function PositionList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete Position */}
               <Tooltip label="Delete Position" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

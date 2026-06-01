@@ -105,24 +105,114 @@ export default function WarehouseList() {
   }, [fetchData, isAuthorized, user?.token]);
 
   const handleDelete = async (id) => {
-    /* kode lama */
+    const result = await showConfirm(
+      "Delete Record?",
+      "Are you sure you want to delete this record? This action cannot be undone.",
+      "Yes, Delete!",
+    );
+
+    if (result.isConfirmed) {
+      showLoading();
+      try {
+        const encryptedId = encrypt(id.toString());
+        await axios.delete(`${API_URL}/warehouse/${encryptedId}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+        closeSwal();
+        showAlert(
+          "Deleted!",
+          "success",
+          "The record has been successfully deleted.",
+        );
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        console.error("Delete error:", error);
+        const errorMsg =
+          error.response?.data?.message || "Failed to delete the record.";
+        showAlert("Error", "error", errorMsg);
+      }
+    }
   };
   const handleApprove = async (id) => {
-    /* kode lama */
+    const result = await showConfirm(
+      "Approve Item?",
+      "Are you sure you want to approve this item?",
+      "Yes, Approve!",
+    );
+    if (result.isConfirmed) {
+      showLoading();
+      try {
+        const encryptedId = encrypt(id.toString());
+        await axios.patch(
+          `${API_URL}/warehouse/${encryptedId}/approve`,
+          {},
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        );
+
+        closeSwal();
+        showAlert(
+          "Success!",
+          "success",
+          "The item has been successfully approved.",
+        );
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        console.error("Approve error:", error);
+        const errorMsg =
+          error.response?.data?.message || "Failed to approve the item.";
+        showAlert("Error", "error", errorMsg);
+      }
+    }
   };
+
   const handleReject = async (id) => {
-    /* kode lama */
+    const result = await showInput(
+      "Reject Item?",
+      "Please provide a reason for rejection:",
+      "Enter reason here...",
+      "Reject Item",
+    );
+
+    if (result.isConfirmed) {
+      showLoading();
+      try {
+        const encryptedId = encrypt(id.toString());
+
+        await axios.patch(
+          `${API_URL}/warehouse/${encryptedId}/reject`,
+          { remarks: result.value },
+          { headers: { Authorization: `Bearer ${user.token}` } },
+        );
+
+        closeSwal();
+        showAlert(
+          "Success!",
+          "success",
+          "The item has been successfully rejected.",
+        );
+        fetchData();
+      } catch (error) {
+        closeSwal();
+        console.error("Reject error:", error);
+        const errorMsg =
+          error.response?.data?.message || "Failed to reject the item.";
+        showAlert("Error", "error", errorMsg);
+      }
+    }
   };
 
   const getStatusBadge = (statusVal) => {
-    let statusText = "Pending by Supervisor";
+    let statusText = "Pending by HOD";
     let badgeColor = "orange";
 
     if (statusVal === 2) {
-      statusText = "Approved by Supervisor";
+      statusText = "Approved by HOD";
       badgeColor = "teal";
     } else if (statusVal === 3) {
-      statusText = "Rejected by Supervisor";
+      statusText = "Rejected by HOD";
       badgeColor = "red";
     }
 
@@ -163,6 +253,15 @@ export default function WarehouseList() {
         cell: (info) => info.getValue() ?? "-",
       },
       {
+        accessorFn: (row) => row.category,
+        id: "category",
+        header: "Category",
+        enableColumnFilter: true,
+        enableSorting: true,
+        size: 150,
+        cell: (info) => info.getValue() ?? "-",
+      },
+      {
         accessorFn: (row) => row.quantity,
         id: "quantity",
         header: "Qty",
@@ -195,6 +294,7 @@ export default function WarehouseList() {
           return (
             <div className="flex flex-col gap-1 items-center text-center w-full">
               {getStatusBadge(statusInt)}
+
               {isRejected && remarks && (
                 <Text
                   size="xs"
@@ -218,11 +318,14 @@ export default function WarehouseList() {
         cell: ({ row }) => {
           const record = row.original;
           const encryptedId = encrypt(record.id.toString());
-          const isPending = record.status === 1 || record.status === null;
+          const currentStatus = Number(record.status);
+          const isPending =
+            currentStatus === 1 ||
+            currentStatus === 0 ||
+            record.status === null;
 
           return (
             <Group gap={6} justify="center" wrap="nowrap">
-              {/* TOMBOL APPROVE (ID 39) */}
               <Tooltip
                 label={canApprove ? "Approve Item" : "No Permission"}
                 withArrow
@@ -239,7 +342,6 @@ export default function WarehouseList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL REJECT (ID 39) */}
               <Tooltip
                 label={canApprove ? "Reject Item" : "No Permission"}
                 withArrow
@@ -248,7 +350,7 @@ export default function WarehouseList() {
                   size="md"
                   radius="md"
                   variant="filled"
-                  color={canApprove && isPending ? "blue" : "gray"}
+                  color={canApprove && isPending ? "red" : "gray"}
                   disabled={!canApprove || !isPending}
                   onClick={() => handleReject(record.id)}
                 >
@@ -256,7 +358,6 @@ export default function WarehouseList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* TOMBOL EDIT (ID 37 atau Admin IT 35) */}
               {(canUpdate || canViewAll) && (
                 <Tooltip label="Edit Record" withArrow>
                   <ActionIcon
@@ -273,7 +374,6 @@ export default function WarehouseList() {
                 </Tooltip>
               )}
 
-              {/* TOMBOL DELETE (ID 38 atau Admin IT 35) */}
               {(canDelete || canViewAll) && (
                 <Tooltip label="Delete Record" withArrow>
                   <ActionIcon
@@ -308,6 +408,10 @@ export default function WarehouseList() {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  if (!user || !user.token) {
+    return null;
+  }
 
   if (!isAuthorized) {
     return (

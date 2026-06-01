@@ -134,7 +134,6 @@ export default function RoleList() {
 
           return (
             <Group gap={8} justify="center" wrap="nowrap">
-              {/* Tombol Edit Role */}
               <Tooltip label="Edit Role" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"
@@ -149,7 +148,6 @@ export default function RoleList() {
                 </ActionIcon>
               </Tooltip>
 
-              {/* Tombol Delete Role */}
               <Tooltip label="Delete Role" withArrow position="bottom">
                 <ActionIcon
                   variant="filled"

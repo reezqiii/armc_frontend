@@ -113,7 +113,6 @@ function AddPosition() {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6">
-              {/* TextInput dengan margin bottom agar tidak menempel ke Select */}
               <TextInput
                 required
                 label="Position Name"

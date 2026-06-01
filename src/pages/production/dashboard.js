@@ -37,7 +37,7 @@ export default function ProductionDashboard() {
     try {
       const response = await axios.post(
         `${API_URL}/production/serverside_list?page=0&size=100`,
-        {}, 
+        {},
         {
           headers: { Authorization: `Bearer ${user.token}` },
         },
@@ -89,6 +89,10 @@ export default function ProductionDashboard() {
     };
   });
 
+  if (!user || !user.token) {
+    return null;
+  }
+
   if (!isAuthorized) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
@@ -116,7 +120,6 @@ export default function ProductionDashboard() {
 
       <AuthLayout sidebarList={productionList}>
         <div className="py-6 px-4">
-          {/* WELCOME BANNER (Role Dihapus) */}
           <Paper
             radius="md"
             p="lg"
@@ -133,7 +136,6 @@ export default function ProductionDashboard() {
             </Text>
           </Paper>
 
-          {/* STATS GRID */}
           <SimpleGrid
             cols={{ base: 1, sm: 2, lg: 4 }}
             spacing="lg"
@@ -165,7 +167,6 @@ export default function ProductionDashboard() {
             ))}
           </SimpleGrid>
 
-          {/* RECENT UPDATES (Date Badge Dihapus) */}
           <Paper radius="md" p="md" withBorder shadow="sm">
             <div className="flex items-center gap-2 border-b pb-3 mb-4">
               <IconActivity size={20} className="text-teal-600" />
@@ -181,7 +182,6 @@ export default function ProductionDashboard() {
                     key={activity.id}
                     className="flex items-center gap-3 bg-gray-50 p-4 rounded-md border border-gray-100"
                   >
-                    {/* Memberikan indikator warna sebagai pengganti badge tanggal agar tetap informatif */}
                     <div
                       className={`w-1.5 h-8 rounded-full ${
                         activity.status === "Passed"
