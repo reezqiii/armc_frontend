@@ -337,7 +337,7 @@ function CreateUser() {
                       error={errors.id_project}
                       classNames={inputClass}
                     />
-                    <MultiSelect
+                    {/* <MultiSelect
                       searchable
                       clearable
                       label="Additional Projects"
@@ -346,7 +346,7 @@ function CreateUser() {
                       value={formData.project_ids}
                       onChange={(v) => handleChange("project_ids", v)}
                       classNames={inputClass}
-                    />
+                    /> */}
                     <Select
                       required
                       searchable

@@ -218,6 +218,9 @@ function EditUser() {
     if (!formData.badge_no) newErrors.badge_no = "Required";
     if (!formData.username) newErrors.username = "Required";
     if (!formData.email) newErrors.email = "Required";
+    if (!formData.id_department) newErrors.id_department = "Required";
+    if (!formData.id_position) newErrors.id_position = "Required";
+    if (!formData.id_project) newErrors.id_project = "Required";
     if (!formData.id_role) newErrors.id_role = "Required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -361,10 +364,12 @@ function EditUser() {
                   />
                   <Select
                     required
-                    label="Role"
-                    data={roleOptions}
-                    value={formData.id_role}
-                    onChange={(v) => handleChange("id_role", v)}
+                    searchable
+                    label="Position"
+                    data={positionOptions}
+                    value={formData.id_position}
+                    onChange={(v) => handleChange("id_position", v)}
+                    error={errors.id_position}
                     classNames={inputClass}
                   />
                   <Select
@@ -373,6 +378,14 @@ function EditUser() {
                     data={projectOptions}
                     value={formData.id_project}
                     onChange={(v) => handleChange("id_project", v)}
+                    classNames={inputClass}
+                  />
+                  <Select
+                    required
+                    label="Role"
+                    data={roleOptions}
+                    value={formData.id_role}
+                    onChange={(v) => handleChange("id_role", v)}
                     classNames={inputClass}
                   />
                 </div>
